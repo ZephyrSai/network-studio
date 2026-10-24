@@ -74,20 +74,20 @@ function drawFace(n,g){
 
 // ---------- link (connector) types ----------
 const linkTypes={
-  eth:{name:'Ethernet · 1G copper',stroke:'#4a6fa5',width:2,dash:'',speed:'1G',media:'Cat6'},
-  fiber10:{name:'10G fibre',stroke:'#ef6b32',width:2.5,dash:'',speed:'10G',media:'OM4 / SMF'},
-  fiber100:{name:'40/100G fibre',stroke:'#b91c1c',width:3.5,dash:'',speed:'100G',media:'SMF'},
-  stack:{name:'Stack / LAG / port-channel',stroke:'#1e3a8a',width:2.25,dash:'',double:true,speed:'',media:'DAC'},
-  wan:{name:'WAN / MPLS circuit',stroke:'#7c3aed',width:2.5,dash:'',speed:'',media:'Leased line'},
-  internet:{name:'Internet / ISP',stroke:'#0f766e',width:2.5,dash:'',speed:'',media:'Fibre'},
-  vpn:{name:'VPN / IPsec tunnel',stroke:'#16a34a',width:2,dash:'9 5',speed:'',media:'Tunnel'},
-  wireless:{name:'Wireless / radio',stroke:'#0891b2',width:2,dash:'2 5',speed:'',media:'Wi-Fi / RF'},
-  ha:{name:'HA / heartbeat',stroke:'#dc2626',width:1.75,dash:'6 4',speed:'1G',media:'Cat6'},
-  mgmt:{name:'Management / OOB',stroke:'#5d8fbc',width:1.5,dash:'7 5',speed:'1G',media:'Cat6'},
-  serial:{name:'Serial / console',stroke:'#6b7280',width:1.5,dash:'1 4',speed:'',media:'RS-232'},
-  fieldbus:{name:'Fieldbus / RS-485',stroke:'#a16207',width:1.75,dash:'12 3 2 3',speed:'',media:'RS-485'},
-  power:{name:'Power feed',stroke:'#ca8a04',width:1.75,dash:'10 4 2 4',speed:'',media:'Power'},
-  logical:{name:'Logical flow',stroke:'#64748b',width:1.5,dash:'4 4',endMarker:'arrow',speed:'',media:''},
+  eth:{name:'Ethernet · 1G copper',short:'1G copper',stroke:'#4a6fa5',width:2,dash:'',speed:'1G',media:'Cat6'},
+  fiber10:{name:'10G fibre',short:'10G fibre',stroke:'#ef6b32',width:2.5,dash:'',speed:'10G',media:'OM4 / SMF'},
+  fiber100:{name:'40/100G fibre',short:'40/100G fibre',stroke:'#b91c1c',width:3.5,dash:'',speed:'100G',media:'SMF'},
+  stack:{name:'Stack / LAG / port-channel',short:'Stack / LAG',stroke:'#1e3a8a',width:2.25,dash:'',double:true,speed:'',media:'DAC'},
+  wan:{name:'WAN / MPLS circuit',short:'WAN / MPLS',stroke:'#7c3aed',width:2.5,dash:'',speed:'',media:'Leased line'},
+  internet:{name:'Internet / ISP',short:'Internet',stroke:'#0f766e',width:2.5,dash:'',speed:'',media:'Fibre'},
+  vpn:{name:'VPN / IPsec tunnel',short:'VPN tunnel',stroke:'#16a34a',width:2,dash:'9 5',speed:'',media:'Tunnel'},
+  wireless:{name:'Wireless / radio',short:'Wireless',stroke:'#0891b2',width:2,dash:'2 5',speed:'',media:'Wi-Fi / RF'},
+  ha:{name:'HA / heartbeat',short:'HA link',stroke:'#dc2626',width:1.75,dash:'6 4',speed:'1G',media:'Cat6'},
+  mgmt:{name:'Management / OOB',short:'Management',stroke:'#5d8fbc',width:1.5,dash:'7 5',speed:'1G',media:'Cat6'},
+  serial:{name:'Serial / console',short:'Serial',stroke:'#6b7280',width:1.5,dash:'1 4',speed:'',media:'RS-232'},
+  fieldbus:{name:'Fieldbus / RS-485',short:'Fieldbus',stroke:'#a16207',width:1.75,dash:'12 3 2 3',speed:'',media:'RS-485'},
+  power:{name:'Power feed',short:'Power',stroke:'#ca8a04',width:1.75,dash:'10 4 2 4',speed:'',media:'Power'},
+  logical:{name:'Logical flow',short:'Logical flow',stroke:'#64748b',width:1.5,dash:'4 4',endMarker:'arrow',speed:'',media:''},
 };
 function applyLinkType(e,id){const t=linkTypes[id];if(!t)return;e.linkType=id;e.stroke=t.stroke;e.strokeWidth=t.width;e.dash=t.dash;e.double=!!t.double;if(t.endMarker)e.endMarker=t.endMarker;e.data??={};if(t.speed&&!e.data.speed)e.data.speed=t.speed;if(t.media&&!e.data.media)e.data.media=t.media}
 // "10G", "2.5 Gbps", "100M" → Mbps

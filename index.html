@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=4a69e5fc">
+<link rel="stylesheet" href="css/app.css?v=fe394759">
 <style id="printRules"></style>
 </head>
 <body>
@@ -58,6 +58,7 @@
 <footer class="status">
   <div id="pageTabs" class="pageTabs"></div>
   <div class="spacer"></div>
+  <button id="issueCount" class="issueBtn" data-action="check" hidden></button>
   <span id="selectionCount">Ready</span>
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
@@ -79,23 +80,24 @@
 <script src="js/core.js?v=86f4cf9b"></script>
 <script src="js/stencils.js?v=51c82413"></script>
 <script src="js/packs/extended.js?v=05ccca0c"></script>
-<script src="js/shapes.js?v=abb06e09"></script>
+<script src="js/shapes.js?v=d0c995c0"></script>
 <script src="js/icons.js?v=8b2bdc5b"></script>
 <script src="js/router.js?v=0c90e0a3"></script>
 <script src="js/layout.js?v=51056f31"></script>
 <script src="js/connectors.js?v=b2de2b0d"></script>
+<script src="js/constraints.js?v=9b0e54b4"></script>
 <script src="js/vsdx.js?v=1795b2a5"></script>
-<script src="js/render.js?v=d17def8e"></script>
-<script src="js/analysis.js?v=156b40b9"></script>
-<script src="js/io.js?v=d71aa394"></script>
+<script src="js/render.js?v=5d09db93"></script>
+<script src="js/analysis.js?v=293cdf67"></script>
+<script src="js/io.js?v=1b81eac8"></script>
 <script src="js/packs.js?v=85a99e86"></script>
-<script src="js/builder.js?v=e4933f6d"></script>
-<script src="js/templates.js?v=fe539e78"></script>
-<script src="js/app.js?v=870adc5b"></script>
-<script src="js/inspector.js?v=a3253af2"></script>
-<script src="js/actions.js?v=4184830a"></script>
-<script src="js/panels.js?v=0d427483"></script>
+<script src="js/builder.js?v=b9669f82"></script>
+<script src="js/templates.js?v=02a71dec"></script>
+<script src="js/app.js?v=2684a869"></script>
+<script src="js/inspector.js?v=24dfbeed"></script>
+<script src="js/actions.js?v=28c986ee"></script>
+<script src="js/panels.js?v=b766c890"></script>
 <script src="js/workspace.js?v=ca2e8f8f"></script>
-<script src="js/main.js?v=4a2518c2"></script>
+<script src="js/main.js?v=009fd108"></script>
 </body>
 </html>

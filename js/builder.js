@@ -27,7 +27,7 @@ function layoutPage(kind='hier',opts={}){
     for(const b of blocks){const p=top.get(b.id);if(!p)continue;if(b.node){const eb=effBox(b.node);C.move(b.node,grid(p.x+eb.dx)-b.node.x,grid(p.y)-b.node.y)}else{const z=b.zone,{pos,ms}=inner.get(z.id);for(const n of ms){const q=pos.get(n.id),eb=effBox(n);C.move(n,grid(p.x+30+q.x+eb.dx)-n.x,grid(p.y+56+q.y)-n.y)}const dx=p.x-z.x,dy=p.y-z.y;z.labels.forEach(l=>{l.x+=dx;l.y+=dy});z.x=p.x;z.y=p.y;z.w=b.w;z.h=b.h}}
     for(const e of links){if(e.routing!=='straight')e.routing='auto';Conn.markDirty(e.id)}
     for(const e of page.items)if(e.kind==='edge'&&(e.from&&ids.has(e.from.node)||e.to&&ids.has(e.to.node))&&!links.includes(e))Conn.markDirty(e.id);
-    if(opts.fitPage!==false)autoSizePage(page)});fit()}
+    if(opts.fitPage!==false&&page.autoSize===false)autoSizePage(page)});fit()}
 // Grow the page to the smallest standard sheet (or a custom size) that holds the drawing.
 function autoSizePage(page,{allowShrink=false,notify:say=true}={}){const all=page.items;if(!all.length)return;const b=C.bounds(all,true),m=page.margin*C.PX,need={w:b.x+b.w+m+20,h:b.y+b.h+m+20},cur=C.pageSize(page);if(!allowShrink&&need.w<=cur.w&&need.h<=cur.h)return;
   for(const paper of['A4','A3','A2','A1','A0'])for(const orientation of[page.orientation,page.orientation==='landscape'?'portrait':'landscape']){const s=C.pageSize({...page,paper,orientation});if(s.w>=need.w&&s.h>=need.h){if(page.paper!==paper||page.orientation!==orientation){page.paper=paper;page.orientation=orientation;if(say)notify(`Page set to ${paper} ${orientation} to fit the drawing.`)}return}}

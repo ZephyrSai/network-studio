@@ -34,7 +34,7 @@ function wire(){
     if(id==='fontColor'){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.color=t.value)));return}
     if(id==='displaySel'&&t.value){S.prefs.newDisplay=t.value;savePrefs();const ns=sel.filter(n=>n.kind==='node'&&Shapes.kindOf(n.type)==='device');if(ns.length)mutate(()=>ns.forEach(n=>n.display=t.value));else notify('New devices will use the '+t.value+' style.');t.value='';return}
     if(id==='strokeColor'||id==='fillColor'){if(!ensureEditable())return;mutate(()=>sel.forEach(n=>n[id==='strokeColor'?'stroke':'fill']=t.value));return}
-    if(id==='paperSel'){mutate(()=>pg().paper=t.value);fit();return}
+    if(id==='paperSel'){mutate(()=>{pg().paper=t.value;pg().minPaper=t.value});fit();return}
     if(id==='jumpSel'){mutate(()=>S.doc.display.jumpStyle=t.value);return}
     if(id==='colorBySel'){mutate(()=>S.doc.display.colorBy=t.value);return}
     if(id==='showFieldSel'&&t.value){const k=t.value;mutate(()=>{const f=S.doc.display.fields||=[];S.doc.display.fields=f.includes(k)?f.filter(x=>x!==k):[...f,k]});renderRibbon();return}
@@ -111,6 +111,7 @@ async function boot(){
   S.doc=doc;S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.activeLayer=doc.layers[0].id;
   renderRibbon();renderLeft();setMode('select');document.title=S.doc.name+' · Port Network Studio';
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
+  scheduleCheck();
   if(location.hash.startsWith('#doc='))await loadFromHash();
   else if(!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
   // make the router/layout modules optional: degrade gracefully when missing

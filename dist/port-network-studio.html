@@ -304,6 +304,10 @@ details.packCat>summary{color:var(--blue)}
 .packRow button{font-size:12px;padding:4px 8px}
 .h3{font-size:13px;margin:16px 0 4px;color:var(--strong)}
 
+.issueBtn{border:0;border-radius:20px;padding:2px 10px;font-size:11.5px;font-weight:600;background:var(--panel2)}
+.issueBtn.err{color:#fff;background:var(--danger)}.issueBtn.warn{color:#7c2d12;background:#fde68a}.issueBtn.ok{color:var(--ok)}
+.hintTxt{display:block;font-size:10.5px;color:var(--muted);margin-top:3px}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -355,6 +359,7 @@ details.packCat>summary{color:var(--blue)}
 <footer class="status">
   <div id="pageTabs" class="pageTabs"></div>
   <div class="spacer"></div>
+  <button id="issueCount" class="issueBtn" data-action="check" hidden></button>
   <span id="selectionCount">Ready</span>
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
@@ -841,20 +846,20 @@ function drawFace(n,g){
 
 // ---------- link (connector) types ----------
 const linkTypes={
-  eth:{name:'Ethernet · 1G copper',stroke:'#4a6fa5',width:2,dash:'',speed:'1G',media:'Cat6'},
-  fiber10:{name:'10G fibre',stroke:'#ef6b32',width:2.5,dash:'',speed:'10G',media:'OM4 / SMF'},
-  fiber100:{name:'40/100G fibre',stroke:'#b91c1c',width:3.5,dash:'',speed:'100G',media:'SMF'},
-  stack:{name:'Stack / LAG / port-channel',stroke:'#1e3a8a',width:2.25,dash:'',double:true,speed:'',media:'DAC'},
-  wan:{name:'WAN / MPLS circuit',stroke:'#7c3aed',width:2.5,dash:'',speed:'',media:'Leased line'},
-  internet:{name:'Internet / ISP',stroke:'#0f766e',width:2.5,dash:'',speed:'',media:'Fibre'},
-  vpn:{name:'VPN / IPsec tunnel',stroke:'#16a34a',width:2,dash:'9 5',speed:'',media:'Tunnel'},
-  wireless:{name:'Wireless / radio',stroke:'#0891b2',width:2,dash:'2 5',speed:'',media:'Wi-Fi / RF'},
-  ha:{name:'HA / heartbeat',stroke:'#dc2626',width:1.75,dash:'6 4',speed:'1G',media:'Cat6'},
-  mgmt:{name:'Management / OOB',stroke:'#5d8fbc',width:1.5,dash:'7 5',speed:'1G',media:'Cat6'},
-  serial:{name:'Serial / console',stroke:'#6b7280',width:1.5,dash:'1 4',speed:'',media:'RS-232'},
-  fieldbus:{name:'Fieldbus / RS-485',stroke:'#a16207',width:1.75,dash:'12 3 2 3',speed:'',media:'RS-485'},
-  power:{name:'Power feed',stroke:'#ca8a04',width:1.75,dash:'10 4 2 4',speed:'',media:'Power'},
-  logical:{name:'Logical flow',stroke:'#64748b',width:1.5,dash:'4 4',endMarker:'arrow',speed:'',media:''},
+  eth:{name:'Ethernet · 1G copper',short:'1G copper',stroke:'#4a6fa5',width:2,dash:'',speed:'1G',media:'Cat6'},
+  fiber10:{name:'10G fibre',short:'10G fibre',stroke:'#ef6b32',width:2.5,dash:'',speed:'10G',media:'OM4 / SMF'},
+  fiber100:{name:'40/100G fibre',short:'40/100G fibre',stroke:'#b91c1c',width:3.5,dash:'',speed:'100G',media:'SMF'},
+  stack:{name:'Stack / LAG / port-channel',short:'Stack / LAG',stroke:'#1e3a8a',width:2.25,dash:'',double:true,speed:'',media:'DAC'},
+  wan:{name:'WAN / MPLS circuit',short:'WAN / MPLS',stroke:'#7c3aed',width:2.5,dash:'',speed:'',media:'Leased line'},
+  internet:{name:'Internet / ISP',short:'Internet',stroke:'#0f766e',width:2.5,dash:'',speed:'',media:'Fibre'},
+  vpn:{name:'VPN / IPsec tunnel',short:'VPN tunnel',stroke:'#16a34a',width:2,dash:'9 5',speed:'',media:'Tunnel'},
+  wireless:{name:'Wireless / radio',short:'Wireless',stroke:'#0891b2',width:2,dash:'2 5',speed:'',media:'Wi-Fi / RF'},
+  ha:{name:'HA / heartbeat',short:'HA link',stroke:'#dc2626',width:1.75,dash:'6 4',speed:'1G',media:'Cat6'},
+  mgmt:{name:'Management / OOB',short:'Management',stroke:'#5d8fbc',width:1.5,dash:'7 5',speed:'1G',media:'Cat6'},
+  serial:{name:'Serial / console',short:'Serial',stroke:'#6b7280',width:1.5,dash:'1 4',speed:'',media:'RS-232'},
+  fieldbus:{name:'Fieldbus / RS-485',short:'Fieldbus',stroke:'#a16207',width:1.75,dash:'12 3 2 3',speed:'',media:'RS-485'},
+  power:{name:'Power feed',short:'Power',stroke:'#ca8a04',width:1.75,dash:'10 4 2 4',speed:'',media:'Power'},
+  logical:{name:'Logical flow',short:'Logical flow',stroke:'#64748b',width:1.5,dash:'4 4',endMarker:'arrow',speed:'',media:''},
 };
 function applyLinkType(e,id){const t=linkTypes[id];if(!t)return;e.linkType=id;e.stroke=t.stroke;e.strokeWidth=t.width;e.dash=t.dash;e.double=!!t.double;if(t.endMarker)e.endMarker=t.endMarker;e.data??={};if(t.speed&&!e.data.speed)e.data.speed=t.speed;if(t.media&&!e.data.media)e.data.media=t.media}
 // "10G", "2.5 Gbps", "100M" → Mbps
@@ -2203,6 +2208,66 @@ if(typeof Core!=='undefined')Core.setSampler(Conn.sample);
 
 </script>
 <script>
+// Live constraints applied after every change, so dependent objects never drift apart:
+//  • zones (containers) grow to keep their members inside;
+//  • the page auto-sizes to the drawing (standard sheet sizes, shrinking back to the chosen size),
+//    shifting everything if objects were pushed past the top/left edge;
+//  • pinned items (title blocks, legends, borders) stay anchored to the page corners / margin frame,
+//    on their own page and when a background page is shown behind sheets of other sizes.
+const Constraints=(()=>{
+  const C=Core,SERIES={A:['A4','A3','A2','A1','A0'],US:['Letter','Tabloid']};
+  const area=p=>{const s=C.pageSize(p),m=p.margin*C.PX;return{x:m,y:m,w:s.w-2*m,h:s.h-2*m}};
+  const centerIn=(n,b)=>{const c=C.center(n);return c[0]>=b.x&&c[0]<=b.x+b.w&&c[1]>=b.y&&c[1]<=b.y+b.h};
+  const PINS=[['','Not pinned'],['tl','Top-left corner'],['tr','Top-right corner'],['bl','Bottom-left corner'],['br','Bottom-right corner'],['frame','Margin frame (border)']];
+
+  // ---------- pins ----------
+  function offsets(n,a){const b=C.box(n);return{l:b.x-a.x,t:b.y-a.y,r:a.x+a.w-(b.x+b.w),b:a.y+a.h-(b.y+b.h)}}
+  function place(n,a,off){
+    if(n.pin==='frame'){const dx=a.x-n.x,dy=a.y-n.y;(n.labels||[]).forEach(l=>{l.x+=dx;l.y+=dy});n.x=a.x;n.y=a.y;n.w=a.w;n.h=a.h;return}
+    const b=C.box(n);let x=b.x,y=b.y;if(n.pin.includes('r'))x=a.x+a.w-Math.max(0,off.r)-b.w;else if(n.pin.includes('l'))x=a.x+Math.max(0,off.l);if(n.pin.includes('b'))y=a.y+a.h-Math.max(0,off.b)-b.h;else if(n.pin.includes('t'))y=a.y+Math.max(0,off.t);C.move(n,x-b.x,y-b.y)}
+  // Pinned items of a background page, re-anchored for the sheet it is shown behind.
+  function bgItems(bg,fg){if(!bg.items.some(n=>n.pin))return bg.items;const a0=area(bg),a1=area(fg);return bg.items.map(n=>{if(!n.pin)return n;const c=C.copy(n);place(c,a1,offsets(n,a0));return c})}
+  const bgView=(bg,fg)=>({...bg,items:bgItems(bg,fg)});
+
+  // ---------- containers ----------
+  function fitZones(page){let changed=false;const zones=page.items.filter(z=>z.kind==='zone'&&z.autoFit!==false&&!z.pin&&!z.locked).sort((a,b)=>a.w*a.h-b.w*b.h);
+    for(const z of zones){const members=page.items.filter(n=>n!==z&&n.kind!=='edge'&&!n.pin&&centerIn(n,z)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h));if(!members.length)continue;
+      const b=C.bounds(members,true),pad=16,head=z.labels?.[0]?Math.max(30,z.labels[0].y+z.labels[0].size*.4-z.y+8):12;
+      const x0=Math.min(z.x,b.x-pad),y0=Math.min(z.y,b.y-head),x1=Math.max(z.x+z.w,b.x+b.w+pad),y1=Math.max(z.y+z.h,b.y+b.h+pad);
+      if(x0<z.x-.5||y0<z.y-.5||x1>z.x+z.w+.5||y1>z.y+z.h+.5){const dx=x0-z.x,dy=y0-z.y;(z.labels||[]).forEach(l=>{l.x+=dx;l.y+=dy});z.x=x0;z.y=y0;z.w=x1-x0;z.h=y1-y0;changed=true}}
+    return changed}
+
+  // ---------- page auto-size ----------
+  function candidates(p){const base=p.minPaper||p.paper;if(base==='Custom')return[];const ser=SERIES.A.includes(base)?SERIES.A:SERIES.US.includes(base)?SERIES.US:[base];return ser.slice(Math.max(0,ser.indexOf(base)))}
+  // pinned blocks may sit on empty zone areas, but must not cover devices, links, text or tables
+  function overlapsContent(page,content){const pins=page.items.filter(n=>n.pin&&n.pin!=='frame');return pins.some(p=>{const pb=C.box(p);return content.some(n=>n.kind!=='zone'&&C.overlaps(pb,C.bounds([n],n.kind!=='edge')))})}
+  function autoSize(page){
+    if(page.autoSize===false||page.isBackground)return null;
+    page.minPaper??=page.paper;if(page.minPaper==='Custom'){page.minW??=page.customW;page.minH??=page.customH}
+    const pinned=page.items.filter(n=>n.pin),offs=new Map(pinned.map(n=>[n,offsets(n,area(page))])),content=page.items.filter(n=>!n.pin);
+    let shift=null;const before={paper:page.paper,w:page.customW,h:page.customH};
+    // like Visio, the page reacts when shapes leave the sheet itself; the print margin is only a guide
+    if(content.length){let b=C.bounds(content,true);const m=4;
+      if(b.x<0||b.y<0){const dx=b.x<0?Math.ceil(m-b.x):0,dy=b.y<0?Math.ceil(m-b.y):0;for(const n of content)C.move(n,dx,dy);for(const g of page.guideLines||[])g.pos+=g.axis==='x'?dx:dy;shift=[dx,dy];b={...b,x:b.x+dx,y:b.y+dy}}
+      const need={w:b.x+b.w+m,h:b.y+b.h+m};let done=false;
+      for(const paper of candidates(page)){const s=C.pageSize({...page,paper});if(s.w+.5<need.w||s.h+.5<need.h)continue;page.paper=paper;const a=area(page);for(const n of pinned)place(n,a,offs.get(n));if(!overlapsContent(page,content)){done=true;break}}
+      if(!done){// beyond the largest sheet (or a custom page): grow a custom sheet in 10 mm steps
+        let extra=0;for(const n of pinned)if(n.pin!=='frame'&&n.pin.includes('b'))extra=Math.max(extra,C.box(n).h+16);
+        const minW=page.minPaper==='Custom'?page.minW:C.dimensions({...page,paper:page.minPaper})[0],minH=page.minPaper==='Custom'?page.minH:C.dimensions({...page,paper:page.minPaper})[1];
+        page.paper='Custom';page.customW=Math.max(minW,Math.ceil(need.w/C.PX/10)*10);page.customH=Math.max(minH,Math.ceil((need.h+(overlapsContent(page,content)?extra:0))/C.PX/10)*10);for(const n of pinned)place(n,area(page),offs.get(n));
+        if(overlapsContent(page,content)){page.customH=Math.ceil((need.h+extra)/C.PX/10)*10;for(const n of pinned)place(n,area(page),offs.get(n))}}}
+    else{page.paper=page.minPaper;if(page.paper==='Custom'){page.customW=page.minW;page.customH=page.minH}for(const n of pinned)place(n,area(page),offs.get(n))}
+    const resized=before.paper!==page.paper||before.w!==page.customW||before.h!==page.customH;return{shift,resized}}
+
+  // ---------- entry points ----------
+  // After every edit: containers first (they change content bounds), then the page, then the pins.
+  function sync(page){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);const r=page.isBackground?null:autoSize(page);if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
+  function pinNow(n,page,pin){n.pin=pin||undefined;if(!pin){delete n.pin;return}place(n,area(page),offsets(n,area(page)))}
+  return{sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
+})();
+
+</script>
+<script>
 /*
  * Port Network Studio v3 - Microsoft Visio (.vsdx) export writer.
  *
@@ -3385,8 +3450,8 @@ let RCTX=null; // context of the scene currently being drawn (for {{field}} subs
 function layerOf(n,doc=S.doc){return doc.layers.find(l=>l.id===n.layer)||doc.layers[0]}
 function itemVisible(n,ctx){const L=layerOf(n,ctx.doc);if(L&&L.visible===false)return false;if(ctx.print&&L&&L.print===false)return false;return true}
 function makeCtx(page,{doc=S.doc,interactive=false,print=false,prefix='v',tag=false,fieldPage=null}={}){
-  const pageIndex=doc.pages.indexOf(page),fg=doc.pages.filter(p=>!p.isBackground),fp=fieldPage||page;
-  return{doc,page,fieldPage:fp,interactive,print,prefix,tag,pageIndex,pageNumber:Math.max(1,fg.indexOf(fp)+1),pageCount:fg.length,byId:new Map(page.items.map(n=>[n.id,n])),colors:colorMap(doc,page),bg:page.bg||'#ffffff',dim:interactive?S.filterFn:null,analysis:interactive?S.analysis:null}}
+  const pageIndex=doc.pages.findIndex(p=>p.id===page.id),fg=doc.pages.filter(p=>!p.isBackground),fp=fieldPage||page;
+  return{doc,page,fieldPage:fp,interactive,print,prefix,tag,pageIndex,pageNumber:Math.max(1,fg.findIndex(p=>p.id===fp.id)+1),pageCount:fg.length,byId:new Map(page.items.map(n=>[n.id,n])),colors:colorMap(doc,page),bg:page.bg||'#ffffff',dim:interactive?S.filterFn:null,analysis:interactive?S.analysis:null}}
 
 // ---------- {{field}} substitution ----------
 function resolveLabel(owner,l,ctx=RCTX){
@@ -3490,25 +3555,30 @@ function drawTable(n,g,ctx){
   if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}}
 
 function legendRows(n,page,ctx){
-  const rows=[],count=new Map(),links=new Map(),items=page.items.filter(i=>itemVisible(i,ctx));
-  if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1)}
+  const rows=[],count=new Map(),sample=new Map(),links=new Map(),items=page.items.filter(i=>itemVisible(i,ctx));
+  if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1);if(!sample.has(k))sample.set(k,i)}
   if(n.links!==false)for(const i of items)if(i.kind==='edge'){const k=Shapes.linkTypes[i.linkType]?i.linkType:'_'+i.stroke+'|'+(i.dash||'')+'|'+(i.double?1:0);const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
-  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c});
-  for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.name||'Connector',count:v.n});
+  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c,sample:sample.get(k)});
+  for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.short||Shapes.linkTypes[k]?.name||'Connector',count:v.n});
+  if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
   if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
   return rows}
-function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,counts=n.counts!==false,per=Math.max(3,n.maxRows||8),cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,cw=Math.max(150,...rows.map(r=>Core.textWidth(r.text+(counts&&r.count?'  ×'+r.count:''),size)+86));n.w=Math.max(n.minW||0,cols*cw+12);n.h=44+inCol*24+4;return{rows,size,counts,cols,inCol,cw}}
+// Legend layout: rows flow into columns of maxRows; each column is as wide as its longest entry.
+function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false,per=Math.max(3,n.maxRows||8),cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,colX=[],colW=[];
+  for(let c=0;c<cols;c++){const part=rows.slice(c*inCol,(c+1)*inCol);colW.push(Math.max(120,...part.map(r=>Core.textWidth(r.text,size)+(counts&&r.count?Core.textWidth(' ×'+r.count,size)+14:0)+64)));colX.push(c?colX[c-1]+colW[c-1]:0)}
+  const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,colX.at(-1)+colW.at(-1)+12);n.h=40+inCol*rh+6;return{rows,size,rh,counts,inCol,colX,colW}}
 function drawLegend(n,g,ctx,page){
-  const{rows,size,counts,inCol,cw}=legendMeasure(n,page,ctx),rh=24;
+  const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx);
   el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill||ctx.bg,stroke:n.stroke||'#a2b2c6','stroke-width':1},g);
   const title=el('text',{x:n.x+14,y:n.y+24,'font-family':Core.FONT,'font-size':13,'font-weight':700,fill:n.color||'#34465e','letter-spacing':.6},g);title.textContent=n.title||'LEGEND';
-  rows.forEach((r,i)=>{const col=Math.floor(i/inCol),x0=n.x+6+col*cw,y=n.y+38+(i%inCol)*rh,cy=y+rh/2;
-    if(col)el('line',{x1:x0-3,y1:n.y+38,x2:x0-3,y2:n.y+n.h-8,stroke:n.stroke||'#a2b2c6','stroke-opacity':.5},g);
-    if(r.kind==='device'){const holder=el('g',{transform:`translate(${x0+8} ${y+2})`},g);holder.innerHTML=Shapes.iconSvg(r.type,{size:30,display:'symbol',accent:ctx.doc.theme==='noc'||ctx.doc.theme==='blueprint'?'#7dd3fc':'#2f5ea8',fill:ctx.bg})}
-    else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+42}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
-    else el('rect',{x:x0+14,y:cy-7,width:22,height:14,rx:3,fill:r.color},g);
-    const t=el('text',{x:x0+54,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
-    if(counts&&r.count){const c=el('text',{x:x0+cw-14,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e','fill-opacity':.6},g);c.textContent='×'+r.count}});
+  rows.forEach((r,i)=>{const col=Math.floor(i/inCol),x0=n.x+6+colX[col],cw=colW[col],y=n.y+36+(i%inCol)*rh,cy=y+rh/2;
+    if(col&&i%inCol===0)el('line',{x1:x0-2,y1:n.y+38,x2:x0-2,y2:n.y+n.h-8,stroke:n.stroke||'#a2b2c6','stroke-opacity':.45},g);
+    if(r.kind==='device'){const s=r.sample,holder=el('g',{transform:`translate(${x0+8} ${y+1})`},g);holder.innerHTML=Shapes.iconSvg(r.type,{size:26,display:s?.display==='card'?'symbol':s?.display||'symbol',accent:(s&&colorFor(s,ctx))||s?.stroke||'#2f5ea8',fill:s?.fill&&s.fill!=='none'?s.fill:ctx.bg})}
+    else if(r.kind==='zone')el('rect',{x:x0+12,y:cy-7,width:24,height:14,rx:3,fill:r.zone.fill,stroke:r.zone.stroke,'stroke-dasharray':r.zone.dash?'3 2':null},g);
+    else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+40}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
+    else el('rect',{x:x0+12,y:cy-6,width:22,height:12,rx:3,fill:r.color},g);
+    const t=el('text',{x:x0+50,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
+    if(counts&&r.count){const c=el('text',{x:x0+cw-10,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size-1,fill:n.color||'#34465e','fill-opacity':.55},g);c.textContent='×'+r.count}});
   if(ctx.interactive)el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}
 
 function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return null;const id=`${ctx.prefix}-m-${e.id}-${side}`,m=el('marker',{id,viewBox:'-8 -6 12 12',refX:0,refY:0,markerWidth:7,markerHeight:7,markerUnits:'strokeWidth',orient:'auto-start-reverse',overflow:'visible'},defs);
@@ -3535,7 +3605,7 @@ function drawLabel(owner,l,parent,ctx){
 // ---------- standalone SVG (export, print, thumbnails) ----------
 function sceneSvg(page,{doc=S.doc,print=true,pad=15,area=null,prefix='o'}={}){
   const root=document.createElementNS(NS,'svg');root.setAttribute('xmlns',NS);
-  const ctx=makeCtx(page,{doc,print,prefix}),bgPage=page.background&&doc.pages.find(p=>p.id===page.background);
+  const ctx=makeCtx(page,{doc,print,prefix}),bgSrc=page.background&&doc.pages.find(p=>p.id===page.background),bgPage=bgSrc&&bgSrc!==page?Constraints.bgView(bgSrc,page):null;
   RCTX=ctx;for(const n of page.items)if(n.kind==='legend')legendMeasure(n,page,ctx);RCTX=null;
   const all=[...page.items,...(bgPage?bgPage.items:[])].filter(n=>itemVisible(n,ctx));
   const b=area||(all.length?Core.bounds(all,true):{x:0,y:0,...Core.pageSize(page)});const vb=[b.x-pad,b.y-pad,b.w+pad*2,b.h+pad*2];
@@ -3561,7 +3631,7 @@ function renderNow(){
     if(S.prefs.grid){const step=gridStep(),k=step*z<7?5:1,gs=step*k,p=el('pattern',{id:'gridPattern',width:gs,height:gs,patternUnits:'userSpaceOnUse'},el('defs',{},pl));const light=isDarkColor(pg().bg);el('path',{d:`M${gs} 0H0V${gs}`,fill:'none',stroke:light?'#ffffff':'#3b5b8c','stroke-opacity':light?.08:.09,'stroke-width':1/z},p);el('rect',{x:0,y:0,width:b.w,height:b.h,fill:'url(#gridPattern)','pointer-events':'none'},pl)}
     el('rect',{x:m,y:m,width:b.w-2*m,height:b.h-2*m,fill:'none',stroke:'#93a9c6','stroke-opacity':.7,'stroke-dasharray':'5 5','stroke-width':1/z,'pointer-events':'none'},pl);
     if(S.prefs.guides)for(const gl of pg().guideLines||[])el('line',{x1:gl.axis==='x'?gl.pos:-5000,y1:gl.axis==='y'?gl.pos:-5000,x2:gl.axis==='x'?gl.pos:5000,y2:gl.axis==='y'?gl.pos:5000,stroke:'#9b70c6','stroke-width':1.2/z,'stroke-dasharray':`${8/z} ${5/z}`,'data-role':'guide','data-guide':gl.id,cursor:gl.axis==='x'?'ew-resize':'ns-resize'},pl);
-    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg())drawScene(el('g',{opacity:.9},bgl),bgPage,makeCtx(bgPage,{prefix:'bg',fieldPage:pg()}));
+    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg()){const v=Constraints.bgView(bgPage,pg());drawScene(el('g',{opacity:.9},bgl),v,makeCtx(v,{prefix:'bg',fieldPage:pg()}))}
     drawScene(world,pg(),makeCtx(pg(),{interactive:true}));scheduleMinimap();
   }
   renderOverlay();renderRulers();updateMinimapView();
@@ -3711,6 +3781,7 @@ function check(doc){
       for(const field of['ip','mgmtIp']){const raw=n.data?.[field];if(!raw)continue;const found=C.ipsIn(raw);if(!found.length)add('error',page,n.id,`“${nm}”: “${raw}” is not a valid IPv4 address.`,'ipfmt');for(const ip of found){if(ips.has(ip))add('error',page,[n.id,ips.get(ip).id],`Duplicate IP address ${ip} (${nm} and ${nameOf(ips.get(ip))}).`,'dupip');else ips.set(ip,n);
         const z=zoneOf(n,page),c=z&&C.cidr(z.data?.subnet);if(c&&field==='ip'){const v=C.ip2int(ip);if(!C.inCidr(v,c))add('warning',page,n.id,`${nm}: ${ip} is outside zone “${zoneName(z)}” subnet ${c.text}.`,'subnet');else if(c.bits<31&&(v===c.net||v===c.broadcast))add('error',page,n.id,`${nm}: ${ip} is the ${v===c.net?'network':'broadcast'} address of ${c.text}.`,'netaddr');const gw=C.ip2int(z.data?.gateway);if(gw!=null&&gw===v&&!['router','firewall','l3switch','rk-router','rk-firewall'].includes(n.type))add('warning',page,n.id,`${nm} uses the zone gateway address ${ip}.`,'gw')}}}
       if(!G.adj.get(n.id)?.length&&!Shapes.rackItems[n.type])add('info',page,n.id,`“${nm}” has no connections.`,'isolated');
+      if(n.url?.startsWith('#page:')&&!doc.pages.some(p=>p.id===n.url.slice(6)))add('warning',page,n.id,`“${nm}” links to a page that no longer exists.`,'pagelink');
     }
     // overlapping devices
     const devs=page.items.filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&!Shapes.rackItems[n.type]);for(let i=0;i<devs.length;i++)for(let j=i+1;j<devs.length;j++){const a=C.box(devs[i]),c=C.box(devs[j]);const ox=Math.min(a.x+a.w,c.x+c.w)-Math.max(a.x,c.x),oy=Math.min(a.y+a.h,c.y+c.h)-Math.max(a.y,c.y);if(ox>a.w*.3&&oy>a.h*.3)add('warning',page,[devs[i].id,devs[j].id],`“${nameOf(devs[i])}” overlaps “${nameOf(devs[j])}”.`,'overlap')}
@@ -3807,7 +3878,7 @@ async function exportVsdx(){
   const fgPages=S.doc.pages.filter(p=>!p.isBackground);
   try{for(const page of fgPages){
     const ps=C.pageSize(page),svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${ps.w} ${ps.h}`);svg.setAttribute('width',ps.w);svg.setAttribute('height',ps.h);host.append(svg);
-    const bgPage=page.background&&S.doc.pages.find(p=>p.id===page.background);
+    const bgSrc=page.background&&S.doc.pages.find(p=>p.id===page.background),bgPage=bgSrc?Constraints.bgView(bgSrc,page):null;
     if(bgPage)drawScene(el('g',{},svg),bgPage,makeCtx(bgPage,{print:true,tag:true,prefix:'xb',fieldPage:page}));
     const ctx=makeCtx(page,{print:true,tag:true,prefix:'x'});drawScene(el('g',{},svg),page,ctx);RCTX=ctx;const pageItems=bgPage?[...bgPage.items,...page.items]:page.items;
     const inv=svg.getScreenCTM().inverse(),shapes=[];let sid=1;const idMap=new Map();
@@ -4017,7 +4088,7 @@ function layoutPage(kind='hier',opts={}){
     for(const b of blocks){const p=top.get(b.id);if(!p)continue;if(b.node){const eb=effBox(b.node);C.move(b.node,grid(p.x+eb.dx)-b.node.x,grid(p.y)-b.node.y)}else{const z=b.zone,{pos,ms}=inner.get(z.id);for(const n of ms){const q=pos.get(n.id),eb=effBox(n);C.move(n,grid(p.x+30+q.x+eb.dx)-n.x,grid(p.y+56+q.y)-n.y)}const dx=p.x-z.x,dy=p.y-z.y;z.labels.forEach(l=>{l.x+=dx;l.y+=dy});z.x=p.x;z.y=p.y;z.w=b.w;z.h=b.h}}
     for(const e of links){if(e.routing!=='straight')e.routing='auto';Conn.markDirty(e.id)}
     for(const e of page.items)if(e.kind==='edge'&&(e.from&&ids.has(e.from.node)||e.to&&ids.has(e.to.node))&&!links.includes(e))Conn.markDirty(e.id);
-    if(opts.fitPage!==false)autoSizePage(page)});fit()}
+    if(opts.fitPage!==false&&page.autoSize===false)autoSizePage(page)});fit()}
 // Grow the page to the smallest standard sheet (or a custom size) that holds the drawing.
 function autoSizePage(page,{allowShrink=false,notify:say=true}={}){const all=page.items;if(!all.length)return;const b=C.bounds(all,true),m=page.margin*C.PX,need={w:b.x+b.w+m+20,h:b.y+b.h+m+20},cur=C.pageSize(page);if(!allowShrink&&need.w<=cur.w&&need.h<=cur.h)return;
   for(const paper of['A4','A3','A2','A1','A0'])for(const orientation of[page.orientation,page.orientation==='landscape'?'portrait':'landscape']){const s=C.pageSize({...page,paper,orientation});if(s.w>=need.w&&s.h>=need.h){if(page.paper!==paper||page.orientation!==orientation){page.paper=paper;page.orientation=orientation;if(say)notify(`Page set to ${paper} ${orientation} to fit the drawing.`)}return}}
@@ -4125,12 +4196,12 @@ function kit(doc,page){
   const pin=(n,side)=>side?n.ports.find(p=>p.name===side)?.id??null:null;
   const link=(a,b,lt='eth',o={})=>{const e=C.edge([C.center(a),C.center(b)],{node:a.id,port:pin(a,o.aPort)},{node:b.id,port:pin(b,o.bPort)});e.routing=o.routing||'auto';Shapes.applyLinkType(e,lt);e.jumps=true;if(o.fromIf)e.fromIf=o.fromIf;if(o.toIf)e.toIf=o.toIf;if(o.speed)e.data.speed=o.speed;if(o.vlans)e.data.vlans=o.vlans;if(o.label){const l=C.label(o.label,0,0,10.5);l.anchor={t:o.t??.5,dx:0,dy:-9};l.background=true;e.labels.push(l)}if(o.end)e.endMarker=o.end;page.items.push(e);return e};
   const text=(t,x,y,w=300,size=13,bold=false)=>{const n=C.text(t,x,y,w,40,size);n.labels[0].bold=bold;n.labels[0].wrapWidth=w-20;page.items.push(n);return n};
-  const legend=(x,y,maxRows=4,devices=false)=>{const l={id:C.uid(),kind:'legend',x,y,w:220,h:160,title:'LEGEND',labels:[],counts:true,maxRows,devices};page.items.push(l);return l};
+  const legend=(x,y,maxRows=4,devices=true,pin='bl')=>{const l={id:C.uid(),kind:'legend',x,y,w:220,h:160,title:'LEGEND',labels:[],counts:true,maxRows,devices,pin};page.items.push(l);return l};
   return{dev,zone,link,text,legend}}
 function background(doc,ref){const p=C.page('Background');Object.assign(p,{paper:ref.paper,orientation:ref.orientation,margin:ref.margin,isBackground:true});const ps=C.pageSize(p),m=p.margin*C.PX;
-  p.items.push({id:C.uid(),kind:'zone',x:m,y:m,w:ps.w-2*m,h:ps.h-2*m,rx:0,fill:'none',stroke:'#475569',strokeWidth:1.2,dash:'',style:'outline',contain:false,showMeta:false,labels:[],data:{},locked:true});
-  const t={id:C.uid(),kind:'table',cols:[96,250],rowH:20,size:10.5,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Client','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}} · {{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7',locked:true};tableLayout(t);t.x=ps.w-m-t.w;t.y=ps.h-m-t.h;p.items.push(t);doc.pages.push(p);return p}
-function finish(doc){for(const p of doc.pages){RCTX=makeCtx(p,{doc});Conn.sync(p.items,{rerouteAll:true,pageId:'tpl:'+p.id});for(const e of p.items)if(e.kind==='edge')Conn.placeLabels(e);RCTX=null}return doc}
+  p.items.push({id:C.uid(),kind:'zone',x:m,y:m,w:ps.w-2*m,h:ps.h-2*m,rx:0,fill:'none',stroke:'#475569',strokeWidth:1.2,dash:'',style:'outline',contain:false,autoFit:false,showMeta:false,labels:[],data:{},locked:true,pin:'frame'});
+  const t={id:C.uid(),kind:'table',cols:[96,250],rowH:20,size:10.5,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Client','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}} · {{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7',locked:true};tableLayout(t);t.x=ps.w-m-t.w;t.y=ps.h-m-t.h;t.pin='br';p.items.push(t);doc.pages.push(p);return p}
+function finish(doc){for(const p of doc.pages){RCTX=makeCtx(p,{doc});for(const n of p.items)if(n.kind==='legend')legendMeasure(n,p,RCTX);Conn.sync(p.items,{rerouteAll:true,pageId:'tpl:'+p.id});const r=Constraints.sync(p);if(r?.shift||r?.zones)Conn.sync(p.items,{rerouteAll:true,pageId:'tpl2:'+p.id});for(const e of p.items)if(e.kind==='edge')Conn.placeLabels(e);RCTX=null}return doc}
 const ip=(base,i)=>base.replace(/x$/,String(i));
 
 const B={
@@ -4153,7 +4224,7 @@ campus(){const d=C.newDoc('Enterprise campus network');d.meta={...d.meta,author:
   k.link(c1,a1,'fiber10',{fromIf:'Te1/0/10',toIf:'Te1/1/1'});k.link(c2,a1,'fiber10',{fromIf:'Te1/0/10',toIf:'Te1/1/2'});k.link(c1,a2,'fiber10',{fromIf:'Te1/0/11',toIf:'Te1/1/1'});k.link(c2,a2,'fiber10',{fromIf:'Te1/0/11',toIf:'Te1/1/2'});
   for(const n of[ap1,ph1,pc1,pr1])k.link(a1,n,'eth');for(const n of[ap2,ap3,pc2,cam])k.link(a2,n,'eth');
   k.link(c1,h1,'fiber10',{fromIf:'Te1/0/20'});k.link(c2,h2,'fiber10',{fromIf:'Te1/0/20'});k.link(h1,san,'fiber10',{label:'iSCSI'});k.link(h2,san,'fiber10');k.link(h1,ad,'eth');k.link(h2,bk,'eth');k.link(c2,nms,'mgmt',{label:'OOB'});k.link(nms,jump,'mgmt');
-  k.legend(50,905,3);
+  k.legend(50,905,5);
   // physical page with racks
   const p2=C.page('Comms room racks');d.pages.push(p2);const r=kit(d,p2);r.text('MAIN COMMS ROOM · RACK ELEVATIONS (FRONT VIEW)',60,40,700,16,true);
   const rack=(name,x,eq)=>{const rk=Shapes.make('rack42',0,0,name);C.move(rk,x-rk.x,100-rk.y);p2.items.push(rk);const inner=Shapes.rackInner(rk);for(const[type,label,u,data]of eq){const n=Shapes.make(type,0,0,label);const y=inner.y+inner.h-(u-1)*Shapes.RU-n.h;C.move(n,inner.x-n.x,y-n.y);n.data=data||{};p2.items.push(n)}return rk};
@@ -4172,7 +4243,7 @@ datacenter(){const d=C.newDoc('Data centre leaf-spine fabric');d.meta={...d.meta
   const srvA=[100,230,360].map((x,i)=>k.dev('rackserver','HOST-A0'+(i+1),x,770,{hostname:'HOST-A0'+(i+1),ip:'10.20.0.1'+(i+1),model:'ProLiant DL380 Gen11',vendor:'HPE',power:800})),stA=k.dev('storage','NAS-A',230,900,{model:'AFF A250',vendor:'NetApp',power:700});
   const srvB=[590,720,850].map((x,i)=>k.dev('rackserver','HOST-B0'+(i+1),x,770,{hostname:'HOST-B0'+(i+1),ip:'10.24.0.1'+(i+1),model:'ProLiant DL380 Gen11',vendor:'HPE',power:800})),kb=k.dev('cluster','K8s workers',720,900,{});
   for(const s of srvA){k.link(leaves[0],s,'fiber10',{routing:'straight'});k.link(leaves[1],s,'fiber10',{routing:'straight'})}for(const s of srvB){k.link(leaves[2],s,'fiber10',{routing:'straight'});k.link(leaves[3],s,'fiber10',{routing:'straight'})}k.link(srvA[1],stA,'fiber10');k.link(srvB[1],kb,'logical');
-  k.text('Every leaf has a 100G uplink to each spine; hosts are dual-homed to a vPC leaf pair. Try Analyze ▸ Single points of failure, then delete a spine and run it again.',1050,670,470,12);k.legend(1040,760,3);
+  k.text('Every leaf has a 100G uplink to each spine; hosts are dual-homed to a vPC leaf pair. Try Analyze ▸ Single points of failure, then delete a spine and run it again.',1050,670,470,12);k.legend(1040,750,7);
   const bg=background(d,p);p.background=bg.id;return finish(d)},
 
 sdwan(){const d=C.newDoc('SD-WAN branch network');d.meta={...d.meta,description:'Hub-and-spoke SD-WAN over MPLS and Internet with LTE backup and remote access.'};const p=d.pages[0];p.name='WAN overview';const k=kit(d,p);
@@ -4183,7 +4254,7 @@ sdwan(){const d=C.newDoc('SD-WAN branch network');d.meta={...d.meta,description:
   [['Branch · Doha West',40],['Branch · Al Khor',420],['Branch · Wakrah',800]].forEach(([name,x],i)=>{k.zone(name,x,600,360,310,{subnet:`10.${i+1}.0.0/24`,vlan:10+i},{style:'header'});const e=k.dev('sdwan',`BR${i+1}-EDGE`,x+90,690,{hostname:`BR${i+1}-EDGE`,ip:`10.${i+1}.0.1`,model:'Edge 610',vendor:'VeloCloud'}),lte=k.dev('modem','LTE backup',x+270,690,{}),sw=k.dev('switch',`BR${i+1}-SW`,x+90,810,{hostname:`BR${i+1}-SW`,ip:`10.${i+1}.0.2`,poeBudget:370}),ap=k.dev('wap',`BR${i+1}-AP`,x+200,850,{poeDraw:15}),pos=k.dev('workstation','POS / users',x+300,850,{});
     k.link(e,mpls,'wan');k.link(e,inet,'internet');k.link(e,lte,'eth');k.link(lte,inet,'wireless',{label:'4G/5G'});k.link(e,sw,'eth');k.link(sw,ap,'eth');k.link(sw,pos,'eth');k.link(e,hub,'vpn',{routing:'straight'})});
   k.zone('Remote access',1180,600,360,310,{},{style:'header'});const home=k.dev('home','Remote workers',1290,700,{}),lap=k.dev('laptop','ZTNA client',1430,830,{});k.link(lap,home,'wireless');k.link(home,inet,'vpn',{label:'ZTNA'});
-  k.text('Dashed green = overlay tunnels to the hubs. Purple = MPLS underlay, teal = Internet underlay, dotted = LTE backup.',40,300,300,12);k.legend(40,935,3);return finish(d)},
+  k.text('Dashed green = overlay tunnels to the hubs. Purple = MPLS underlay, teal = Internet underlay, dotted = LTE backup.',40,300,300,12);k.legend(40,935,4);return finish(d)},
 
 cctv(){const d=C.newDoc('Video surveillance network');d.meta={...d.meta,description:'IP CCTV with ANPR, perimeter thermal, PoE access, fibre backbone, NVR recording and control room.'};d.display.fields=['ip'];const p=d.pages[0];p.name='CCTV & security systems';const k=kit(d,p);
   d.vlans=[{id:30,name:'CCTV',subnet:'10.30.0.0/22',gateway:'10.30.0.1',color:'#ea580c'},{id:31,name:'Access control',subnet:'10.31.0.0/24',gateway:'10.31.0.1',color:'#7c3aed'},{id:40,name:'Control room',subnet:'10.40.0.0/24',gateway:'10.40.0.1',color:'#2563eb'}];
@@ -4196,7 +4267,7 @@ cctv(){const d=C.newDoc('Video surveillance network');d.meta={...d.meta,descript
   const vw=k.dev('videowall','Video wall 3×2',1110,520,{}),op1=k.dev('workstation','Operator 1',1240,660,{ip:'10.40.0.21'}),op2=k.dev('workstation','Operator 2',1360,660,{ip:'10.40.0.22'}),sup=k.dev('workstation','Supervisor',1480,520,{ip:'10.40.0.30'}),crsw=k.dev('switch','CR-SW',1300,500,{ip:'10.40.0.2'});
   for(const c of[anpr1,anpr2,ic,acr])k.link(gsw,c,'eth');k.link(acr,bar,'serial',{label:'relay'});for(const c of[t1,t2,ptz,b1,b2])k.link(psw,c,'eth');for(const c of domes)k.link(bsw,c,'eth');
   k.link(gsw,core,'fiber10',{label:'SM fibre 1.2 km',aPort:'Right'});k.link(psw,core,'fiber10',{label:'SM fibre 2.4 km',aPort:'Left'});k.link(bsw,core,'fiber10',{aPort:'Left',label:'SM fibre 0.6 km'});for(const n of[nvr1,nvr2,vms,ntp])k.link(core,n,'fiber10');k.link(core,crsw,'fiber10');for(const n of[vw,op1,op2,sup])k.link(crsw,n,'eth');
-  k.text('Analyze ▸ Stream traffic routes every camera to its nearest NVR and shows link load. Data ▸ Reports ▸ CCTV storage sizes retention; PoE budget checks each switch.',40,760,560,12);k.legend(40,840,6,true);return finish(d)},
+  k.text('Analyze ▸ Stream traffic routes every camera to its nearest NVR and shows link load. Data ▸ Reports ▸ CCTV storage sizes retention; PoE budget checks each switch.',40,760,560,12);k.legend(40,840,6);return finish(d)},
 
 ot(){const d=C.newDoc('OT / SCADA network (Purdue model)');d.meta={...d.meta,description:'IEC 62443-style zoning: enterprise, industrial DMZ, operations, supervisory, control and process levels.'};const p=d.pages[0];p.name='Purdue reference';p.paper='A2';const k=kit(d,p);const X=40,W=2165;
   const band=(name,y,h,lvl,sub,colors,note)=>{k.zone(name,X,y,W,h,{security:lvl,subnet:sub},{style:'tab',colors});if(note)k.text(note,90,y+60,560,13)};
@@ -4216,7 +4287,7 @@ ot(){const d=C.newDoc('OT / SCADA network (Purdue model)');d.meta={...d.meta,des
   for(const n of[scada1,scada2,hist,ews])k.link(ocore,n,'eth');k.link(ocore,ids,'mgmt',{label:'SPAN'});k.link(ocore,ring[2],'fiber10');k.link(ring[0],ring[1],'fiber10');k.link(ring[1],ring[2],'fiber10');k.link(ring[0],ring[2],'fiber10',{label:'ring (MRP)'});k.link(ring[0],hmi1,'eth');k.link(ring[0],hmi2,'eth');
   k.link(ring[0],radio,'eth');k.link(radio,rtu,'wireless',{label:'licensed radio'});k.link(ring[1],plc1,'eth');k.link(ring[1],plc2,'eth');k.link(ring[2],plc3,'eth');
   k.link(rtu,l0[0],'fieldbus');k.link(plc1,l0[1],'fieldbus');k.link(plc1,l0[2],'fieldbus');k.link(plc2,l0[3],'fieldbus',{label:'PROFINET'});k.link(plc3,l0[4],'fieldbus',{label:'Modbus RTU'});k.link(plc3,l0[5],'fieldbus');
-  k.legend(660,1150,3);return finish(d)},
+  k.legend(1480,72,8,true,'tr');return finish(d)},
 
 hybrid(){const d=C.newDoc('Hybrid cloud connectivity');d.meta={...d.meta,description:'On-premises data centre extended to a cloud region over IPsec and a private interconnect.'};const p=d.pages[0];p.name='Hybrid cloud';const k=kit(d,p);
   k.zone('On-premises',40,140,560,700,{subnet:'10.0.0.0/16'},{style:'header'});const reg=k.zone('Cloud region · eu-central',760,40,780,860,{},{style:'header',colors:['#f0f9ff','#7dd3fc']});k.zone('VPC 10.100.0.0/16',800,110,700,560,{subnet:'10.100.0.0/16'},{style:'tab',colors:['#ffffff','#38bdf8']});k.zone('Public subnet',840,170,620,170,{subnet:'10.100.1.0/24'},{colors:['#ecfdf5','#6ee7b7']});k.zone('Private subnet',840,380,620,250,{subnet:'10.100.10.0/24'},{colors:['#eff6ff','#93c5fd']});
@@ -4226,7 +4297,7 @@ hybrid(){const d=C.newDoc('Hybrid cloud connectivity');d.meta={...d.meta,descrip
   const obj=k.dev('objectstore','Object storage',920,780,{}),q=k.dev('queue','Message queue',1080,780,{}),cdn=k.dev('cdn','CDN',1240,780,{}),ic=k.dev('router','Private interconnect',660,430,{});
   k.link(users,fw,'eth');k.link(fw,core,'fiber10');for(const n of[ad,app,db])k.link(core,n,'eth');k.link(app,stor,'fiber10');k.link(db,stor,'fiber10');k.link(fw,inet,'internet');k.link(inet,igw,'internet');k.link(igw,lb,'eth');k.link(lb,waf,'eth');k.link(lb,a1,'eth');k.link(lb,a2,'eth');k.link(lb,k8,'eth');k.link(a1,pdb,'eth');k.link(a2,pdb,'eth');k.link(pdb,rdb,'logical',{label:'replication'});k.link(k8,q,'logical');k.link(fn,obj,'logical');k.link(cdn,lb,'logical');
   k.link(fw,vgw,'vpn',{label:'IPsec 2×1G',t:.2});k.link(core,ic,'wan',{label:'10G'});k.link(ic,a2,'wan',{label:'private interconnect',t:.25});
-  k.legend(40,890,3);return finish(d)},
+  k.legend(40,910,4);return finish(d)},
 
 office(){const d=C.newDoc('Small office network');d.meta={...d.meta,description:'Single-site office: fibre ONT, UTM firewall, PoE switch, Wi-Fi, VoIP, NAS and CCTV.'};const p=d.pages[0];p.name='Office LAN';const k=kit(d,p);
   k.zone('Office LAN',60,300,1460,630,{subnet:'192.168.10.0/24',gateway:'192.168.10.1'},{style:'header'});
@@ -4234,7 +4305,7 @@ office(){const d=C.newDoc('Small office network');d.meta={...d.meta,description:
   const xs=[212,377,542,707,872,1037,1202,1367],sp=[['wap','AP reception',{ip:'192.168.10.21',poeDraw:13,unitPrice:180}],['wap','AP office',{ip:'192.168.10.22',poeDraw:13,unitPrice:180}],['ipphone','VoIP phones ×8',{poeDraw:5}],['workstation','PCs ×12',{}],['printer','MFP printer',{ip:'192.168.10.40'}],['nas','NAS backup',{ip:'192.168.10.50',unitPrice:900}],['camera','CAM entrance',{ip:'192.168.10.61',bitrate:3,poeDraw:6}],['domecamera','CAM office',{ip:'192.168.10.62',bitrate:3,poeDraw:6}]].map(([t,n,dd],i)=>k.dev(t,n,xs[i],720,dd));
   const mob=k.dev('smartphone','Guest Wi-Fi',212,850,{}),lap=k.dev('laptop','Staff laptops',377,850,{});
   k.link(isp,ont,'internet');k.link(ont,fw,'eth');k.link(fw,sw,'eth',{label:'VLAN trunk'});for(const n of sp)k.link(sw,n,'eth');k.link(sw,nvr,'eth');k.link(sp[0],mob,'wireless');k.link(sp[1],lap,'wireless');
-  k.legend(60,960,3);const bg=background(d,p);p.background=bg.id;return finish(d)},
+  k.legend(60,935,4);const bg=background(d,p);p.background=bg.id;return finish(d)},
 };
 const LIST=[['campus','Enterprise campus','Dual-ISP perimeter, collapsed core, DMZ, data centre, floors + rack elevations'],['datacenter','Data centre leaf-spine','VXLAN fabric, border leaves, firewalls, compute pods'],['sdwan','SD-WAN branches','Hub-and-spoke over MPLS + Internet, LTE backup, remote access'],['cctv','CCTV / video surveillance','ANPR, thermal, PTZ, PoE switches, NVRs, control room — try stream analysis'],['ot','OT / SCADA (Purdue)','IEC 62443 levels 0–5, industrial DMZ, rings, PLCs and fieldbus'],['hybrid','Hybrid cloud','On-prem DC to a cloud VPC over IPsec and private interconnect'],['office','Small office','ONT, UTM firewall, PoE switch, Wi-Fi, VoIP, NAS and cameras']];
 return{list:()=>LIST.map(([id,name,description])=>({id,name,description})),build:id=>B[id]()};
@@ -4244,7 +4315,7 @@ return{list:()=>LIST.map(([id,name,description])=>({id,name,description})),build
 <script>
 // Editor state, history, pointer/keyboard interaction and the action registry.
 const $=id=>document.getElementById(id);
-const DEFAULT_PREFS={grid:true,snap:true,guides:true,rulers:true,showPorts:false,minimap:true,autoConnect:true,wheelZoom:false,gridStep:10,theme:'auto',paletteDisplay:'symbol',newDisplay:'symbol',leftOpen:true,rightOpen:true,jumpStyle:'arc'};
+const DEFAULT_PREFS={grid:true,snap:true,guides:true,rulers:true,showPorts:false,minimap:true,autoConnect:true,wheelZoom:false,gridStep:10,theme:'auto',paletteDisplay:'symbol',newDisplay:'symbol',leftOpen:true,rightOpen:true,jumpStyle:'arc',deleteConnectors:true,liveCheck:true};
 const S={doc:null,pageIndex:0,selected:new Set(),activeLabel:null,segment:null,bend:null,mode:'select',view:{x:-40,y:-40,zoom:.8},drag:null,trace:null,hover:null,hoverId:null,snapPort:null,dropTarget:null,history:[],future:[],clipboard:[],space:false,dirty:false,guideLines:[],spacing:null,library:[],copiedStyle:null,highlights:new Set(),analysis:null,filterFn:null,filter:null,cursor:null,fileHandle:null,activeLayer:null,linkType:'eth',routeStyle:'auto',painter:false,lastClick:null,prefs:{...DEFAULT_PREFS}};
 const pg=()=>S.doc.pages[S.pageIndex],items=()=>pg().items,find=id=>items().find(n=>n.id===id),picked=()=>items().filter(n=>S.selected.has(n.id));
 const isLocked=n=>!!n.locked||!!layerOf(n)?.locked,editable=()=>picked().filter(n=>!isLocked(n));
@@ -4255,8 +4326,11 @@ const C=Core;
 let autosaveTimer=null;
 function snapshot(){return JSON.stringify({doc:S.doc,pageIndex:S.pageIndex})}
 function remember(){S.history.push(snapshot());if(S.history.length>150)S.history.shift();S.future=[]}
-function changed(){S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
+function changed(){const r=Constraints.sync(pg());if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
 function mutate(fn){remember();const r=fn();changed();render();return r}
+let checkTimer=null;
+// Design-rule check runs quietly after edits; the status bar shows the count and opens the full list.
+function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),e=issues.filter(i=>i.severity==='error').length,w=issues.filter(i=>i.severity==='warning').length,b=$('issueCount');if(!b)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
 function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear()}
 function restore(s){const r=JSON.parse(s);S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;changed();render()}
 function undo(){if(!S.history.length)return notify('Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
@@ -4343,8 +4417,10 @@ function startConnect(c,p,e){
   const lt=Shapes.linkTypes[S.linkType]||{};
   S.drag={kind:'connect',from:c.ref,fromP:c.p,start:p,startClient:[e.clientX,e.clientY],preview:[c.p,c.p],stroke:lt.stroke,width:lt.width,dash:lt.dash}}
 
-function pointerMove(e){
-  const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
+let panTimer=null;
+function autoPan(e){const d=S.drag;if(!d||['pan','guide','autoconn'].includes(d.kind)){clearInterval(panTimer);panTimer=null;return}const r=$('canvas').getBoundingClientRect(),edge=28,vx=e.clientX<r.left+edge?-1:e.clientX>r.right-edge?1:0,vy=e.clientY<r.top+edge?-1:e.clientY>r.bottom-edge?1:0;S.lastMove=e;if(!vx&&!vy){clearInterval(panTimer);panTimer=null;return}S.panVec=[vx,vy];if(!panTimer)panTimer=setInterval(()=>{if(!S.drag){clearInterval(panTimer);panTimer=null;return}S.view.x+=S.panVec[0]*12/S.view.zoom;S.view.y+=S.panVec[1]*12/S.view.zoom;pointerMove(S.lastMove,true)},16)}
+function pointerMove(e,fromPan=false){
+  if(!fromPan)autoPan(e);const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
   if(!d){
     if(S.mode==='connect'){if(S.trace){const t=snapTarget(p,e);S.hover=t.p}else snapTarget(p,e);S.hoverId=nodesAt(p)[0]?.id||null;render('overlay')}
     else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id,n=id&&find(id);let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
@@ -4401,7 +4477,8 @@ function pointerUp(e){
   else if(d.kind==='textbox'){const q=d.current,w=Math.abs(q[0]-d.start[0]);const x=w>30?Math.min(q[0],d.start[0]):d.start[0],y=w>30?Math.min(q[1],d.start[1]):d.start[1];const n=mutate(()=>{const t=C.text('Text',x,y,w>30?w:240,60,14);if(w>30)t.labels[0].wrapWidth=w-20;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});setMode('select');editLabel(n.id,n.labels[0].id,true)}
   else if(d.kind==='autoconn'){autoConnect(d.id,d.dir)}
   else if(d.kind==='connect'){finishConnect(d,e,p)}
-  else if(d.moved){if(['bend','segment'].includes(d.kind)){const edge=find(d.id);if(edge?.kind==='edge'){if(d.pending?.candidate){const t=commitPort(d.pending);edge.points[d.index]=t.p;if(d.index===0)edge.from=t.ref;else edge.to=t.ref}if(d.pending?.glue||edge.routing==='auto'||edge.routing==='straight')Conn.markDirty(edge.id);Conn.orthogonalize(edge);edge.points=Conn.simplify(edge.points)}}
+  else if(d.moved){if(['bend','segment'].includes(d.kind)){const edge=find(d.id);if(edge?.kind==='edge'){if(d.pending?.candidate){const t=commitPort(d.pending);edge.points[d.index]=t.p;if(d.index===0)edge.from=t.ref;else edge.to=t.ref}if(d.index===0||d.index===edge.points.length-1){const k=d.index===0?'from':'to',f=k==='from'?'fromIf':'toIf',o=d.original?.find(x=>x.id===edge.id),r=edge[k],n=r&&find(r.node),port=r?.port&&n?.ports.find(q=>q.id===r.port);if(o&&(o[k]?.node!==r?.node||o[k]?.port!==r?.port))edge[f]=port&&!genericPort(port.name)?port.name:''}
+      if(d.pending?.glue||edge.routing==='auto'||edge.routing==='straight')Conn.markDirty(edge.id);Conn.orthogonalize(edge);edge.points=Conn.simplify(edge.points)}}
     if(d.kind==='move'&&d.rackSlot)notify('Placed at U'+Shapes.rackU(items().find(r=>r.type==='rack'&&C.inside({x:d.rackSlot.x+1,y:d.rackSlot.y+1,w:0,h:0},Shapes.rackInner(r))),{y:d.rackSlot.y,h:d.rackSlot.h})+'.',1800);
     S.snapPort=null;S.dropTarget=null;changed()}
   else if(d.kind!=='pan'&&d.kind!=='autoconn'){if(S.duplicated){changed()}else S.history.pop()}
@@ -4476,11 +4553,11 @@ function insertAnnotation(kind,x,y){
   if(kind==='legend')return mutate(()=>{const l={id:C.uid(),kind:'legend',x:grid(x-110),y:grid(y-80),w:220,h:160,title:'LEGEND',labels:[],counts:true,layer:S.activeLayer};items().push(l);select([l.id]);return l});
   if(kind==='title')return titleBlock();
   if(kind==='revision')return revisionTable(x,y)}
-function titleBlock(){return mutate(()=>{const b=C.pageSize(pg()),m=pg().margin*C.PX,t={id:C.uid(),kind:'table',cols:[110,300],rowH:22,size:11,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Company','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}}'],['Date','{{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7',layer:S.activeLayer};tableLayout(t);t.x=b.w-m-t.w-10;t.y=b.h-m-t.h-10;items().push(t);select([t.id]);return t})}
+function titleBlock(){return mutate(()=>{const b=C.pageSize(pg()),m=pg().margin*C.PX,t={id:C.uid(),kind:'table',cols:[110,300],rowH:22,size:11,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Company','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}}'],['Date','{{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7',layer:S.activeLayer};tableLayout(t);t.x=b.w-m-t.w-10;t.y=b.h-m-t.h-10;t.pin='br';items().push(t);select([t.id]);return t})}
 function revisionTable(x,y){return mutate(()=>{const t={id:C.uid(),kind:'table',x:grid(x-200),y:grid(y-50),cols:[50,80,190,90],rowH:22,size:10.5,header:true,rows:[['Rev','Date','Description','By'],['{{doc.revision}}','{{date}}','Initial issue','{{doc.author}}'],['','','','']],labels:[],stroke:'#94a3b8',headerFill:'#eef2f7',layer:S.activeLayer};tableLayout(t);items().push(t);select([t.id]);return t})}
 function erase(){
   if(S.activeLabel){const n=find(S.activeLabel.owner);if(!n||isLocked(n))return;mutate(()=>{n.labels=n.labels.filter(l=>l.id!==S.activeLabel.id);S.activeLabel=null});return}
-  if(!ensureEditable())return;mutate(()=>{const gone=new Set(S.selected);pg().items=items().filter(n=>!gone.has(n.id));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&gone.has(e[k].node))e[k]=null;for(const t of items())if(t.target&&gone.has(t.target))delete t.target;S.selected.clear();S.segment=null;S.bend=null})}
+  if(!ensureEditable())return;mutate(()=>{const gone=new Set(S.selected);if(S.prefs.deleteConnectors!==false)for(const e of items())if(e.kind==='edge'&&!isLocked(e)&&(e.from&&gone.has(e.from.node)||e.to&&gone.has(e.to.node)))gone.add(e.id);pg().items=items().filter(n=>!gone.has(n.id));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&gone.has(e[k].node))e[k]=null;for(const t of items())if(t.target&&gone.has(t.target))delete t.target;S.selected.clear();S.segment=null;S.bend=null})}
 function copySelection(){if(!S.selected.size)return false;const set=picked(),ids=new Set(set.map(n=>n.id));for(const e of items())if(e.kind==='edge'&&!ids.has(e.id)&&e.from&&e.to&&ids.has(e.from.node)&&ids.has(e.to.node))set.push(e);S.clipboard=C.copy(set);return JSON.stringify({portClipboard:3,items:S.clipboard})}
 function pasteItems(list,at=null){if(!list?.length)return;mutate(()=>{let a=C.duplicate(list,24,24);if(at){const b=C.bounds(a);a.forEach(n=>C.move(n,grid(at[0]-b.w/2)-b.x,grid(at[1]-b.h/2)-b.y))}a.forEach(n=>{if(!S.doc.layers.some(l=>l.id===n.layer))n.layer=S.activeLayer});items().push(...a);for(const e of a)if(e.kind==='edge')Conn.markDirty(e.id);S.clipboard=C.copy(a);select(a.map(n=>n.id))})}
 function align(kind){const list=editable().filter(n=>n.kind!=='edge');if(list.length<2&&S.alignRef!=='page')return notify('Select at least two shapes.');if(!list.length)return;const first=find([...S.selected].find(id=>find(id)?.kind!=='edge')),m=pg().margin*C.PX,ps=C.pageSize(pg()),b=S.alignRef==='page'?{x:m,y:m,w:ps.w-2*m,h:ps.h-2*m}:S.alignRef==='selection'?C.bounds(list):C.bounds([first]);mutate(()=>list.forEach(n=>{const nb=C.box(n);let dx=0,dy=0;if(kind===0)dx=b.x-nb.x;if(kind===1)dx=b.x+b.w/2-nb.x-nb.w/2;if(kind===2)dx=b.x+b.w-nb.x-nb.w;if(kind===3)dy=b.y-nb.y;if(kind===4)dy=b.y+b.h/2-nb.y-nb.h/2;if(kind===5)dy=b.y+b.h-nb.y-nb.h;C.move(n,dx,dy)}))}
@@ -4493,7 +4570,7 @@ function setLayer(id){if(!ensureEditable())return;mutate(()=>picked().forEach(n=
 function applyPainter(n){const c=S.copiedStyle;if(!c)return;const targets=n.group?items().filter(x=>x.group===n.group):[n];mutate(()=>{for(const t of targets){if(isLocked(t))continue;if(t.kind===c.kind||c.kind==='node'&&t.kind==='node'){for(const[k,v]of Object.entries(c.appearance))t[k]=C.copy(v)}else if(c.appearance.stroke)t.stroke=c.appearance.stroke;if(c.label)t.labels?.forEach(l=>Object.assign(l,C.copy(c.label)))}})}
 function copyFormat(){const n=picked()[0];if(!n)return notify('Select a source shape or connector.');const keys=n.kind==='edge'?['stroke','strokeWidth','dash','double','curve','startMarker','endMarker','jumps','linkType','routing']:n.kind==='zone'?['stroke','fill','strokeWidth','dash','style','headerFill']:['stroke','fill','strokeWidth','display','dash'];const appearance={};keys.forEach(k=>{if(n[k]!==undefined)appearance[k]=C.copy(n[k])});const l=S.activeLabel?find(S.activeLabel.owner)?.labels.find(x=>x.id===S.activeLabel.id):n.labels?.[0];S.copiedStyle={kind:n.kind,appearance,label:l?{size:l.size,color:l.color,bold:!!l.bold,italic:!!l.italic,background:!!l.background,font:l.font}:null};return true}
 function followLink(url){if(url.startsWith('#page:')){const i=S.doc.pages.findIndex(p=>p.id===url.slice(6));if(i>=0)gotoPage(i);return}window.open(url,'_blank','noopener')}
-function gotoPage(i){S.pageIndex=i;clearTransient();S.analysis=null;fit();render()}
+function gotoPage(i){S.pageIndex=i;clearTransient();S.analysis=null;Constraints.sync(pg());fit();render()}
 
 // ---------- view ----------
 function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const all=items();let b=selection&&S.selected.size?C.bounds(picked(),true):{x:0,y:0,...C.pageSize(pg())};if(!selection&&all.length){const e=C.bounds(all,true);if(e.x<0||e.y<0||e.x+e.w>b.w||e.y+e.h>b.h){const x=Math.min(0,e.x),y=Math.min(0,e.y);b={x,y,w:Math.max(b.w,e.x+e.w)-x,h:Math.max(b.h,e.y+e.h)-y}}}const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(.05,Math.min(8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
@@ -4566,7 +4643,7 @@ function update(){
   if(focusBind){const e=$('inspector').querySelector(`[data-bind="${CSS.escape(focusBind)}"],#${CSS.escape(focusBind)}`);if(e){e.focus();if(caret!=null&&e.setSelectionRange)try{e.setSelectionRange(caret,caret)}catch{}}}}
 
 // ---------- per-kind property panels ----------
-function common(n){return section('Arrange',`${field('Layer',sel('layer',layerOptions(),n.layer||S.doc.layers[0].id))}${row(btn('front','To front'),btn('back','To back'))}${row(btn(n.locked?'unlock':'lock',n.locked?'Unlock':'Lock'),btn('duplicate','Duplicate'))}${row(btn('copyFormat','Copy format'),btn('painter','Format painter'))}`,'arrange')}
+function common(n){return section('Arrange',`${field('Layer',sel('layer',layerOptions(),n.layer||S.doc.layers[0].id))}${n.kind!=='edge'&&n.kind!=='node'||n.kind==='node'&&Shapes.kindOf(n.type)==='basic'?field('Pin to page',sel('pin',Constraints.PINS.filter(([v])=>v!=='frame'||n.kind==='zone'||n.kind==='node'),n.pin||'')+'<span class="hintTxt">Pinned items follow the page corner when the page resizes.</span>'):''}${row(btn('front','To front'),btn('back','To back'))}${row(btn(n.locked?'unlock':'lock',n.locked?'Unlock':'Lock'),btn('duplicate','Duplicate'))}${row(btn('copyFormat','Copy format'),btn('painter','Format painter'))}`,'arrange')}
 function geometry(n,rot=true){return section('Position & size',`${row(field('X',inp('x',num(n.x),'number')),field('Y',inp('y',num(n.y),'number')))}${row(field('Width',inp('w',num(n.w),'number','min="4"')),field('Height',inp('h',num(n.h),'number','min="4"')))}${rot?row(field('Rotation °',inp('rotation',n.rotation||0,'number')),`<div class="fld"><span>Flip</span><div class="seg">${btn('flipX','⇋ H')}${btn('flipY','⇵ V')}</div></div>`):''}`,'geom')}
 function labelsList(n){return section('Text',`${n.labels?.[0]?field(n.kind==='zone'?'Heading':'Name / text',area('labels.0.text',n.labels[0].text,Math.min(4,(n.labels[0].text.match(/\n/g)||[]).length+1),'data-live="1"')):''}${n.labels?.[0]?row(field('Size',inp('labels.0.size',n.labels[0].size,'number','min="5" max="144"')),field('Colour',color('labels.0.color',n.labels[0].color))):''}
   ${n.labels?.[0]?`<div class="seg">${btn('bold','<b>B</b>','title="Bold (Ctrl+B)" class="'+(n.labels[0].bold?'active':'')+'"')}${btn('italic','<i>I</i>','title="Italic" class="'+(n.labels[0].italic?'active':'')+'"')}${btn('labelBg','▭ Halo','title="White background behind text" class="'+(n.labels[0].background?'active':'')+'"')}${btn('alignL','⯇','title="Align left"')}${btn('alignC','≡','title="Centre"')}${btn('alignR','⯈','title="Align right"')}</div>`:''}
@@ -4592,11 +4669,11 @@ function edgePanel(e){
   +section('Line style',`${row(field('Colour',color('stroke',e.stroke)),field('Weight',inp('strokeWidth',e.strokeWidth||2,'number','min="0.5" max="12" step="0.25"')))}${row(field('Pattern',sel('dash',DASH,e.dash||'')),field('Shape',sel('curve',[['straight','Angled'],['smooth','Curved']],e.curve||'straight')))}${row(field('Start',sel('startMarker',MARK,e.startMarker||'none')),field('End',sel('endMarker',MARK,e.endMarker||'none')))}${chk('double',e.double,'Double line (tunnel / bundle)')}${chk('jumps',e.jumps!==false,'Line jumps at crossings')}${chk('follow',e.follow!==false,'Stay attached when devices move')}`,'style')
   +(e.routing!=='auto'&&e.routing!=='straight'?section('Path editing',`<p class="muted">Drag sections sideways or bends freely. Double-click inserts a bend. Select a section or bend and press Delete.</p>${row(btn('deleteSegment','Delete section'),btn('deleteBend','Delete bend'))}${row(btn('extendStart','Extend start'),btn('extendEnd','Extend end'))}${row(btn('parallel','Parallel copy'),btn('detach','Detach ends'))}${btn('toAuto','Switch to auto-routing','class="wide"')}`,'path'):'')
   +common(e)}
-function zonePanel(z){const c=C.cidr(z.data?.subnet);return labelsList(z)+section('Zone style',`${seg('style',[['plain','Plain'],['header','Header'],['tab','Tab'],['outline','Outline']],z.style||'plain')}${row(field('Fill',color('fill',z.fill)),field('Border',color('stroke',z.stroke)))}${row(field('Border style',sel('dash',DASH,z.dash||'')),field('Weight',inp('strokeWidth',z.strokeWidth??1.5,'number','min="0" max="8" step="0.25"')))}${z.style==='header'||z.style==='tab'?field('Header colour',color('headerFill',z.headerFill||'')):''}${chk('contain',z.contain!==false,'Move contents with the zone (container)')}${chk('showMeta',z.showMeta!==false,'Show VLAN / subnet in the corner')}${row(btn('fitZone','Fit to contents'),btn('selectMembers','Select members'))}`,'zstyle')+(c?section('Subnet',subnetInfo(z,c),'subnet'):'')+geometry(z,false)+common(z)}
+function zonePanel(z){const c=C.cidr(z.data?.subnet);return labelsList(z)+section('Zone style',`${seg('style',[['plain','Plain'],['header','Header'],['tab','Tab'],['outline','Outline']],z.style||'plain')}${row(field('Fill',color('fill',z.fill)),field('Border',color('stroke',z.stroke)))}${row(field('Border style',sel('dash',DASH,z.dash||'')),field('Weight',inp('strokeWidth',z.strokeWidth??1.5,'number','min="0" max="8" step="0.25"')))}${z.style==='header'||z.style==='tab'?field('Header colour',color('headerFill',z.headerFill||'')):''}${chk('contain',z.contain!==false,'Move contents with the zone (container)')}${chk('autoFit',z.autoFit!==false,'Grow automatically to fit members')}${chk('showMeta',z.showMeta!==false,'Show VLAN / subnet in the corner')}${row(btn('fitZone','Fit to contents'),btn('selectMembers','Select members'))}`,'zstyle')+(c?section('Subnet',subnetInfo(z,c),'subnet'):'')+geometry(z,false)+common(z)}
 function subnetInfo(z,c){const plan=Analysis.ipPlan(S.doc).find(r=>r.zone===z);return`<table class="kv"><tr><td>Network</td><td>${c.text}</td></tr><tr><td>Mask</td><td>${c.maskText}</td></tr><tr><td>Usable</td><td>${C.int2ip(c.first)} – ${C.int2ip(c.last)}</td></tr><tr><td>Broadcast</td><td>${C.int2ip(c.broadcast)}</td></tr><tr><td>Hosts</td><td>${c.hosts.toLocaleString()}</td></tr>${plan?`<tr><td>In use</td><td>${plan.used} (${(plan.used/Math.max(1,c.hosts)*100).toFixed(1)}%)</td></tr><tr><td>Next free</td><td>${plan.next||'—'}</td></tr>`:''}</table>`}
 function textPanel(t){const devs=items().filter(n=>n.kind==='node'&&Shapes.isDevice(n));return labelsList(t)+section('Box',`${row(field('Fill',color('fill',t.fill||'')),field('Border',color('stroke',t.stroke||'')))}${row(field('Wrap width',inp('labels.0.wrapWidth',t.labels?.[0]?.wrapWidth||0,'number','min="0"')),field('Corner',inp('rx',t.rx??6,'number','min="0"')))}${field('Callout points to',sel('target',[['','(nothing)'],...devs.map(d=>[d.id,Analysis.nameOf(d)])],t.target||''))}`,'box')+geometry(t,false)+common(t)}
 function tablePanel(t){return section('Table',`${row(field('Rows',inp('_rows',t.rows.length,'number','min="1" max="500"')),field('Columns',inp('_cols',t.cols.length,'number','min="1" max="30"')))}${row(field('Text size',inp('size',t.size||11,'number','min="6" max="40"')),field('Row height',inp('rowH',t.rowH,'number','min="12" max="120"')))}${field('Column widths',inp('_widths',t.cols.map(Math.round).join(', ')))}${chk('header',t.header!==false,'Header row')}${chk('boldFirstCol',!!t.boldFirstCol,'Bold first column')}${row(field('Lines',color('stroke',t.stroke)),field('Header',color('headerFill',t.headerFill)))}${field('Contents (CSV — edit and click Apply)',`<textarea id="tableCsv" rows="6" spellcheck="false">${h(t.rows.map(r=>r.map(v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v).join(',')).join('\n'))}</textarea>`)}${row(btn('tableApplyCsv','Apply CSV'),btn('tableCopy','Copy for Excel'))}<p class="muted">Double-click a cell to edit; Tab moves to the next cell. {{doc.name}}, {{page.number}}, {{date}} fields work in cells.</p>`,'table')+common(t)}
-function legendPanel(l){return section('Legend',`${field('Title',inp('title',l.title||'LEGEND'))}${chk('devices',l.devices!==false,'Device types')}${chk('links',l.links!==false,'Link types')}${chk('colors',l.colors!==false,'Colour-by values')}${chk('counts',l.counts!==false,'Show counts')}${row(field('Background',color('fill',l.fill||'#ffffff')),field('Border',color('stroke',l.stroke||'#a2b2c6')))}<p class="muted">The legend updates automatically from what is on this page.</p>`,'legend')+common(l)}
+function legendPanel(l){return section('Legend',`${field('Title',inp('title',l.title||'LEGEND'))}${chk('devices',l.devices!==false,'Device types')}${chk('links',l.links!==false,'Link types')}${chk('zones',!!l.zones,'Zones')}${chk('colors',l.colors!==false,'Colour-by values')}${chk('counts',l.counts!==false,'Show counts')}${field('Rows per column',inp('maxRows',l.maxRows||8,'number','min="3" max="40"'))}${row(field('Background',color('fill',l.fill||'#ffffff')),field('Border',color('stroke',l.stroke||'#a2b2c6')))}<p class="muted">The legend updates automatically from what is on this page.</p>`,'legend')+common(l)}
 function propsFor(n){return n.kind==='node'?nodePanel(n):n.kind==='edge'?edgePanel(n):n.kind==='zone'?zonePanel(n):n.kind==='text'?textPanel(n):n.kind==='table'?tablePanel(n):n.kind==='legend'?legendPanel(n):common(n)}
 
 function labelPanel(owner,l){return section('Label',`${field('Text',area('L.text',l.text,4,'data-live="1"'))}${row(field('Size',inp('L.size',l.size,'number','min="5" max="144"')),field('Rotation °',inp('L.rotation',l.rotation||0,'number')))}${row(field('Colour',color('L.color',l.color)),field('Align',sel('L.align',[['start','Left'],['middle','Centre'],['end','Right']],l.align||'middle')))}${row(field('Font',sel('L.font',[['','Sans (default)'],[C.MONO,'Monospace'],['Georgia, serif','Serif']],l.font||'')),field('Wrap width',inp('L.wrapWidth',l.wrapWidth||0,'number','min="0"')))}${chk('L.bold',l.bold,'Bold')}${chk('L.italic',l.italic,'Italic')}${chk('L.underline',l.underline,'Underline')}${chk('L.background',l.background,'Background halo')}${l.anchor?field('Position along connector',`<input type="range" min="0" max="1" step="0.01" data-bind="L.anchor.t" value="${l.anchor.t}">`):''}${row(btn('editLabel','Edit on canvas'),btn('deleteLabel','Delete label'))}`,'label')}
@@ -4623,7 +4700,7 @@ function multiData(a){const nodes=a.filter(n=>n.kind==='node');if(!nodes.length)
 
 // ---------- page & document ----------
 function pagePanel(){const p=pg(),papers=[...Object.keys(C.PAPERS),'Custom'].map(k=>[k,k]);const bgs=S.doc.pages.filter(x=>x.isBackground&&x!==p);
-  return section('Page setup',`${field('Page name',`<input data-page="name" value="${h(p.name)}">`)}${row(field('Paper',`<select data-page="paper">${papers.map(([v,t])=>`<option ${p.paper===v?'selected':''}>${t}</option>`).join('')}</select>`),field('Orientation',`<select data-page="orientation"><option value="landscape" ${p.orientation==='landscape'?'selected':''}>Landscape</option><option value="portrait" ${p.orientation==='portrait'?'selected':''}>Portrait</option></select>`))}${p.paper==='Custom'?row(field('Width mm',`<input data-page="customW" type="number" value="${p.customW}" min="50">`),field('Height mm',`<input data-page="customH" type="number" value="${p.customH}" min="50">`)):''}${row(field('Margin mm',`<input data-page="margin" type="number" value="${p.margin}" min="0" max="60">`),field('Page colour',`<input type="color" data-page="bg" value="${p.bg||'#ffffff'}">`))}${btn('fitPageToDrawing','Fit page to drawing','class="wide"')}`,'psetup')
+  return section('Page setup',`${field('Page name',`<input data-page="name" value="${h(p.name)}">`)}${row(field('Paper',`<select data-page="paper">${papers.map(([v,t])=>`<option ${p.paper===v?'selected':''}>${t}</option>`).join('')}</select>`),field('Orientation',`<select data-page="orientation"><option value="landscape" ${p.orientation==='landscape'?'selected':''}>Landscape</option><option value="portrait" ${p.orientation==='portrait'?'selected':''}>Portrait</option></select>`))}${p.paper==='Custom'?row(field('Width mm',`<input data-page="customW" type="number" value="${p.customW}" min="50">`),field('Height mm',`<input data-page="customH" type="number" value="${p.customH}" min="50">`)):''}${row(field('Margin mm',`<input data-page="margin" type="number" value="${p.margin}" min="0" max="60">`),field('Page colour',`<input type="color" data-page="bg" value="${p.bg||'#ffffff'}">`))}${chk('_as',p.autoSize!==false,'Auto-size: grow (and shrink back) to fit the drawing').replace('data-bind="_as"','data-page="autoSize"')}<p class="muted">Smallest size: ${p.minPaper==='Custom'?(p.minW||p.customW)+' × '+(p.minH||p.customH)+' mm':(p.minPaper||p.paper)} — choosing a paper size sets it.</p>${btn('fitPageToDrawing','Fit page to drawing now','class="wide"')}`,'psetup')
   +section('Background',`${chk('_isbg',p.isBackground,'This is a background page (title block, border, logo)').replace('data-bind="_isbg"','data-page="isBackground"')}${p.isBackground?'':field('Use background page',`<select data-page="background"><option value="">(none)</option>${bgs.map(b=>`<option value="${b.id}" ${p.background===b.id?'selected':''}>${h(b.name)}</option>`).join('')}</select>`)}${btn('newBackground','＋ New background page with title block','class="wide"')}`,'pbg')
   +section('Print',`${field('Sizing',`<select data-page="printSizing"><option value="fit" ${p.printSizing==='fit'?'selected':''}>Fit drawing to one sheet</option><option value="actual" ${p.printSizing==='actual'?'selected':''}>Actual size (page area)</option><option value="tile" ${p.printSizing==='tile'?'selected':''}>Tile across several sheets</option></select>`)}${p.printSizing==='tile'?row(field('Sheet paper',`<select data-page="tilePaper">${['A4','A3','Letter'].map(v=>`<option ${(p.tilePaper||'A4')===v?'selected':''}>${v}</option>`).join('')}</select>`),field('Scale',`<input data-page="tileScale" type="number" value="${p.tileScale||1}" min="0.25" max="4" step="0.25">`)):''}${row(btn('print','Print page'),btn('printAll','Print all'))}`,'pprint')
   +section('Guides & pages',`${row(btn('guideX','＋ Vertical guide'),btn('guideY','＋ Horizontal guide'))}${btn('clearGuides','Clear guides','class="wide"')}${row(btn('duplicatePage','Duplicate page'),btn('deletePage','Delete page'))}${row(btn('pageLeft','◂ Move left'),btn('pageRight','Move right ▸'))}`,'pguides')}
@@ -4646,13 +4723,14 @@ function apply(bind,v){
     if(bind==='linkType'){if(n.kind==='edge'&&v)Shapes.applyLinkType(n,v);continue}
     if(bind==='routing'){if(n.kind!=='edge'||!v)continue;n.routing=v;n.curve=v==='free'&&n.curve==='smooth'?'smooth':'straight';if(['hv','vh'].includes(v))Conn.orthogonalize(n);Conn.markDirty(n.id);continue}
     if(bind==='curve'){if(n.kind!=='edge')continue;n.curve=v;if(v==='smooth'){if(n.routing==='auto'||n.routing==='straight'||n.routing==='hv'||n.routing==='vh')n.routing='free';if(n.points.length===2){const[a,b]=n.points,dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;n.points.splice(1,0,[(a[0]+b[0])/2-dy/l*35,(a[1]+b[1])/2+dx/l*35])}}else Conn.orthogonalize(n);continue}
-    if(bind==='units'){const s=Shapes.rackSize(+v),dy=n.h-s.h;n.units=+v;n.h=s.h;continue}
+    if(bind==='units'){const s=Shapes.rackSize(+v),dy=n.h-s.h;n.units=+v;n.h=s.h;n.y+=dy;(n.labels||[]).forEach(l=>l.y+=dy);continue}
     if(bind==='ru'){const r=rackOf(n,pg()),bottom=n.y+n.h;n.h=Math.max(1,Math.round(v))*Shapes.RU;if(r)n.y=bottom-n.h;n.labels.forEach(l=>{l.y=n.y+n.h/2+l.size*.36});continue}
     if(bind==='rackPos'){const r=rackOf(n,pg());if(!r)continue;const i=Shapes.rackInner(r),y=i.y+i.h-(Math.round(v)-1)*Shapes.RU-n.h;C.move(n,0,Math.max(i.y,Math.min(i.y+i.h-n.h,y))-n.y);continue}
     if(['x','y','w','h'].includes(bind)&&n.kind!=='edge'){if(bind==='x'||bind==='y'){C.move(n,bind==='x'?v-n.x:0,bind==='y'?v-n.y:0)}else if(v>=4){const b=C.box(n),sx=bind==='w'?v/n.w:1,sy=bind==='h'?v/n.h:1;n.w*=sx;n.h*=sy;for(const l of n.labels||[]){if(n.kind==='node'){l.x=b.x+(l.x-b.x)*sx;if(l.y>b.y+b.h)l.y+=n.h-b.h}}}continue}
     if(bind==='fillNone'){n.fill=v?'none':'#ffffff';continue}
     if(bind==='display'&&n.kind!=='node')continue;
     if(bind==='target'){if(v)n.target=v;else delete n.target;continue}
+    if(bind==='pin'){Constraints.pinNow(n,pg(),v);continue}
     if(bind.startsWith('labels.*.')){for(const l of n.labels||[])setPath(l,bind.slice(9),v);continue}
     if(bind.startsWith('labels.0.')&&!n.labels?.length){if(bind==='labels.0.text'&&v==='')continue;if(n.kind==='edge'){const q=Conn.pointAt(n,.5),l=C.label('',q[0],q[1]-8,11);l.anchor={t:.5,dx:0,dy:-8};l.background=true;n.labels=[l]}else{const b=C.box(n);n.labels=[C.label('',b.x+b.w/2,b.y+b.h+16)]}}
     if(bind==='_rows'||bind==='_cols'||bind==='_widths'){if(n.kind!=='table')continue;if(bind==='_rows'){const r=Math.max(1,Math.round(v));while(n.rows.length<r)n.rows.push(n.cols.map(()=>''));n.rows.length=r}if(bind==='_cols'){const c=Math.max(1,Math.round(v));while(n.cols.length<c){n.cols.push(100);n.rows.forEach(r=>r.push(''))}n.cols.length=c;n.rows.forEach(r=>r.length=c)}if(bind==='_widths'){const w=String(v).split(/[,\s]+/).map(Number).filter(x=>x>8);w.forEach((x,i)=>{if(i<n.cols.length)n.cols[i]=x})}tableLayout(n);continue}
@@ -4670,7 +4748,7 @@ function onChange(e){
   const t=e.target,v=convert(e);
   if(t.dataset.live&&t._remembered){t._remembered=false;changed();lastKey='';render('panel');return}
   if(t.dataset.bind&&!t.dataset.nobind&&!t.id?.startsWith('gen')){apply(t.dataset.bind,t.type==='color'||t.classList.contains('hex')?(t.value||null):v);return}
-  if(t.dataset.page){const k=t.dataset.page;let val=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;if(k==='margin'&&(val<0||val>60))return notify('Margin must be 0–60 mm.');if((k==='customW'||k==='customH')&&(val<50||val>5000))return notify('Custom sizes must be 50–5000 mm.');if(k==='background'&&!val)val=null;mutate(()=>{pg()[k]=val;if(k==='isBackground'&&val)for(const p of S.doc.pages)if(p.background===pg().id&&p===pg())p.background=null});if(['paper','orientation','customW','customH'].includes(k))fit();return}
+  if(t.dataset.page){const k=t.dataset.page;let val=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;if(k==='margin'&&(val<0||val>60))return notify('Margin must be 0–60 mm.');if((k==='customW'||k==='customH')&&(val<50||val>5000))return notify('Custom sizes must be 50–5000 mm.');if(k==='background'&&!val)val=null;mutate(()=>{pg()[k]=val;if(k==='paper'){pg().minPaper=val;if(val==='Custom'){pg().minW=pg().customW;pg().minH=pg().customH}}if(k==='customW'||k==='customH'){pg().minPaper='Custom';pg().minW=pg().customW;pg().minH=pg().customH}if(k==='isBackground'&&val)for(const p of S.doc.pages)if(p.background===pg().id&&p===pg())p.background=null});if(['paper','orientation','customW','customH'].includes(k))fit();return}
   if(t.dataset.doc){const k=t.dataset.doc,val=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;mutate(()=>{if(k==='name')S.doc.name=val||'Untitled network';else setPath(S.doc,k,val)});return}
   if(t.dataset.displayField){const k=t.dataset.displayField;mutate(()=>{const f=S.doc.display.fields||=[];if(t.checked){if(!f.includes(k))f.push(k)}else S.doc.display.fields=f.filter(x=>x!==k)});return}
   if(t.dataset.fieldLabel){const f=S.doc.fields.find(x=>x.key===t.dataset.fieldLabel);if(f)mutate(()=>f.label=t.value||f.key);return}
@@ -4706,8 +4784,8 @@ function addGuide(axis){const ps=C.pageSize(pg());const v=prompt('Guide position
 function movePage(dir){const next=S.pageIndex+dir;if(next<0||next>=S.doc.pages.length)return;mutate(()=>{const p=S.doc.pages;[p[S.pageIndex],p[next]]=[p[next],p[S.pageIndex]];S.pageIndex=next})}
 function addPage(bg=false){mutate(()=>{const p=C.page(bg?'Background':'Page '+(S.doc.pages.filter(x=>!x.isBackground).length+1));p.isBackground=bg;const cur=pg();p.paper=cur.paper;p.orientation=cur.orientation;p.customW=cur.customW;p.customH=cur.customH;p.margin=cur.margin;p.bg=cur.bg;if(!bg&&cur.background)p.background=cur.background;S.doc.pages.splice(S.pageIndex+1,0,p);S.pageIndex++;clearTransient()});fit()}
 function newBackground(){const fgIndex=S.pageIndex;const fg=pg();mutate(()=>{const p=C.page('Background · '+(fg.paper||'A3'));Object.assign(p,{paper:fg.paper,orientation:fg.orientation,customW:fg.customW,customH:fg.customH,margin:fg.margin,isBackground:true});const ps=C.pageSize(p),m=p.margin*C.PX;
-  p.items.push({id:C.uid(),kind:'zone',x:m,y:m,w:ps.w-2*m,h:ps.h-2*m,rx:0,fill:'none',stroke:'#475569',strokeWidth:1.2,dash:'',style:'outline',contain:false,showMeta:false,labels:[],data:{},locked:true});
-  const t={id:C.uid(),kind:'table',cols:[110,300],rowH:22,size:11,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Client','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}}'],['Date','{{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7'};tableLayout(t);t.x=ps.w-m-t.w;t.y=ps.h-m-t.h;p.items.push(t);
+  p.items.push({id:C.uid(),kind:'zone',x:m,y:m,w:ps.w-2*m,h:ps.h-2*m,rx:0,fill:'none',stroke:'#475569',strokeWidth:1.2,dash:'',style:'outline',contain:false,autoFit:false,showMeta:false,labels:[],data:{},locked:true,pin:'frame'});
+  const t={id:C.uid(),kind:'table',cols:[110,300],rowH:22,size:11,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Client','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}}'],['Date','{{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7'};tableLayout(t);t.x=ps.w-m-t.w;t.y=ps.h-m-t.h;t.pin='br';p.items.push(t);
   S.doc.pages.push(p);fg.background=p.id;for(const q of S.doc.pages)if(!q.isBackground&&!q.background&&q.paper===p.paper&&q.orientation===p.orientation)q.background=p.id});S.pageIndex=fgIndex;notify('Background page added (border + title block) and applied to matching pages. Edit it from its page tab.',5000);render()}
 function rotateBy(deg){if(!ensureEditable())return;mutate(()=>{const list=editable().filter(n=>n.kind!=='edge');if(list.length===1){list[0].rotation=(((list[0].rotation||0)+deg)%360+360)%360;return}const b=C.bounds(list),cx=b.x+b.w/2,cy=b.y+b.h/2;for(const n of list){const c=C.center(n),[dx,dy]=C.rotateVec([c[0]-cx,c[1]-cy],deg);C.move(n,cx+dx-c[0],cy+dy-c[1]);if(n.kind==='node')n.rotation=(((n.rotation||0)+deg)%360+360)%360}})}
 function autoNumber(){const list=editable().filter(n=>n.kind==='node');if(!list.length)return;const pat=$('numPattern')?.value||'SW-{n:02}',start=+($('numStart')?.value||1),orderBy=$('numOrder')?.value||'rows',host=$('numHost')?.checked!==false;S.numPattern=pat;
@@ -4731,11 +4809,11 @@ const actions={
   bold:()=>toggleLabelFlag('bold'),italic:()=>toggleLabelFlag('italic'),labelBg:()=>toggleLabelFlag('background'),alignL:()=>setLabelAlign('start'),alignC:()=>setLabelAlign('middle'),alignR:()=>setLabelAlign('end'),
   addLabel:()=>{if(!ensureEditable())return;const n=picked()[0];let l;mutate(()=>{const b=C.box(n);l=C.label('Label',b.x+b.w/2,b.y+b.h+22+(n.labels?.length||0)*16,11);if(n.kind==='edge'){l.anchor={t:.5,dx:0,dy:14};l.background=true}n.labels??=[];n.labels.push(l);S.activeLabel={owner:n.id,id:l.id}});editLabel(n.id,l.id)},editLabel:()=>S.activeLabel&&editLabel(S.activeLabel.owner,S.activeLabel.id),deleteLabel:()=>erase(),
   // insert
-  addPage:()=>addPage(),newBackground,zone:()=>insertAnnotation('zone',...centerOfView()),wrapZone:wrapInZone,textAnn:()=>insertAnnotation('text',...centerOfView()),callout:()=>{const n=picked().find(x=>x.kind==='node');const c=n?[n.x+n.w+30,n.y]:centerOfView();insertAnnotation('callout',...c)},table:()=>insertAnnotation('table',...centerOfView()),titleBlock,legend:()=>{const ps=C.pageSize(pg());insertAnnotation('legend',pg().margin*C.PX+130,ps.h-pg().margin*C.PX-110)},revision:()=>insertAnnotation('revision',...centerOfView()),image:()=>$('imageInput').click(),rack:()=>addNode('rack',...centerOfView()),
+  addPage:()=>addPage(),newBackground,zone:()=>insertAnnotation('zone',...centerOfView()),wrapZone:wrapInZone,textAnn:()=>insertAnnotation('text',...centerOfView()),callout:()=>{const n=picked().find(x=>x.kind==='node');const c=n?[n.x+n.w+30,n.y]:centerOfView();insertAnnotation('callout',...c)},table:()=>insertAnnotation('table',...centerOfView()),titleBlock,legend:()=>{const ps=C.pageSize(pg()),l=insertAnnotation('legend',pg().margin*C.PX+130,ps.h-pg().margin*C.PX-110);if(l){renderNow();mutate(()=>{const m=pg().margin*C.PX;C.move(l,m+10-l.x,ps.h-m-10-l.h-l.y);l.pin='bl'})}},revision:()=>insertAnnotation('revision',...centerOfView()),image:()=>$('imageInput').click(),rack:()=>addNode('rack',...centerOfView()),
   // design
   layoutHier:()=>Builder.layoutPage('hier'),layoutLR:()=>Builder.layoutPage('hier',{direction:'LR'}),layoutGrid:()=>Builder.layoutPage('grid'),layoutCircle:()=>Builder.layoutPage('circular',{clusters:false}),layoutRadial:()=>Builder.layoutPage('radial',{clusters:false}),layoutForce:()=>Builder.layoutPage('force',{clusters:false}),layoutSel:()=>Builder.layoutPage('hier',{clusters:false}),
   rerouteAll:()=>{mutate(()=>{for(const e of items())if(e.kind==='edge'&&e.routing==='auto')Conn.markDirty(e.id)});notify('Auto-routed connectors recalculated.')},allAuto:()=>{const list=(S.selected.size?editable():items()).filter(e=>e.kind==='edge');if(!list.length)return;mutate(()=>list.forEach(e=>{e.routing='auto';e.curve='straight';Conn.markDirty(e.id)}));notify(list.length+' connector(s) switched to auto-routing.')},
-  fitPageToDrawing:()=>mutate(()=>Builder.autoSizePage(pg(),{allowShrink:true})),orientation:()=>{mutate(()=>pg().orientation=pg().orientation==='landscape'?'portrait':'landscape');fit()},
+  fitPageToDrawing:()=>{S.quietResize=true;mutate(()=>{const p=pg();Builder.autoSizePage(p,{allowShrink:true});p.minPaper=p.paper;if(p.paper==='Custom'){p.minW=p.customW;p.minH=p.customH}});S.quietResize=false;fit()},orientation:()=>{mutate(()=>pg().orientation=pg().orientation==='landscape'?'portrait':'landscape');fit()},
   // data & analysis
   importDialog:()=>openImportDialog({}),importText:()=>openImportDialog({tab:'text'}),importNeighbors:()=>openImportDialog({tab:'cdp'}),linkData:()=>openImportDialog({update:true}),vlans:()=>openVlans(),fields:()=>actions.docProps(),
   repInventory:()=>showReport(Analysis.inventory(S.doc)),repCables:()=>showReport(Analysis.cables(S.doc)),repBom:()=>showReport(Analysis.bom(S.doc)),repIp:()=>showReport(Analysis.ipReport(S.doc)),repRack:()=>showReport(Analysis.rackReport(S.doc)),repPoe:()=>showReport(Analysis.poeReport(S.doc)),repCctv:()=>showReport(Analysis.cctvReport(S.doc)),repVlan:()=>showReport(Analysis.vlanReport(S.doc)),
@@ -4783,7 +4861,7 @@ const actions={
   importShapes:()=>$('shapeInput').click(),managePacks:()=>Workspace.openPacks(),myDrawings:()=>Workspace.openDrawings(),
   shortcuts:()=>openShortcuts(),help:()=>openHelp(),palette:()=>openPalette(),about:()=>openHelp(),
 };
-for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render()};
+for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom','deleteConnectors','liveCheck'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render();if(k==='liveCheck')scheduleCheck()};
 
 </script>
 <script>
@@ -4831,6 +4909,7 @@ const RIBBON=[
     {name:'Zones',items:[B('wrapZone','Wrap','wrap'),B('fitZone','Fit to contents','fitpage'),B('selectMembers','Select members','select')]}]},
   {id:'view',name:'View',groups:[
     {name:'Show',items:[T('grid','Grid','gridOn'),T('rulers','Rulers','ruler'),T('guides','Guides','guide'),T('showPorts','Points','ports'),T('minimap','Overview','map'),T('autoConnect','Quick-connect arrows','arrows')]},
+    {name:'Behaviour',items:[T('deleteConnectors','Delete links with shapes','trash'),T('liveCheck','Live design check','check')]},
     {name:'Snap',items:[T('snap','Snap to grid','magnet'),X(()=>`<label class="rsel" title="Grid spacing"><select id="gridStepSel">${[5,10,20,25,50].map(v=>`<option value="${v}" ${+S.prefs.gridStep===v?'selected':''}>Grid ${v}px</option>`).join('')}</select></label>`)]},
     {name:'Zoom',items:[B('fit','Fit page','fit','Shift+1'),B('fitSelection','Selection','fitpage','Shift+2'),B('zoom100','100%','hundred','Ctrl+1'),B('zoomIn','Zoom in','zoomIn','Ctrl+='),B('zoomOut','Zoom out','zoomOut','Ctrl+-')]},
     {name:'Window',items:[T('wheelZoom','Wheel zooms','wheel'),B('toggleLeft','Shapes panel','panels'),B('toggleRight','Inspector','panels'),B('uiTheme','Light / dark','moon'),B('present','Present','present','Full-screen; arrows change page; Esc exits',true)]},
@@ -4978,6 +5057,7 @@ function openHelp(){openDialog('Port Network Studio',`<p><b>Draw precise network
 <li><b>Data</b> — every device has shape data (hostname, IP, model, PoE, bitrate…). Show fields under labels, colour by status/VLAN, use {{fields}} in text, import CSV / NetBox / CDP / LLDP, export inventory, cable schedule, BOM, IP plan.</li>
 <li><b>Analyze</b> — design-rule check, single points of failure, path trace, camera stream bandwidth & link utilisation, PoE budgets, CCTV storage sizing.</li>
 <li><b>Pages</b> — multiple pages, shared background pages with title blocks, layers, page hyperlinks for drill-down, print/PDF (fit, actual size or tiled), Visio .vsdx and draw.io export, share links.</li>
+<li><b>Everything stays linked</b> — the page auto-sizes to the drawing, title blocks and legends stay pinned to the page corners, zones grow to fit their members, the legend lists what is on the page, and the status bar shows live design-check results.</li>
 <li><b>More shapes</b> — 350+ built in. The <b>Icons</b> tab searches 200,000+ open-source icons online; <b>Import shapes</b> takes SVG folders, vendor icon ZIPs, draw.io libraries and images. Packs are kept in this browser and embedded in drawings that use them.</li></ul>
 <p class="muted">Drawings auto-save in this browser (File ▸ My drawings) — also when the app is hosted on GitHub Pages. Use File ▸ Save for a portable .json. Opens Port v1/v2 drawings. Nothing is uploaded anywhere.</p><footer><button data-action="shortcuts">Shortcuts</button><button class="primary" data-close>Start drawing</button></footer>`).onclick=e=>{if(e.target.closest('[data-close]'))closeDialog()}}
 function paletteCommands(){const out=[];for(const r of RIBBON)for(const g of r.groups)for(const i of g.items){if(i.t==='btn')out.push({id:'a:'+i.action,label:i.label,hint:r.name+' ▸ '+g.name,icon:i.icon});if(i.t==='mode')out.push({id:'m:'+i.mode,label:i.label+' tool',hint:'Tool · '+i.key,icon:i.icon});if(i.t==='toggle')out.push({id:'a:toggle_'+i.pref,label:'Toggle '+i.label,hint:'View',icon:i.icon})}for(const f of FILE_MENU)if(f!=='-')out.push({id:'a:'+f[0],label:f[1],hint:'File',icon:f[2]});for(const[k,v]of[['repPoe','PoE budget report'],['repCctv','CCTV storage report'],['exportCsv','Inventory CSV'],['traceFrom','Trace path from selection'],['rerouteAll','Re-route all connectors'],['selectAll','Select all']])out.push({id:'a:'+k,label:v,hint:'Command',icon:'command'});for(const c of Shapes.catalog())for(const i of c.items)out.push({id:'s:'+i.type,label:'Insert '+i.name,hint:c.name,icon:null,type:i.type});const seen=new Set();return out.filter(o=>!seen.has(o.id+o.label)&&seen.add(o.id+o.label))}
@@ -5125,7 +5205,7 @@ function wire(){
     if(id==='fontColor'){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.color=t.value)));return}
     if(id==='displaySel'&&t.value){S.prefs.newDisplay=t.value;savePrefs();const ns=sel.filter(n=>n.kind==='node'&&Shapes.kindOf(n.type)==='device');if(ns.length)mutate(()=>ns.forEach(n=>n.display=t.value));else notify('New devices will use the '+t.value+' style.');t.value='';return}
     if(id==='strokeColor'||id==='fillColor'){if(!ensureEditable())return;mutate(()=>sel.forEach(n=>n[id==='strokeColor'?'stroke':'fill']=t.value));return}
-    if(id==='paperSel'){mutate(()=>pg().paper=t.value);fit();return}
+    if(id==='paperSel'){mutate(()=>{pg().paper=t.value;pg().minPaper=t.value});fit();return}
     if(id==='jumpSel'){mutate(()=>S.doc.display.jumpStyle=t.value);return}
     if(id==='colorBySel'){mutate(()=>S.doc.display.colorBy=t.value);return}
     if(id==='showFieldSel'&&t.value){const k=t.value;mutate(()=>{const f=S.doc.display.fields||=[];S.doc.display.fields=f.includes(k)?f.filter(x=>x!==k):[...f,k]});renderRibbon();return}
@@ -5202,6 +5282,7 @@ async function boot(){
   S.doc=doc;S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.activeLayer=doc.layers[0].id;
   renderRibbon();renderLeft();setMode('select');document.title=S.doc.name+' · Port Network Studio';
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
+  scheduleCheck();
   if(location.hash.startsWith('#doc='))await loadFromHash();
   else if(!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
   // make the router/layout modules optional: degrade gracefully when missing

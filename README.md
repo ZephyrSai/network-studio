@@ -29,6 +29,18 @@ No installation, no account, no server: everything runs in the browser, and draw
 | **Persistence** | Drawings auto-save to **IndexedDB** in your browser — including on GitHub Pages — with a **My drawings** manager (open / duplicate / download / delete, backup & restore all), optional **persistent storage** request, plus a quick localStorage recovery copy. Shape packs and your symbol library persist too. |
 | **Productivity** | Ribbon UI, command palette (Ctrl+K), find & replace across text and data, format painter, smart guides, snapping, rulers, overview map, explorer tree, dark mode, full keyboard shortcuts (press `?`). |
 
+### Everything stays linked
+The drawing is kept consistent automatically after every edit:
+
+* **Page auto-size** — the page grows to the next sheet (A3 → A2 → A1 …, or a custom size beyond A0) when shapes go past its edge, shrinks back to the size you chose when they return, and shifts the drawing if something is dragged past the top/left edge. Switch it off per page.
+* **Pinned blocks** — title blocks, legends and borders pin to a page corner or the margin frame and follow the page when it resizes. Background pages re-anchor to every sheet they sit behind, so one title block works for A3 and A1 sheets alike.
+* **Legend** — generated from the page: device types (drawn as they actually appear, including colour-by-data), link types, colour-by values and optionally zones, with counts. Updates as you add or remove things.
+* **Containers** — zones carry their members and grow when a member is pushed past an edge; racks carry their equipment and keep U positions when the rack height changes.
+* **Connectors** — glued ends follow devices, auto-routes re-route around whatever moved, interface names follow port renames and re-attachment, and deleting a device removes its links (optional, like Visio).
+* **Text & fields** — `{{fields}}` in labels, title blocks and tables update live from shape data and document properties.
+* **Live design check** — the status bar shows the current error/warning count and opens the full list.
+* **Dragging** auto-scrolls the view at the window edge.
+
 ### Templates
 Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN branches · CCTV / video surveillance · OT / SCADA Purdue model · Hybrid cloud · Small office.
 

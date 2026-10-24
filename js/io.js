@@ -60,7 +60,7 @@ async function exportVsdx(){
   const fgPages=S.doc.pages.filter(p=>!p.isBackground);
   try{for(const page of fgPages){
     const ps=C.pageSize(page),svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${ps.w} ${ps.h}`);svg.setAttribute('width',ps.w);svg.setAttribute('height',ps.h);host.append(svg);
-    const bgPage=page.background&&S.doc.pages.find(p=>p.id===page.background);
+    const bgSrc=page.background&&S.doc.pages.find(p=>p.id===page.background),bgPage=bgSrc?Constraints.bgView(bgSrc,page):null;
     if(bgPage)drawScene(el('g',{},svg),bgPage,makeCtx(bgPage,{print:true,tag:true,prefix:'xb',fieldPage:page}));
     const ctx=makeCtx(page,{print:true,tag:true,prefix:'x'});drawScene(el('g',{},svg),page,ctx);RCTX=ctx;const pageItems=bgPage?[...bgPage.items,...page.items]:page.items;
     const inv=svg.getScreenCTM().inverse(),shapes=[];let sid=1;const idMap=new Map();

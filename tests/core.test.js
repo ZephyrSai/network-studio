@@ -4,7 +4,7 @@ const Core=require('../js/core.js');
 
 // Load the browser-only modules into one shared context (they are classic scripts sharing globals).
 function sandbox(){const ctx={console,Math,JSON,Date,Map,Set,Array,Object,String,Number,RegExp,Error,Infinity,NaN,parseFloat,parseInt,isFinite,Uint8Array,TextEncoder,globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
-  for(const f of['core.js','stencils.js','shapes.js','router.js','layout.js','connectors.js','builder.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8').replace(/^const (\w+)=/m,'var $1=').replace(/\nconst (Shapes|Builder|Conn)=/,'\nvar $1='),ctx,{filename:f});
+  for(const f of['core.js','stencils.js','shapes.js','router.js','layout.js','connectors.js','constraints.js','builder.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8').replace(/^const (\w+)=/m,'var $1=').replace(/\nconst (Shapes|Builder|Conn|Constraints)=/,'\nvar $1='),ctx,{filename:f});
   vm.runInContext("var S={linkType:'eth',prefs:{},doc:{display:{fields:[]}}};function resolveLabel(o,l){return l.text}",ctx);return ctx}
 
 test('IPv4 / CIDR helpers',()=>{const c=Core.cidr('10.1.2.3/22');assert.equal(c.text,'10.1.0.0/22');assert.equal(c.maskText,'255.255.252.0');assert.equal(c.hosts,1022);assert.equal(Core.int2ip(c.first),'10.1.0.1');assert.equal(Core.int2ip(c.last),'10.1.3.254');assert.ok(Core.inCidr(Core.ip2int('10.1.3.7'),c));assert.ok(!Core.inCidr(Core.ip2int('10.1.4.1'),c));assert.equal(Core.ip2int('300.1.1.1'),null);assert.deepEqual(Core.ipsIn('mgmt 10.0.0.1/24, 10.0.0.2 and 999.1.1.1'),['10.0.0.1','10.0.0.2']);assert.equal(Core.cidr('10.0.0.0/33'),null)});
@@ -49,3 +49,17 @@ test('auto-routed connectors avoid devices and spread along sides',()=>{const ct
   const crosses=(pts,b)=>pts.some((p,i)=>i&&Math.max(p[0],pts[i-1][0])>b.x&&Math.min(p[0],pts[i-1][0])<b.x+b.w&&Math.max(p[1],pts[i-1][1])>b.y&&Math.min(p[1],pts[i-1][1])<b.y+b.h);
   assert.ok(!crosses(r.e1,r.blk),'route must avoid the firewall');for(const pts of[r.e1,r.e2])for(let i=1;i<pts.length;i++)assert.ok(pts[i][0]===pts[i-1][0]||pts[i][1]===pts[i-1][1],'orthogonal');
   assert.notDeepEqual(r.e1[0],r.e2[0],'two links on one side get separate attachment points')});
+
+test('page auto-sizes to content: grows, shrinks back, shifts off-page shapes',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const p=Core.page('t');const n=Core.node('router',100,100,'R');p.items.push(n);const out={};Constraints.sync(p);out.start=p.paper;
+  Core.move(n,1800,0);Constraints.sync(p);out.grown=p.paper;Core.move(n,-1800,0);Constraints.sync(p);out.shrunk=p.paper;
+  Core.move(n,-400,-300);const res=Constraints.sync(p);out.shift=res.shift;out.pos=[Math.round(n.x),Math.round(n.y)];
+  p.autoSize=false;Core.move(n,5000,0);Constraints.sync(p);out.off=p.paper;return out})()`,ctx);
+  assert.equal(r.start,'A3');assert.equal(r.grown,'A2');assert.equal(r.shrunk,'A3');assert.ok(r.shift[0]>0&&r.shift[1]>0);assert.ok(r.pos[0]>=0&&r.pos[1]>=0);assert.equal(r.off,'A3')});
+
+test('pinned title block follows the page corner; background pages re-anchor per sheet',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const p=Core.page('t'),t=Core.text('Title',1300,1000,200,60);t.pin='br';p.items.push(t,Core.node('server',100,100,'S'));Constraints.sync(p);const ps0=Core.pageSize(p),gap0=[ps0.w-(t.x+t.w),ps0.h-(t.y+t.h)];
+  p.items[1].x=2000;Constraints.sync(p);const ps1=Core.pageSize(p),gap1=[ps1.w-(t.x+t.w),ps1.h-(t.y+t.h)];
+  const bg=Core.page('bg');bg.isBackground=true;bg.paper='A1';const fr={id:'f',kind:'zone',x:38,y:38,w:10,h:10,labels:[],pin:'frame'};bg.items.push(fr);Constraints.sync(bg);const v=Constraints.bgItems(bg,Core.page('a4small'));
+  return{gap0,gap1,paper:p.paper,frameW:Math.round(v[0].w),a3W:Math.round(Constraints.area(Core.page('x')).w)}})()`,ctx);
+  assert.equal(r.paper,'A2');assert.deepEqual(r.gap0.map(Math.round),r.gap1.map(Math.round));assert.equal(r.frameW,r.a3W)});
+
+test('zones grow to keep members inside',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const p=Core.page('t'),z=Core.zone('Z',100,100,300,200),n=Core.node('server',300,180,'S'),o=Core.node('server',600,180,'Out');p.items.push(z,n,o);Core.move(n,50,0);Constraints.sync(p);const w=z.w;Core.move(o,0,0);return{inside:Core.inside(Core.box(n),Core.box(z)),w,outsideStays:!Core.overlaps(Core.box(o),Core.box(z))}})()`,ctx);assert.ok(r.inside);assert.ok(r.w>300);assert.ok(r.outsideStays,'a device whose centre is outside is not pulled in')});

@@ -8,12 +8,12 @@ function kit(doc,page){
   const pin=(n,side)=>side?n.ports.find(p=>p.name===side)?.id??null:null;
   const link=(a,b,lt='eth',o={})=>{const e=C.edge([C.center(a),C.center(b)],{node:a.id,port:pin(a,o.aPort)},{node:b.id,port:pin(b,o.bPort)});e.routing=o.routing||'auto';Shapes.applyLinkType(e,lt);e.jumps=true;if(o.fromIf)e.fromIf=o.fromIf;if(o.toIf)e.toIf=o.toIf;if(o.speed)e.data.speed=o.speed;if(o.vlans)e.data.vlans=o.vlans;if(o.label){const l=C.label(o.label,0,0,10.5);l.anchor={t:o.t??.5,dx:0,dy:-9};l.background=true;e.labels.push(l)}if(o.end)e.endMarker=o.end;page.items.push(e);return e};
   const text=(t,x,y,w=300,size=13,bold=false)=>{const n=C.text(t,x,y,w,40,size);n.labels[0].bold=bold;n.labels[0].wrapWidth=w-20;page.items.push(n);return n};
-  const legend=(x,y,maxRows=4,devices=false)=>{const l={id:C.uid(),kind:'legend',x,y,w:220,h:160,title:'LEGEND',labels:[],counts:true,maxRows,devices};page.items.push(l);return l};
+  const legend=(x,y,maxRows=4,devices=true,pin='bl')=>{const l={id:C.uid(),kind:'legend',x,y,w:220,h:160,title:'LEGEND',labels:[],counts:true,maxRows,devices,pin};page.items.push(l);return l};
   return{dev,zone,link,text,legend}}
 function background(doc,ref){const p=C.page('Background');Object.assign(p,{paper:ref.paper,orientation:ref.orientation,margin:ref.margin,isBackground:true});const ps=C.pageSize(p),m=p.margin*C.PX;
-  p.items.push({id:C.uid(),kind:'zone',x:m,y:m,w:ps.w-2*m,h:ps.h-2*m,rx:0,fill:'none',stroke:'#475569',strokeWidth:1.2,dash:'',style:'outline',contain:false,showMeta:false,labels:[],data:{},locked:true});
-  const t={id:C.uid(),kind:'table',cols:[96,250],rowH:20,size:10.5,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Client','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}} · {{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7',locked:true};tableLayout(t);t.x=ps.w-m-t.w;t.y=ps.h-m-t.h;p.items.push(t);doc.pages.push(p);return p}
-function finish(doc){for(const p of doc.pages){RCTX=makeCtx(p,{doc});Conn.sync(p.items,{rerouteAll:true,pageId:'tpl:'+p.id});for(const e of p.items)if(e.kind==='edge')Conn.placeLabels(e);RCTX=null}return doc}
+  p.items.push({id:C.uid(),kind:'zone',x:m,y:m,w:ps.w-2*m,h:ps.h-2*m,rx:0,fill:'none',stroke:'#475569',strokeWidth:1.2,dash:'',style:'outline',contain:false,autoFit:false,showMeta:false,labels:[],data:{},locked:true,pin:'frame'});
+  const t={id:C.uid(),kind:'table',cols:[96,250],rowH:20,size:10.5,header:false,boldFirstCol:true,rows:[['Project','{{doc.name}}'],['Drawing','{{page.name}}'],['Client','{{doc.company}}'],['Prepared by','{{doc.author}}'],['Revision','{{doc.revision}} · {{date}}'],['Sheet','{{page.number}} of {{page.count}}']],labels:[],stroke:'#64748b',headerFill:'#eef2f7',locked:true};tableLayout(t);t.x=ps.w-m-t.w;t.y=ps.h-m-t.h;t.pin='br';p.items.push(t);doc.pages.push(p);return p}
+function finish(doc){for(const p of doc.pages){RCTX=makeCtx(p,{doc});for(const n of p.items)if(n.kind==='legend')legendMeasure(n,p,RCTX);Conn.sync(p.items,{rerouteAll:true,pageId:'tpl:'+p.id});const r=Constraints.sync(p);if(r?.shift||r?.zones)Conn.sync(p.items,{rerouteAll:true,pageId:'tpl2:'+p.id});for(const e of p.items)if(e.kind==='edge')Conn.placeLabels(e);RCTX=null}return doc}
 const ip=(base,i)=>base.replace(/x$/,String(i));
 
 const B={
@@ -36,7 +36,7 @@ campus(){const d=C.newDoc('Enterprise campus network');d.meta={...d.meta,author:
   k.link(c1,a1,'fiber10',{fromIf:'Te1/0/10',toIf:'Te1/1/1'});k.link(c2,a1,'fiber10',{fromIf:'Te1/0/10',toIf:'Te1/1/2'});k.link(c1,a2,'fiber10',{fromIf:'Te1/0/11',toIf:'Te1/1/1'});k.link(c2,a2,'fiber10',{fromIf:'Te1/0/11',toIf:'Te1/1/2'});
   for(const n of[ap1,ph1,pc1,pr1])k.link(a1,n,'eth');for(const n of[ap2,ap3,pc2,cam])k.link(a2,n,'eth');
   k.link(c1,h1,'fiber10',{fromIf:'Te1/0/20'});k.link(c2,h2,'fiber10',{fromIf:'Te1/0/20'});k.link(h1,san,'fiber10',{label:'iSCSI'});k.link(h2,san,'fiber10');k.link(h1,ad,'eth');k.link(h2,bk,'eth');k.link(c2,nms,'mgmt',{label:'OOB'});k.link(nms,jump,'mgmt');
-  k.legend(50,905,3);
+  k.legend(50,905,5);
   // physical page with racks
   const p2=C.page('Comms room racks');d.pages.push(p2);const r=kit(d,p2);r.text('MAIN COMMS ROOM · RACK ELEVATIONS (FRONT VIEW)',60,40,700,16,true);
   const rack=(name,x,eq)=>{const rk=Shapes.make('rack42',0,0,name);C.move(rk,x-rk.x,100-rk.y);p2.items.push(rk);const inner=Shapes.rackInner(rk);for(const[type,label,u,data]of eq){const n=Shapes.make(type,0,0,label);const y=inner.y+inner.h-(u-1)*Shapes.RU-n.h;C.move(n,inner.x-n.x,y-n.y);n.data=data||{};p2.items.push(n)}return rk};
@@ -55,7 +55,7 @@ datacenter(){const d=C.newDoc('Data centre leaf-spine fabric');d.meta={...d.meta
   const srvA=[100,230,360].map((x,i)=>k.dev('rackserver','HOST-A0'+(i+1),x,770,{hostname:'HOST-A0'+(i+1),ip:'10.20.0.1'+(i+1),model:'ProLiant DL380 Gen11',vendor:'HPE',power:800})),stA=k.dev('storage','NAS-A',230,900,{model:'AFF A250',vendor:'NetApp',power:700});
   const srvB=[590,720,850].map((x,i)=>k.dev('rackserver','HOST-B0'+(i+1),x,770,{hostname:'HOST-B0'+(i+1),ip:'10.24.0.1'+(i+1),model:'ProLiant DL380 Gen11',vendor:'HPE',power:800})),kb=k.dev('cluster','K8s workers',720,900,{});
   for(const s of srvA){k.link(leaves[0],s,'fiber10',{routing:'straight'});k.link(leaves[1],s,'fiber10',{routing:'straight'})}for(const s of srvB){k.link(leaves[2],s,'fiber10',{routing:'straight'});k.link(leaves[3],s,'fiber10',{routing:'straight'})}k.link(srvA[1],stA,'fiber10');k.link(srvB[1],kb,'logical');
-  k.text('Every leaf has a 100G uplink to each spine; hosts are dual-homed to a vPC leaf pair. Try Analyze ▸ Single points of failure, then delete a spine and run it again.',1050,670,470,12);k.legend(1040,760,3);
+  k.text('Every leaf has a 100G uplink to each spine; hosts are dual-homed to a vPC leaf pair. Try Analyze ▸ Single points of failure, then delete a spine and run it again.',1050,670,470,12);k.legend(1040,750,7);
   const bg=background(d,p);p.background=bg.id;return finish(d)},
 
 sdwan(){const d=C.newDoc('SD-WAN branch network');d.meta={...d.meta,description:'Hub-and-spoke SD-WAN over MPLS and Internet with LTE backup and remote access.'};const p=d.pages[0];p.name='WAN overview';const k=kit(d,p);
@@ -66,7 +66,7 @@ sdwan(){const d=C.newDoc('SD-WAN branch network');d.meta={...d.meta,description:
   [['Branch · Doha West',40],['Branch · Al Khor',420],['Branch · Wakrah',800]].forEach(([name,x],i)=>{k.zone(name,x,600,360,310,{subnet:`10.${i+1}.0.0/24`,vlan:10+i},{style:'header'});const e=k.dev('sdwan',`BR${i+1}-EDGE`,x+90,690,{hostname:`BR${i+1}-EDGE`,ip:`10.${i+1}.0.1`,model:'Edge 610',vendor:'VeloCloud'}),lte=k.dev('modem','LTE backup',x+270,690,{}),sw=k.dev('switch',`BR${i+1}-SW`,x+90,810,{hostname:`BR${i+1}-SW`,ip:`10.${i+1}.0.2`,poeBudget:370}),ap=k.dev('wap',`BR${i+1}-AP`,x+200,850,{poeDraw:15}),pos=k.dev('workstation','POS / users',x+300,850,{});
     k.link(e,mpls,'wan');k.link(e,inet,'internet');k.link(e,lte,'eth');k.link(lte,inet,'wireless',{label:'4G/5G'});k.link(e,sw,'eth');k.link(sw,ap,'eth');k.link(sw,pos,'eth');k.link(e,hub,'vpn',{routing:'straight'})});
   k.zone('Remote access',1180,600,360,310,{},{style:'header'});const home=k.dev('home','Remote workers',1290,700,{}),lap=k.dev('laptop','ZTNA client',1430,830,{});k.link(lap,home,'wireless');k.link(home,inet,'vpn',{label:'ZTNA'});
-  k.text('Dashed green = overlay tunnels to the hubs. Purple = MPLS underlay, teal = Internet underlay, dotted = LTE backup.',40,300,300,12);k.legend(40,935,3);return finish(d)},
+  k.text('Dashed green = overlay tunnels to the hubs. Purple = MPLS underlay, teal = Internet underlay, dotted = LTE backup.',40,300,300,12);k.legend(40,935,4);return finish(d)},
 
 cctv(){const d=C.newDoc('Video surveillance network');d.meta={...d.meta,description:'IP CCTV with ANPR, perimeter thermal, PoE access, fibre backbone, NVR recording and control room.'};d.display.fields=['ip'];const p=d.pages[0];p.name='CCTV & security systems';const k=kit(d,p);
   d.vlans=[{id:30,name:'CCTV',subnet:'10.30.0.0/22',gateway:'10.30.0.1',color:'#ea580c'},{id:31,name:'Access control',subnet:'10.31.0.0/24',gateway:'10.31.0.1',color:'#7c3aed'},{id:40,name:'Control room',subnet:'10.40.0.0/24',gateway:'10.40.0.1',color:'#2563eb'}];
@@ -79,7 +79,7 @@ cctv(){const d=C.newDoc('Video surveillance network');d.meta={...d.meta,descript
   const vw=k.dev('videowall','Video wall 3×2',1110,520,{}),op1=k.dev('workstation','Operator 1',1240,660,{ip:'10.40.0.21'}),op2=k.dev('workstation','Operator 2',1360,660,{ip:'10.40.0.22'}),sup=k.dev('workstation','Supervisor',1480,520,{ip:'10.40.0.30'}),crsw=k.dev('switch','CR-SW',1300,500,{ip:'10.40.0.2'});
   for(const c of[anpr1,anpr2,ic,acr])k.link(gsw,c,'eth');k.link(acr,bar,'serial',{label:'relay'});for(const c of[t1,t2,ptz,b1,b2])k.link(psw,c,'eth');for(const c of domes)k.link(bsw,c,'eth');
   k.link(gsw,core,'fiber10',{label:'SM fibre 1.2 km',aPort:'Right'});k.link(psw,core,'fiber10',{label:'SM fibre 2.4 km',aPort:'Left'});k.link(bsw,core,'fiber10',{aPort:'Left',label:'SM fibre 0.6 km'});for(const n of[nvr1,nvr2,vms,ntp])k.link(core,n,'fiber10');k.link(core,crsw,'fiber10');for(const n of[vw,op1,op2,sup])k.link(crsw,n,'eth');
-  k.text('Analyze ▸ Stream traffic routes every camera to its nearest NVR and shows link load. Data ▸ Reports ▸ CCTV storage sizes retention; PoE budget checks each switch.',40,760,560,12);k.legend(40,840,6,true);return finish(d)},
+  k.text('Analyze ▸ Stream traffic routes every camera to its nearest NVR and shows link load. Data ▸ Reports ▸ CCTV storage sizes retention; PoE budget checks each switch.',40,760,560,12);k.legend(40,840,6);return finish(d)},
 
 ot(){const d=C.newDoc('OT / SCADA network (Purdue model)');d.meta={...d.meta,description:'IEC 62443-style zoning: enterprise, industrial DMZ, operations, supervisory, control and process levels.'};const p=d.pages[0];p.name='Purdue reference';p.paper='A2';const k=kit(d,p);const X=40,W=2165;
   const band=(name,y,h,lvl,sub,colors,note)=>{k.zone(name,X,y,W,h,{security:lvl,subnet:sub},{style:'tab',colors});if(note)k.text(note,90,y+60,560,13)};
@@ -99,7 +99,7 @@ ot(){const d=C.newDoc('OT / SCADA network (Purdue model)');d.meta={...d.meta,des
   for(const n of[scada1,scada2,hist,ews])k.link(ocore,n,'eth');k.link(ocore,ids,'mgmt',{label:'SPAN'});k.link(ocore,ring[2],'fiber10');k.link(ring[0],ring[1],'fiber10');k.link(ring[1],ring[2],'fiber10');k.link(ring[0],ring[2],'fiber10',{label:'ring (MRP)'});k.link(ring[0],hmi1,'eth');k.link(ring[0],hmi2,'eth');
   k.link(ring[0],radio,'eth');k.link(radio,rtu,'wireless',{label:'licensed radio'});k.link(ring[1],plc1,'eth');k.link(ring[1],plc2,'eth');k.link(ring[2],plc3,'eth');
   k.link(rtu,l0[0],'fieldbus');k.link(plc1,l0[1],'fieldbus');k.link(plc1,l0[2],'fieldbus');k.link(plc2,l0[3],'fieldbus',{label:'PROFINET'});k.link(plc3,l0[4],'fieldbus',{label:'Modbus RTU'});k.link(plc3,l0[5],'fieldbus');
-  k.legend(660,1150,3);return finish(d)},
+  k.legend(1480,72,8,true,'tr');return finish(d)},
 
 hybrid(){const d=C.newDoc('Hybrid cloud connectivity');d.meta={...d.meta,description:'On-premises data centre extended to a cloud region over IPsec and a private interconnect.'};const p=d.pages[0];p.name='Hybrid cloud';const k=kit(d,p);
   k.zone('On-premises',40,140,560,700,{subnet:'10.0.0.0/16'},{style:'header'});const reg=k.zone('Cloud region · eu-central',760,40,780,860,{},{style:'header',colors:['#f0f9ff','#7dd3fc']});k.zone('VPC 10.100.0.0/16',800,110,700,560,{subnet:'10.100.0.0/16'},{style:'tab',colors:['#ffffff','#38bdf8']});k.zone('Public subnet',840,170,620,170,{subnet:'10.100.1.0/24'},{colors:['#ecfdf5','#6ee7b7']});k.zone('Private subnet',840,380,620,250,{subnet:'10.100.10.0/24'},{colors:['#eff6ff','#93c5fd']});
@@ -109,7 +109,7 @@ hybrid(){const d=C.newDoc('Hybrid cloud connectivity');d.meta={...d.meta,descrip
   const obj=k.dev('objectstore','Object storage',920,780,{}),q=k.dev('queue','Message queue',1080,780,{}),cdn=k.dev('cdn','CDN',1240,780,{}),ic=k.dev('router','Private interconnect',660,430,{});
   k.link(users,fw,'eth');k.link(fw,core,'fiber10');for(const n of[ad,app,db])k.link(core,n,'eth');k.link(app,stor,'fiber10');k.link(db,stor,'fiber10');k.link(fw,inet,'internet');k.link(inet,igw,'internet');k.link(igw,lb,'eth');k.link(lb,waf,'eth');k.link(lb,a1,'eth');k.link(lb,a2,'eth');k.link(lb,k8,'eth');k.link(a1,pdb,'eth');k.link(a2,pdb,'eth');k.link(pdb,rdb,'logical',{label:'replication'});k.link(k8,q,'logical');k.link(fn,obj,'logical');k.link(cdn,lb,'logical');
   k.link(fw,vgw,'vpn',{label:'IPsec 2×1G',t:.2});k.link(core,ic,'wan',{label:'10G'});k.link(ic,a2,'wan',{label:'private interconnect',t:.25});
-  k.legend(40,890,3);return finish(d)},
+  k.legend(40,910,4);return finish(d)},
 
 office(){const d=C.newDoc('Small office network');d.meta={...d.meta,description:'Single-site office: fibre ONT, UTM firewall, PoE switch, Wi-Fi, VoIP, NAS and CCTV.'};const p=d.pages[0];p.name='Office LAN';const k=kit(d,p);
   k.zone('Office LAN',60,300,1460,630,{subnet:'192.168.10.0/24',gateway:'192.168.10.1'},{style:'header'});
@@ -117,7 +117,7 @@ office(){const d=C.newDoc('Small office network');d.meta={...d.meta,description:
   const xs=[212,377,542,707,872,1037,1202,1367],sp=[['wap','AP reception',{ip:'192.168.10.21',poeDraw:13,unitPrice:180}],['wap','AP office',{ip:'192.168.10.22',poeDraw:13,unitPrice:180}],['ipphone','VoIP phones ×8',{poeDraw:5}],['workstation','PCs ×12',{}],['printer','MFP printer',{ip:'192.168.10.40'}],['nas','NAS backup',{ip:'192.168.10.50',unitPrice:900}],['camera','CAM entrance',{ip:'192.168.10.61',bitrate:3,poeDraw:6}],['domecamera','CAM office',{ip:'192.168.10.62',bitrate:3,poeDraw:6}]].map(([t,n,dd],i)=>k.dev(t,n,xs[i],720,dd));
   const mob=k.dev('smartphone','Guest Wi-Fi',212,850,{}),lap=k.dev('laptop','Staff laptops',377,850,{});
   k.link(isp,ont,'internet');k.link(ont,fw,'eth');k.link(fw,sw,'eth',{label:'VLAN trunk'});for(const n of sp)k.link(sw,n,'eth');k.link(sw,nvr,'eth');k.link(sp[0],mob,'wireless');k.link(sp[1],lap,'wireless');
-  k.legend(60,960,3);const bg=background(d,p);p.background=bg.id;return finish(d)},
+  k.legend(60,935,4);const bg=background(d,p);p.background=bg.id;return finish(d)},
 };
 const LIST=[['campus','Enterprise campus','Dual-ISP perimeter, collapsed core, DMZ, data centre, floors + rack elevations'],['datacenter','Data centre leaf-spine','VXLAN fabric, border leaves, firewalls, compute pods'],['sdwan','SD-WAN branches','Hub-and-spoke over MPLS + Internet, LTE backup, remote access'],['cctv','CCTV / video surveillance','ANPR, thermal, PTZ, PoE switches, NVRs, control room — try stream analysis'],['ot','OT / SCADA (Purdue)','IEC 62443 levels 0–5, industrial DMZ, rings, PLCs and fieldbus'],['hybrid','Hybrid cloud','On-prem DC to a cloud VPC over IPsec and private interconnect'],['office','Small office','ONT, UTM firewall, PoE switch, Wi-Fi, VoIP, NAS and cameras']];
 return{list:()=>LIST.map(([id,name,description])=>({id,name,description})),build:id=>B[id]()};

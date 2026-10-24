@@ -4,8 +4,8 @@ let RCTX=null; // context of the scene currently being drawn (for {{field}} subs
 function layerOf(n,doc=S.doc){return doc.layers.find(l=>l.id===n.layer)||doc.layers[0]}
 function itemVisible(n,ctx){const L=layerOf(n,ctx.doc);if(L&&L.visible===false)return false;if(ctx.print&&L&&L.print===false)return false;return true}
 function makeCtx(page,{doc=S.doc,interactive=false,print=false,prefix='v',tag=false,fieldPage=null}={}){
-  const pageIndex=doc.pages.indexOf(page),fg=doc.pages.filter(p=>!p.isBackground),fp=fieldPage||page;
-  return{doc,page,fieldPage:fp,interactive,print,prefix,tag,pageIndex,pageNumber:Math.max(1,fg.indexOf(fp)+1),pageCount:fg.length,byId:new Map(page.items.map(n=>[n.id,n])),colors:colorMap(doc,page),bg:page.bg||'#ffffff',dim:interactive?S.filterFn:null,analysis:interactive?S.analysis:null}}
+  const pageIndex=doc.pages.findIndex(p=>p.id===page.id),fg=doc.pages.filter(p=>!p.isBackground),fp=fieldPage||page;
+  return{doc,page,fieldPage:fp,interactive,print,prefix,tag,pageIndex,pageNumber:Math.max(1,fg.findIndex(p=>p.id===fp.id)+1),pageCount:fg.length,byId:new Map(page.items.map(n=>[n.id,n])),colors:colorMap(doc,page),bg:page.bg||'#ffffff',dim:interactive?S.filterFn:null,analysis:interactive?S.analysis:null}}
 
 // ---------- {{field}} substitution ----------
 function resolveLabel(owner,l,ctx=RCTX){
@@ -109,25 +109,30 @@ function drawTable(n,g,ctx){
   if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}}
 
 function legendRows(n,page,ctx){
-  const rows=[],count=new Map(),links=new Map(),items=page.items.filter(i=>itemVisible(i,ctx));
-  if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1)}
+  const rows=[],count=new Map(),sample=new Map(),links=new Map(),items=page.items.filter(i=>itemVisible(i,ctx));
+  if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1);if(!sample.has(k))sample.set(k,i)}
   if(n.links!==false)for(const i of items)if(i.kind==='edge'){const k=Shapes.linkTypes[i.linkType]?i.linkType:'_'+i.stroke+'|'+(i.dash||'')+'|'+(i.double?1:0);const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
-  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c});
-  for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.name||'Connector',count:v.n});
+  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c,sample:sample.get(k)});
+  for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.short||Shapes.linkTypes[k]?.name||'Connector',count:v.n});
+  if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
   if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
   return rows}
-function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,counts=n.counts!==false,per=Math.max(3,n.maxRows||8),cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,cw=Math.max(150,...rows.map(r=>Core.textWidth(r.text+(counts&&r.count?'  ×'+r.count:''),size)+86));n.w=Math.max(n.minW||0,cols*cw+12);n.h=44+inCol*24+4;return{rows,size,counts,cols,inCol,cw}}
+// Legend layout: rows flow into columns of maxRows; each column is as wide as its longest entry.
+function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false,per=Math.max(3,n.maxRows||8),cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,colX=[],colW=[];
+  for(let c=0;c<cols;c++){const part=rows.slice(c*inCol,(c+1)*inCol);colW.push(Math.max(120,...part.map(r=>Core.textWidth(r.text,size)+(counts&&r.count?Core.textWidth(' ×'+r.count,size)+14:0)+64)));colX.push(c?colX[c-1]+colW[c-1]:0)}
+  const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,colX.at(-1)+colW.at(-1)+12);n.h=40+inCol*rh+6;return{rows,size,rh,counts,inCol,colX,colW}}
 function drawLegend(n,g,ctx,page){
-  const{rows,size,counts,inCol,cw}=legendMeasure(n,page,ctx),rh=24;
+  const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx);
   el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill||ctx.bg,stroke:n.stroke||'#a2b2c6','stroke-width':1},g);
   const title=el('text',{x:n.x+14,y:n.y+24,'font-family':Core.FONT,'font-size':13,'font-weight':700,fill:n.color||'#34465e','letter-spacing':.6},g);title.textContent=n.title||'LEGEND';
-  rows.forEach((r,i)=>{const col=Math.floor(i/inCol),x0=n.x+6+col*cw,y=n.y+38+(i%inCol)*rh,cy=y+rh/2;
-    if(col)el('line',{x1:x0-3,y1:n.y+38,x2:x0-3,y2:n.y+n.h-8,stroke:n.stroke||'#a2b2c6','stroke-opacity':.5},g);
-    if(r.kind==='device'){const holder=el('g',{transform:`translate(${x0+8} ${y+2})`},g);holder.innerHTML=Shapes.iconSvg(r.type,{size:30,display:'symbol',accent:ctx.doc.theme==='noc'||ctx.doc.theme==='blueprint'?'#7dd3fc':'#2f5ea8',fill:ctx.bg})}
-    else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+42}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
-    else el('rect',{x:x0+14,y:cy-7,width:22,height:14,rx:3,fill:r.color},g);
-    const t=el('text',{x:x0+54,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
-    if(counts&&r.count){const c=el('text',{x:x0+cw-14,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e','fill-opacity':.6},g);c.textContent='×'+r.count}});
+  rows.forEach((r,i)=>{const col=Math.floor(i/inCol),x0=n.x+6+colX[col],cw=colW[col],y=n.y+36+(i%inCol)*rh,cy=y+rh/2;
+    if(col&&i%inCol===0)el('line',{x1:x0-2,y1:n.y+38,x2:x0-2,y2:n.y+n.h-8,stroke:n.stroke||'#a2b2c6','stroke-opacity':.45},g);
+    if(r.kind==='device'){const s=r.sample,holder=el('g',{transform:`translate(${x0+8} ${y+1})`},g);holder.innerHTML=Shapes.iconSvg(r.type,{size:26,display:s?.display==='card'?'symbol':s?.display||'symbol',accent:(s&&colorFor(s,ctx))||s?.stroke||'#2f5ea8',fill:s?.fill&&s.fill!=='none'?s.fill:ctx.bg})}
+    else if(r.kind==='zone')el('rect',{x:x0+12,y:cy-7,width:24,height:14,rx:3,fill:r.zone.fill,stroke:r.zone.stroke,'stroke-dasharray':r.zone.dash?'3 2':null},g);
+    else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+40}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
+    else el('rect',{x:x0+12,y:cy-6,width:22,height:12,rx:3,fill:r.color},g);
+    const t=el('text',{x:x0+50,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
+    if(counts&&r.count){const c=el('text',{x:x0+cw-10,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size-1,fill:n.color||'#34465e','fill-opacity':.55},g);c.textContent='×'+r.count}});
   if(ctx.interactive)el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}
 
 function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return null;const id=`${ctx.prefix}-m-${e.id}-${side}`,m=el('marker',{id,viewBox:'-8 -6 12 12',refX:0,refY:0,markerWidth:7,markerHeight:7,markerUnits:'strokeWidth',orient:'auto-start-reverse',overflow:'visible'},defs);
@@ -154,7 +159,7 @@ function drawLabel(owner,l,parent,ctx){
 // ---------- standalone SVG (export, print, thumbnails) ----------
 function sceneSvg(page,{doc=S.doc,print=true,pad=15,area=null,prefix='o'}={}){
   const root=document.createElementNS(NS,'svg');root.setAttribute('xmlns',NS);
-  const ctx=makeCtx(page,{doc,print,prefix}),bgPage=page.background&&doc.pages.find(p=>p.id===page.background);
+  const ctx=makeCtx(page,{doc,print,prefix}),bgSrc=page.background&&doc.pages.find(p=>p.id===page.background),bgPage=bgSrc&&bgSrc!==page?Constraints.bgView(bgSrc,page):null;
   RCTX=ctx;for(const n of page.items)if(n.kind==='legend')legendMeasure(n,page,ctx);RCTX=null;
   const all=[...page.items,...(bgPage?bgPage.items:[])].filter(n=>itemVisible(n,ctx));
   const b=area||(all.length?Core.bounds(all,true):{x:0,y:0,...Core.pageSize(page)});const vb=[b.x-pad,b.y-pad,b.w+pad*2,b.h+pad*2];
@@ -180,7 +185,7 @@ function renderNow(){
     if(S.prefs.grid){const step=gridStep(),k=step*z<7?5:1,gs=step*k,p=el('pattern',{id:'gridPattern',width:gs,height:gs,patternUnits:'userSpaceOnUse'},el('defs',{},pl));const light=isDarkColor(pg().bg);el('path',{d:`M${gs} 0H0V${gs}`,fill:'none',stroke:light?'#ffffff':'#3b5b8c','stroke-opacity':light?.08:.09,'stroke-width':1/z},p);el('rect',{x:0,y:0,width:b.w,height:b.h,fill:'url(#gridPattern)','pointer-events':'none'},pl)}
     el('rect',{x:m,y:m,width:b.w-2*m,height:b.h-2*m,fill:'none',stroke:'#93a9c6','stroke-opacity':.7,'stroke-dasharray':'5 5','stroke-width':1/z,'pointer-events':'none'},pl);
     if(S.prefs.guides)for(const gl of pg().guideLines||[])el('line',{x1:gl.axis==='x'?gl.pos:-5000,y1:gl.axis==='y'?gl.pos:-5000,x2:gl.axis==='x'?gl.pos:5000,y2:gl.axis==='y'?gl.pos:5000,stroke:'#9b70c6','stroke-width':1.2/z,'stroke-dasharray':`${8/z} ${5/z}`,'data-role':'guide','data-guide':gl.id,cursor:gl.axis==='x'?'ew-resize':'ns-resize'},pl);
-    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg())drawScene(el('g',{opacity:.9},bgl),bgPage,makeCtx(bgPage,{prefix:'bg',fieldPage:pg()}));
+    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg()){const v=Constraints.bgView(bgPage,pg());drawScene(el('g',{opacity:.9},bgl),v,makeCtx(v,{prefix:'bg',fieldPage:pg()}))}
     drawScene(world,pg(),makeCtx(pg(),{interactive:true}));scheduleMinimap();
   }
   renderOverlay();renderRulers();updateMinimapView();
