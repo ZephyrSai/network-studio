@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stencil Preview</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --panel:#ffffff; --panel-alt:#f8f9fc; --text:#1d2533; --muted:#6a7486;
+    --line:#dde3ec; --chip:#eef2f8; --focus:#2f5ea8; --conn:#d04a4a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f141d; --panel:#171e2a; --panel-alt:#1b2330; --text:#e4e9f2; --muted:#8e99ad;
+      --line:#2a3445; --chip:#222c3b; --focus:#7aa2e0; --conn:#e06b6b;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f141d; --panel:#171e2a; --panel-alt:#1b2330; --text:#e4e9f2; --muted:#8e99ad;
+    --line:#2a3445; --chip:#222c3b; --focus:#7aa2e0; --conn:#e06b6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+  header h1{font-size:16px;margin:0 8px 0 0;font-weight:650}
+  header .stat{color:var(--muted);font-size:12px}
+  header label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+  input[type=search]{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-width:180px;font:inherit}
+  input[type=color]{width:34px;height:26px;border:1px solid var(--line);border-radius:6px;padding:0;background:none}
+  button{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}
+  button:hover{border-color:var(--focus)}
+  main{padding:8px 16px 40px;max-width:1500px;margin:0 auto}
+  #issues{margin:12px 0;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font:12px/1.5 Menlo,Consolas,monospace;white-space:pre-wrap}
+  #issues.ok{color:var(--muted)}
+  #issues.bad{border-color:var(--conn);color:var(--conn)}
+  section h2{font-size:15px;margin:22px 0 10px;display:flex;align-items:baseline;gap:8px}
+  section h2 span{color:var(--muted);font-weight:400;font-size:12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,670px),1fr));gap:10px}
+  .item{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;gap:12px;align-items:center;min-width:0}
+  .meta{width:140px;flex:0 0 140px;min-width:0}
+  .meta b{display:block;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .meta code{display:block;font:11px Menlo,Consolas,monospace;color:var(--muted);margin-top:2px}
+  .meta small{display:block;color:var(--muted);font-size:11px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cells{display:flex;flex-wrap:wrap;gap:8px;flex:1;min-width:0}
+  .cell{width:92px;height:96px;flex:0 0 auto;border-radius:8px;background:var(--panel-alt);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;overflow:hidden}
+  .cell .stage{flex:1;display:flex;align-items:center;justify-content:center;width:100%;position:relative}
+  .cell em{font-style:normal;font-size:10px;color:var(--muted);padding-bottom:4px}
+  .conn .cell.sym .stage::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:1.5px solid var(--conn)}
+  .conn .cell.sym .stage::after{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1.5px solid var(--conn)}
+  .stage>*{position:relative;z-index:1}
+  .card{background:#fff;border:1.5px solid #c9d5e6;border-radius:8px;display:flex;align-items:center;justify-content:center}
+  .tile,.circle{display:flex;align-items:center;justify-content:center}
+  .circle{border-radius:50%}
+  svg{display:block}
+  @media (max-width:560px){ .item{flex-direction:column;align-items:flex-start} .meta{width:auto;flex:none} }
+</style>
+</head>
+<body>
+<header>
+  <h1>Port Network Studio · Stencils</h1>
+  <span class="stat" id="stat"></span>
+  <input type="search" id="q" placeholder="Filter by id, name or tag" aria-label="Filter stencils">
+  <label>Accent <input type="color" id="accent" value="#2f5ea8"></label>
+  <label><input type="checkbox" id="conn"> Connector test</label>
+  <button id="theme" type="button">Toggle dark</button>
+</header>
+<main>
+  <div id="issues"></div>
+  <div id="out"></div>
+</main>
+<script src="../js/stencils.js"></script>
+<script>
+(function(){
+  'use strict';
+  // `const Stencils` in a classic script is a global lexical binding, not a window property.
+  var S = (typeof Stencils !== 'undefined') ? Stencils : window.Stencils;
+  if (!S) { document.getElementById('issues').textContent = 'Could not load ../js/stencils.js'; return; }
+  var out = document.getElementById('out');
+  var root = document.documentElement;
+  var accent = '#2f5ea8';
+
+  try { var t = localStorage.getItem('stencilPreviewTheme'); if (t) root.setAttribute('data-theme', t); } catch (e) {}
+  try { var a = localStorage.getItem('stencilPreviewAccent'); if (a) { accent = a; document.getElementById('accent').value = a; } } catch (e) {}
+
+  // Exactly the editor's wrapper.
+  function wrap(sh, w, h, fill, acc){
+    return '<svg viewBox="' + sh.vb + '" preserveAspectRatio="xMidYMid meet" width="' + w + '" height="' + h + '">' +
+      '<g fill="' + fill + '" stroke="currentColor" color="' + acc + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      sh.svg + '</g></svg>';
+  }
+  function cell(cls, label, inner){
+    return '<div class="cell ' + cls + '"><div class="stage">' + inner + '</div><em>' + label + '</em></div>';
+  }
+  // Fit a w×h stencil into the 100×72 preview stage, preserving its default size where possible.
+  function fit(w, h, max){ var k = Math.min(1, max / Math.max(w, h)); return [w * k, h * k]; }
+
+  function render(){
+    var q = document.getElementById('q').value.trim().toLowerCase();
+    var html = '', shown = 0;
+    S.categories.forEach(function(c){
+      var ids = Object.keys(S.shapes).filter(function(id){
+        var s = S.shapes[id];
+        if (s.cat !== c.id) return false;
+        if (!q) return true;
+        return (id + ' ' + s.name + ' ' + s.tags).toLowerCase().indexOf(q) >= 0;
+      });
+      if (!ids.length) return;
+      shown += ids.length;
+      html += '<section><h2>' + c.name + ' <span>' + c.id + ' · ' + ids.length + '</span></h2><div class="grid">';
+      ids.forEach(function(id){
+        var s = S.shapes[id];
+        var d = fit(s.w, s.h, 72), w = d[0], h = d[1];
+        var sym = wrap(s, w, h, '#ffffff', accent);
+        var card = '<div class="card" style="width:' + w + 'px;height:' + h + 'px">' + wrap(s, w * 0.7, h * 0.7, '#ffffff', accent) + '</div>';
+        // Insets match js/render.js: card 15%, tile 16%, circle 22% per side; circle is a w×h ellipse.
+        var tile = '<div class="tile" style="width:' + w + 'px;height:' + h + 'px;border-radius:' + (Math.min(w, h) * 0.2) + 'px;background:' + accent + '">' +
+          wrap(s, w * 0.68, h * 0.68, accent, '#ffffff') + '</div>';
+        var circ = '<div class="circle" style="width:' + w + 'px;height:' + h + 'px;background:' + accent + '">' +
+          wrap(s, w * 0.56, h * 0.56, accent, '#ffffff') + '</div>';
+        var small = wrap(s, s.w * 32 / Math.max(s.w, s.h), s.h * 32 / Math.max(s.w, s.h), '#ffffff', accent);
+        html += '<div class="item"><div class="meta"><b title="' + s.name + '">' + s.name + '</b><code>' + id + ' · t' + s.tier + ' · ' + s.w + '×' + s.h + '</code>' +
+          '<small title="' + s.tags + '">' + s.tags + '</small></div><div class="cells">' +
+          cell('sym', 'symbol', sym) + cell('', 'card', card) + cell('', 'tile', tile) + cell('', 'circle', circ) + cell('sym', '32px', small) +
+          '</div></div>';
+      });
+      html += '</div></section>';
+    });
+    out.innerHTML = html || '<p>No stencils match.</p>';
+    document.getElementById('stat').textContent = shown + ' of ' + Object.keys(S.shapes).length + ' stencils · ' + S.categories.length + ' categories';
+  }
+
+  // Lightweight contract checks, mirrored from the Node validator.
+  function validate(){
+    var cats = {}, msgs = [];
+    S.categories.forEach(function(c){ cats[c.id] = 1; });
+    Object.keys(S.shapes).forEach(function(id){
+      var s = S.shapes[id], p = id + ': ';
+      ['name','cat','w','h','vb','tier','tags','svg'].forEach(function(f){ if (s[f] === undefined || s[f] === '') msgs.push(p + 'missing ' + f); });
+      if (!cats[s.cat]) msgs.push(p + 'unknown category ' + s.cat);
+      var vb = String(s.vb).split(/\s+/).map(Number);
+      if (vb.length !== 4 || Math.abs((vb[2] / vb[3]) / (s.w / s.h) - 1) > 0.02) msgs.push(p + 'vb aspect differs from w:h');
+      if (/#[0-9a-f]{3,8}\b|\b(white|black|rgb|hsl)\b/i.test(s.svg)) msgs.push(p + 'hard-coded colour');
+      if (/<(text|tspan|g|use|defs|image|style|filter|mask|clipPath|linearGradient|radialGradient)\b|\sid=|\sstyle=|url\(/i.test(s.svg)) msgs.push(p + 'forbidden element/attribute');
+      if (/transform="(?!rotate\()/i.test(s.svg)) msgs.push(p + 'non-rotate transform');
+      var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + s.svg + '</svg>', 'image/svg+xml');
+      if (doc.getElementsByTagName('parsererror').length) msgs.push(p + 'markup does not parse');
+    });
+    var el = document.getElementById('issues');
+    el.className = msgs.length ? 'bad' : 'ok';
+    el.textContent = msgs.length ? msgs.length + ' issue(s):\n' + msgs.join('\n') : 'Contract checks passed: fields, categories, vb aspect, colours, elements, XML.';
+  }
+
+  document.getElementById('q').addEventListener('input', render);
+  document.getElementById('accent').addEventListener('input', function(e){
+    accent = e.target.value; try { localStorage.setItem('stencilPreviewAccent', accent); } catch (err) {}
+    render();
+  });
+  document.getElementById('conn').addEventListener('change', function(e){ out.classList.toggle('conn', e.target.checked); });
+  document.getElementById('theme').addEventListener('click', function(){
+    var cur = root.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('stencilPreviewTheme', next); } catch (e) {}
+  });
+
+  validate();
+  render();
+})();
+</script>
+</body>
+</html>

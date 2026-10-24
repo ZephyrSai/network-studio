@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Port Network Studio</title>
+<meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
+<meta name="theme-color" content="#376be5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/app.css?v=4a69e5fc">
+<style id="printRules"></style>
+</head>
+<body>
+<header class="top">
+  <div class="brand" title="Port Network Studio">port<b>•</b><span>network studio</span></div>
+  <div class="doc"><input id="docName" aria-label="Drawing name" spellcheck="false"><div class="sub" id="saveState">Ready</div></div>
+  <div class="spacer"></div>
+  <button class="tbtn" data-action="new" title="New from template (Ctrl+N)"><span class="i" data-icon="template"></span><span>Templates</span></button>
+  <button class="tbtn" data-action="open" title="Open (Ctrl+O)"><span class="i" data-icon="open"></span><span>Open</span></button>
+  <button class="tbtn primary" data-action="save" title="Save (Ctrl+S)"><span class="i" data-icon="save"></span><span>Save</span></button>
+  <button class="tbtn" data-action="exportVsdx" title="Export to Microsoft Visio (.vsdx)"><span class="i" data-icon="visio"></span><span>Visio</span></button>
+  <button class="tbtn" data-action="share" title="Copy a share link (the drawing travels inside the link)"><span class="i" data-icon="share"></span><span>Share</span></button>
+  <button class="tbtn" data-action="present" title="Present (full screen)"><span class="i" data-icon="present"></span></button>
+  <button class="tbtn" data-action="palette" title="Command palette (Ctrl+K)"><span class="i" data-icon="command"></span></button>
+  <button class="tbtn" data-action="help" title="Guide"><span class="i" data-icon="help"></span></button>
+</header>
+<nav class="ribbonTabs" id="ribbonTabs" aria-label="Ribbon"></nav>
+<div class="ribbon" id="ribbon" role="toolbar"></div>
+<div class="layout">
+  <aside class="left" id="leftPanel">
+    <div class="ltabs"><button data-ltab="shapes" class="active">Shapes</button><button data-ltab="icons" title="Search 200,000+ open-source icons online">Icons</button><button data-ltab="layers">Layers</button><button data-ltab="explorer">Explorer</button></div>
+    <div id="shapesPane" class="pane">
+      <div class="searchRow"><input id="search" placeholder="Search shapes — fw, nvr, ap…" aria-label="Search shapes" autocomplete="off"><select id="paletteDisplay" title="Palette preview style"><option value="symbol">Symbol</option><option value="tile">Tile</option><option value="circle">Circle</option></select></div>
+      <div class="row packBar"><button data-action="importShapes" title="SVG files, a folder, a ZIP of icons (e.g. vendor packs), a draw.io library or images">＋ Import shapes</button><button data-action="managePacks" title="Rename, export or remove shape packs">Packs…</button></div>
+      <div id="palette"></div>
+    </div>
+    <div id="iconsPane" class="pane" hidden>
+      <div class="searchRow"><input id="iconSearch" placeholder="Search icons online — router, cctv, aws…" autocomplete="off"><select id="iconSet" title="Icon sets"><option value="network">IT &amp; general</option><option value="brands">Brands &amp; logos</option><option value="all">All sets</option></select></div>
+      <div id="iconResults"></div>
+    </div>
+    <div id="layersPane" class="pane" hidden></div>
+    <div id="explorerPane" class="pane" hidden><input id="explorerSearch" placeholder="Filter by name, IP, model…" autocomplete="off"><div id="explorerList"></div></div>
+  </aside>
+  <main id="workarea" class="workarea">
+    <canvas id="rulerX" class="ruler x"></canvas><canvas id="rulerY" class="ruler y"></canvas><div class="rulerCorner" data-action="toggle_rulers" title="Hide rulers"></div>
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg" aria-label="Drawing canvas"><g id="pageLayer"></g><g id="bgLayer"></g><g id="scene"></g><g id="overlay"></g></svg>
+    <div id="hint"></div>
+    <div id="toast" hidden role="status"></div>
+    <textarea id="inlineText" hidden aria-label="Edit text"></textarea>
+    <div id="minimap" title="Overview — click or drag to navigate"><svg id="miniSvg" preserveAspectRatio="xMidYMid meet"><g id="miniScene"></g><rect id="miniView" fill="#376be522" stroke="#376be5"></rect></svg></div>
+    <div class="presentBar"><button onclick="presentStep(-1)">◀</button><span id="presentPage"></span><button onclick="presentStep(1)">▶</button><button data-action="present">Exit</button></div>
+  </main>
+  <aside class="right" id="rightPanel">
+    <div class="inspHead"><h2 id="inspectorTitle">Page</h2><div id="inspectorTabs" class="itabs"></div></div>
+    <div id="inspector"></div>
+  </aside>
+</div>
+<footer class="status">
+  <div id="pageTabs" class="pageTabs"></div>
+  <div class="spacer"></div>
+  <span id="selectionCount">Ready</span>
+  <span id="cursorPos" class="mono">0 , 0 mm</span>
+  <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
+  <span id="pageInfo"></span>
+  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-330" max="300" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit page">Fit</button></div>
+</footer>
+
+<div id="contextMenu" class="menu" hidden></div>
+<div id="fileMenu" class="menu fileMenu" hidden></div>
+<input id="fileInput" type="file" accept=".json,.csv,.txt,image/*" hidden>
+<input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
+<input id="libraryInput" type="file" accept=".json" hidden>
+<input id="shapeInput" type="file" accept=".svg,.zip,.xml,.drawio,.json,.png,.jpg,.jpeg,.gif,.webp" multiple hidden>
+<input id="folderInput" type="file" webkitdirectory multiple hidden>
+<div id="printPreview" hidden><div class="previewbar"><strong>Print preview</strong><span id="printWarning" class="muted"></span><div class="spacer"></div><button data-action="closePrint">Back to drawing</button><button data-action="printNow" class="primary">Print / Save as PDF</button></div><div id="printPages"></div></div>
+<dialog id="dlg"></dialog>
+<noscript>Port Network Studio needs JavaScript.</noscript>
+
+<script src="js/core.js?v=86f4cf9b"></script>
+<script src="js/stencils.js?v=51c82413"></script>
+<script src="js/packs/extended.js?v=05ccca0c"></script>
+<script src="js/shapes.js?v=abb06e09"></script>
+<script src="js/icons.js?v=8b2bdc5b"></script>
+<script src="js/router.js?v=0c90e0a3"></script>
+<script src="js/layout.js?v=51056f31"></script>
+<script src="js/connectors.js?v=b2de2b0d"></script>
+<script src="js/vsdx.js?v=1795b2a5"></script>
+<script src="js/render.js?v=d17def8e"></script>
+<script src="js/analysis.js?v=156b40b9"></script>
+<script src="js/io.js?v=d71aa394"></script>
+<script src="js/packs.js?v=85a99e86"></script>
+<script src="js/builder.js?v=e4933f6d"></script>
+<script src="js/templates.js?v=fe539e78"></script>
+<script src="js/app.js?v=870adc5b"></script>
+<script src="js/inspector.js?v=a3253af2"></script>
+<script src="js/actions.js?v=4184830a"></script>
+<script src="js/panels.js?v=0d427483"></script>
+<script src="js/workspace.js?v=ca2e8f8f"></script>
+<script src="js/main.js?v=4a2518c2"></script>
+</body>
+</html>
