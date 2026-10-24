@@ -52,7 +52,26 @@ const Constraints=(()=>{
 
   // ---------- entry points ----------
   // After every edit: containers first (they change content bounds), then the page, then the pins.
-  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);const r=page.isBackground?null:autoSize(page,doc);if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
+  const FIT_DEFAULTS={mode:'free',pad:10,round:5,orient:'auto',reserve:true};
+  // Page hugs the drawing: content is moved to margin+padding, the sheet is sized around it (free size rounded up,
+  // or the smallest standard sheet), leaving room below/above for pinned title blocks and legends if asked.
+  function fitPage(page,doc,opt={}){opt={...FIT_DEFAULTS,...page.fit,...opt};const content=page.items.filter(n=>!n.pin);if(!content.length)return null;
+    const pinned=page.items.filter(n=>n.pin),offs=new Map(pinned.map(n=>[n,offsets(n,area(page))])),before={paper:page.paper,w:page.customW,h:page.customH,o:page.orientation};
+    const b=C.bounds(content,true),m=page.margin*C.PX,pad=Math.max(0,+opt.pad||0)*C.PX;
+    const a0=area(page),blocks=blockers(page,doc),room=(side)=>opt.reserve?Math.max(0,...blocks.filter(n=>n.pin.includes(side)).map(n=>{const o=offsets(n,a0);return(side==='b'?o.b:o.t)+C.box(n).h+8-pad})):0,below=room('b'),above=room('t');
+    let w=b.w+2*(m+pad),h=b.h+2*(m+pad)+below+above,ox=m+pad,oy=m+pad+above;
+    if(opt.mode==='paper'){let best=null;for(const paper of[...SERIES.A,...SERIES.US])for(const orientation of opt.orient==='auto'?['landscape','portrait']:[page.orientation]){const s=C.pageSize({...page,paper,orientation});if(s.w+.5>=w&&s.h+.5>=h&&(!best||s.w*s.h<best.s.w*best.s.h))best={paper,orientation,s}}
+      if(best){page.paper=best.paper;page.orientation=best.orientation;ox+=(best.s.w-w)/2;oy+=(best.s.h-h)/2}else opt.mode='free'}
+    if(opt.mode!=='paper'){const r=Math.max(1,+opt.round||1),W=Math.ceil(w/C.PX/r)*r,H=Math.ceil(h/C.PX/r)*r;page.paper='Custom';page.customW=Math.max(50,W);page.customH=Math.max(50,H);page.orientation=W>=H?'landscape':'portrait';ox+=(page.customW*C.PX-w)/2;oy+=(page.customH*C.PX-h)/2}
+    const dx=Math.round((ox-b.x)*100)/100,dy=Math.round((oy-b.y)*100)/100;if(Math.abs(dx)>.01||Math.abs(dy)>.01){for(const n of content)C.move(n,dx,dy);for(const g of page.guideLines||[])g.pos+=g.axis==='x'?dx:dy}
+    page.minPaper=page.paper;if(page.paper==='Custom'){page.minW=page.customW;page.minH=page.customH}
+    const a=area(page);for(const n of pinned)place(n,a,offs.get(n));
+    return{shift:Math.abs(dx)>.01||Math.abs(dy)>.01?[dx,dy]:null,resized:before.paper!==page.paper||before.w!==page.customW||before.h!==page.customH||before.o!==page.orientation}}
+  function measureLegends(page,doc){if(typeof legendMeasure!=='function')return'';let sig='';for(const n of page.items)if(n.kind==='legend'){const prev=RCTX;RCTX=makeCtx(page,{doc});legendMeasure(n,page,RCTX);RCTX=prev;sig+=n.w+'x'+n.h+';'}return sig}
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
+    // legends may re-wrap when the page width changes, which can change the room they need: settle in ≤3 passes
+    for(let i=0;i<3;i++){const ri=page.isBackground?null:page.autoSize==='fit'?fitPage(page,doc):autoSize(page,doc);if(ri){r=r?{shift:ri.shift?[(r.shift?.[0]||0)+ri.shift[0],(r.shift?.[1]||0)+ri.shift[1]]:r.shift,resized:r.resized||ri.resized}:ri}const s2=measureLegends(page,doc);if(s2===sig)break;sig=s2}
+    if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
   function pinNow(n,page,pin){n.pin=pin||undefined;if(!pin){delete n.pin;return}place(n,area(page),offsets(n,area(page)))}
   // Drawings saved before pinning existed: recognise borders, field-driven title blocks and legends and pin them,
   // measuring against the sheet size they were laid out for (the current size or any smaller standard sheet).
@@ -63,5 +82,7 @@ const Constraints=(()=>{
         const fielded=it.kind==='table'&&it.rows?.some(r=>r.some(c=>String(c).includes('{{'))),legend=it.kind==='legend';if(!fielded&&!legend)continue;
         for(const a of areas){const o=offsets(it,a),tol=legend?.28:.12,v=o.b<o.t?'b':'t',h=o.r<o.l?'r':'l';if(Math.min(o.b,o.t)<a.h*tol&&Math.min(o.r,o.l)<a.w*tol&&Math.min(o.b,o.t)>-8&&Math.min(o.r,o.l)>-8){it.pin=v+h;place(it,cur,o);n++;break}}}}
     doc.meta??={};doc.meta.pinsUpgraded=true;return n}
-  return{upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
+  // Width a pinned block may use along its edge without running under other blocks pinned to the same edge.
+  function availableWidth(page,doc,n){const a=area(page);if(!n.pin||n.pin==='frame')return Infinity;const edge=n.pin.includes('b')?'b':'t';return a.w-blockers(page,doc).filter(o=>o.id!==n.id&&o.pin.includes(edge)).reduce((s,o)=>s+C.box(o).w+16,0)}
+  return{availableWidth,FIT_DEFAULTS,fitPage,upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
 })();

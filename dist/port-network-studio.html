@@ -13,7 +13,8 @@
 :root[data-theme=dark]{--blue:#5b8cff;--blue-soft:#1b2a4a;--blue-line:#3b5b9a;--bg:#0d121b;--panel:#141b27;--panel2:#18202e;--border:#253043;--text:#ccd6e4;--strong:#eef3fa;--muted:#8392a8;--hover:#1c2738;--input:#0f1520;--ruler:#121925;--ruler-tick:#4c5b72;--pasteboard:#0a0f17;--shadow:0 8px 30px #0008;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{--hh:52px;--th:32px;--rh:78px;--sh:30px;margin:0;overflow:hidden;font:13px/1.35 var(--font);color:var(--text);background:var(--bg);display:grid;grid-template-rows:var(--hh) var(--th) var(--rh) minmax(0,1fr) var(--sh);-webkit-font-smoothing:antialiased}
+body{--hh:52px;--th:32px;--rh:78px;--sh:30px;margin:0;overflow:hidden;font:13px/1.35 var(--font);color:var(--text);background:var(--bg);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:var(--hh) var(--th) var(--rh) minmax(0,1fr) var(--sh);-webkit-font-smoothing:antialiased}
+body>header.top{grid-row:1}body>.ribbonTabs{grid-row:2}body>.ribbon{grid-row:3}body>.layout{grid-row:4}body>footer.status{grid-row:5}
 body.noHeader{--hh:0px}body.noHeader header.top{display:none}
 body.ribbonCollapsed{--rh:0px}body.ribbonCollapsed .ribbon{display:none}
 body.ribbonCollapsed.ribbonPeek .ribbon{display:flex;position:fixed;left:0;right:0;top:calc(var(--hh) + var(--th));height:78px;z-index:45;box-shadow:var(--shadow)}
@@ -41,7 +42,7 @@ code{font-size:11.5px;background:var(--panel2);padding:1px 4px;border-radius:3px
 .ico{flex:none;display:block}
 
 /* header */
-header.top{display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+header.top{display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border);min-width:0;overflow:hidden}
 .brand{font-size:22px;font-weight:750;letter-spacing:-1px;color:var(--strong);display:flex;align-items:baseline;gap:2px;padding-right:12px}
 .brand b{color:var(--blue)}.brand span{font-size:11px;letter-spacing:.4px;font-weight:600;color:var(--muted);margin-left:6px;text-transform:uppercase}
 .doc{border-left:1px solid var(--border);padding-left:14px;min-width:160px}
@@ -54,7 +55,7 @@ header.top{display:flex;align-items:center;gap:8px;padding:0 12px;background:var
 .tbtn .i{display:flex}
 
 /* ribbon */
-.ribbonTabs{display:flex;align-items:flex-end;gap:2px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--border)}
+.ribbonTabs{display:flex;align-items:flex-end;gap:2px;padding:0 10px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;overflow-y:hidden;scrollbar-width:none}.ribbonTabs::-webkit-scrollbar{display:none}.ribbonTabs>*{flex:none}
 .ribbonTabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:6px 12px 6px;font-weight:550;color:var(--muted)}
 .ribbonTabs button.active{color:var(--blue);border-bottom-color:var(--blue);background:none}
 .ribbonTabs .fileBtn{background:var(--blue);color:#fff;border-radius:6px 6px 0 0;margin-right:6px;border-bottom:0}
@@ -120,7 +121,7 @@ details.cat>summary em{font-style:normal;font-weight:500;letter-spacing:0;margin
 .presentBar{display:none}
 
 /* status bar & page tabs */
-footer.status{display:flex;align-items:center;gap:12px;padding:0 10px 0 6px;background:var(--panel);border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);min-width:0}
+footer.status{display:flex;align-items:center;gap:12px;padding:0 10px 0 6px;background:var(--panel);border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);min-width:0;overflow:hidden}
 footer.status>span{white-space:nowrap}
 .pageTabs{display:flex;gap:2px;overflow-x:auto;max-width:55%;scrollbar-width:none;height:100%;align-items:stretch}
 .pageTabs button{border:0;border-radius:0;border-top:2px solid transparent;background:none;font-size:12px;padding:3px 12px;color:var(--muted)}
@@ -284,7 +285,7 @@ body.presenting .presentBar:hover{opacity:1}
 body.presenting .presentBar button{border-radius:20px}
 
 @media (max-width:1250px){.layout{grid-template-columns:210px minmax(200px,1fr) 270px}.tbtn span:not(.i){display:none}.doc input{width:220px}}
-@media (max-width:860px){body{--hh:48px;--rh:70px}body.noHeader{--hh:0px}body.ribbonCollapsed{--rh:0px}body.noStatus{--sh:0px}.layout{grid-template-columns:0 1fr 0}.workarea{grid-column:1/-1}aside.left,aside.right{position:fixed;top:182px;bottom:30px;width:280px;z-index:40;box-shadow:var(--shadow);display:none}aside.left{left:0}aside.right{right:0}body.showLeft aside.left,body.showRight aside.right{display:flex;flex-direction:column}.brand span,.doc .sub,#cursorPos,#pageInfo,.layerPick{display:none}.doc input{width:130px}#minimap{display:none}.two{grid-template-columns:1fr}}
+@media (max-width:860px){body{--hh:48px;--rh:70px}header.top>.tbtn:nth-last-of-type(-n+5){display:none}.tabDoc{display:none}footer.status{gap:6px}#selectionCount,#zoomRange{display:none}body.noHeader{--hh:0px}body.ribbonCollapsed{--rh:0px}body.noStatus{--sh:0px}.layout{grid-template-columns:0 1fr 0}.workarea{grid-column:1/-1}aside.left,aside.right{position:fixed;top:calc(var(--hh) + var(--th) + var(--rh));bottom:var(--sh);width:280px;z-index:40;box-shadow:var(--shadow);display:none}aside.left{left:0}aside.right{right:0}body.showLeft aside.left,body.showRight aside.right{display:flex;flex-direction:column}.brand span,.doc .sub,#cursorPos,#pageInfo,.layerPick{display:none}.doc{min-width:0;padding-left:10px}.doc input{width:104px}#minimap{display:none}.two{grid-template-columns:1fr}}
 @media print{body{overflow:visible;background:#fff;display:block}body>*{display:none!important}body>#printPreview{display:block!important;position:static;background:#fff;overflow:visible}#printPreview>.previewbar{display:none!important}#printPages{display:block;padding:0}.print-sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}.print-sheet:last-child{break-after:auto;page-break-after:auto}}
 
 /* packs, workspace, online icons */
@@ -318,11 +319,17 @@ details.packCat>summary{color:var(--blue)}
 .chromeBtns button{border:0;background:none;padding:3px 5px;border-radius:5px;color:var(--muted);display:flex}
 .chromeBtns button:hover{background:var(--hover);color:var(--text)}
 .chromeBtns button.on{color:var(--blue)}
+.ribbonTabs .tabDoc{flex:0 1 auto;min-width:0}.ribbonTabs .chromeBtns{position:sticky;right:0;background:var(--panel);padding-left:4px;box-shadow:12px 0 0 var(--panel)}
 .tabDoc{font-size:12px;font-weight:600;color:var(--strong);padding:0 10px 7px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;align-self:flex-end}
 .focusExit{position:absolute;top:28px;right:12px;z-index:6;display:none;border-radius:20px;font-size:12px;padding:4px 12px;box-shadow:var(--shadow)}
 body.focus .focusExit{display:block}
 .miniClose{position:absolute;top:2px;right:2px;border:0;background:var(--panel);border-radius:50%;width:20px;height:20px;padding:0;line-height:1;font-size:13px;opacity:.6;z-index:2}
 .miniClose:hover{opacity:1}
+
+.legendPreview{border:1px dashed var(--border);border-radius:8px;padding:10px;margin:6px 0;max-height:260px;overflow:auto;background:#fff;text-align:center}
+.legendPreview svg{max-width:100%;height:auto}
+.fitMode button{padding:7px 8px}
+.fitResult{margin:10px 0 0;padding:8px 10px;border-radius:6px;background:var(--panel2);font-size:12.5px}
 
 </style>
 <style id="printRules"></style>
@@ -381,7 +388,7 @@ body.focus .focusExit{display:block}
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
   <span id="pageInfo"></span>
-  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-330" max="300" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit page">Fit</button></div>
+  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-330" max="300" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit the view to the page">Fit</button><button data-action="fitPageDialog" title="Fit the page (and its border) to the drawing…">Fit page</button></div>
 </footer>
 
 <div id="contextMenu" class="menu" hidden></div>
@@ -2279,7 +2286,26 @@ const Constraints=(()=>{
 
   // ---------- entry points ----------
   // After every edit: containers first (they change content bounds), then the page, then the pins.
-  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);const r=page.isBackground?null:autoSize(page,doc);if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
+  const FIT_DEFAULTS={mode:'free',pad:10,round:5,orient:'auto',reserve:true};
+  // Page hugs the drawing: content is moved to margin+padding, the sheet is sized around it (free size rounded up,
+  // or the smallest standard sheet), leaving room below/above for pinned title blocks and legends if asked.
+  function fitPage(page,doc,opt={}){opt={...FIT_DEFAULTS,...page.fit,...opt};const content=page.items.filter(n=>!n.pin);if(!content.length)return null;
+    const pinned=page.items.filter(n=>n.pin),offs=new Map(pinned.map(n=>[n,offsets(n,area(page))])),before={paper:page.paper,w:page.customW,h:page.customH,o:page.orientation};
+    const b=C.bounds(content,true),m=page.margin*C.PX,pad=Math.max(0,+opt.pad||0)*C.PX;
+    const a0=area(page),blocks=blockers(page,doc),room=(side)=>opt.reserve?Math.max(0,...blocks.filter(n=>n.pin.includes(side)).map(n=>{const o=offsets(n,a0);return(side==='b'?o.b:o.t)+C.box(n).h+8-pad})):0,below=room('b'),above=room('t');
+    let w=b.w+2*(m+pad),h=b.h+2*(m+pad)+below+above,ox=m+pad,oy=m+pad+above;
+    if(opt.mode==='paper'){let best=null;for(const paper of[...SERIES.A,...SERIES.US])for(const orientation of opt.orient==='auto'?['landscape','portrait']:[page.orientation]){const s=C.pageSize({...page,paper,orientation});if(s.w+.5>=w&&s.h+.5>=h&&(!best||s.w*s.h<best.s.w*best.s.h))best={paper,orientation,s}}
+      if(best){page.paper=best.paper;page.orientation=best.orientation;ox+=(best.s.w-w)/2;oy+=(best.s.h-h)/2}else opt.mode='free'}
+    if(opt.mode!=='paper'){const r=Math.max(1,+opt.round||1),W=Math.ceil(w/C.PX/r)*r,H=Math.ceil(h/C.PX/r)*r;page.paper='Custom';page.customW=Math.max(50,W);page.customH=Math.max(50,H);page.orientation=W>=H?'landscape':'portrait';ox+=(page.customW*C.PX-w)/2;oy+=(page.customH*C.PX-h)/2}
+    const dx=Math.round((ox-b.x)*100)/100,dy=Math.round((oy-b.y)*100)/100;if(Math.abs(dx)>.01||Math.abs(dy)>.01){for(const n of content)C.move(n,dx,dy);for(const g of page.guideLines||[])g.pos+=g.axis==='x'?dx:dy}
+    page.minPaper=page.paper;if(page.paper==='Custom'){page.minW=page.customW;page.minH=page.customH}
+    const a=area(page);for(const n of pinned)place(n,a,offs.get(n));
+    return{shift:Math.abs(dx)>.01||Math.abs(dy)>.01?[dx,dy]:null,resized:before.paper!==page.paper||before.w!==page.customW||before.h!==page.customH||before.o!==page.orientation}}
+  function measureLegends(page,doc){if(typeof legendMeasure!=='function')return'';let sig='';for(const n of page.items)if(n.kind==='legend'){const prev=RCTX;RCTX=makeCtx(page,{doc});legendMeasure(n,page,RCTX);RCTX=prev;sig+=n.w+'x'+n.h+';'}return sig}
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
+    // legends may re-wrap when the page width changes, which can change the room they need: settle in ≤3 passes
+    for(let i=0;i<3;i++){const ri=page.isBackground?null:page.autoSize==='fit'?fitPage(page,doc):autoSize(page,doc);if(ri){r=r?{shift:ri.shift?[(r.shift?.[0]||0)+ri.shift[0],(r.shift?.[1]||0)+ri.shift[1]]:r.shift,resized:r.resized||ri.resized}:ri}const s2=measureLegends(page,doc);if(s2===sig)break;sig=s2}
+    if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
   function pinNow(n,page,pin){n.pin=pin||undefined;if(!pin){delete n.pin;return}place(n,area(page),offsets(n,area(page)))}
   // Drawings saved before pinning existed: recognise borders, field-driven title blocks and legends and pin them,
   // measuring against the sheet size they were laid out for (the current size or any smaller standard sheet).
@@ -2290,7 +2316,9 @@ const Constraints=(()=>{
         const fielded=it.kind==='table'&&it.rows?.some(r=>r.some(c=>String(c).includes('{{'))),legend=it.kind==='legend';if(!fielded&&!legend)continue;
         for(const a of areas){const o=offsets(it,a),tol=legend?.28:.12,v=o.b<o.t?'b':'t',h=o.r<o.l?'r':'l';if(Math.min(o.b,o.t)<a.h*tol&&Math.min(o.r,o.l)<a.w*tol&&Math.min(o.b,o.t)>-8&&Math.min(o.r,o.l)>-8){it.pin=v+h;place(it,cur,o);n++;break}}}}
     doc.meta??={};doc.meta.pinsUpgraded=true;return n}
-  return{upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
+  // Width a pinned block may use along its edge without running under other blocks pinned to the same edge.
+  function availableWidth(page,doc,n){const a=area(page);if(!n.pin||n.pin==='frame')return Infinity;const edge=n.pin.includes('b')?'b':'t';return a.w-blockers(page,doc).filter(o=>o.id!==n.id&&o.pin.includes(edge)).reduce((s,o)=>s+C.box(o).w+16,0)}
+  return{availableWidth,FIT_DEFAULTS,fitPage,upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
 })();
 
 </script>
@@ -3582,18 +3610,21 @@ function drawTable(n,g,ctx){
   if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}}
 
 function legendRows(n,page,ctx){
-  const rows=[],count=new Map(),sample=new Map(),links=new Map(),items=page.items.filter(i=>itemVisible(i,ctx));
+  const rows=[],count=new Map(),sample=new Map(),links=new Map(),src=n.scope==='doc'?ctx.doc.pages.filter(p=>!p.isBackground).flatMap(p=>p.items):page.items,items=src.filter(i=>itemVisible(i,ctx));
   if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1);if(!sample.has(k))sample.set(k,i)}
   if(n.links!==false)for(const i of items)if(i.kind==='edge'){const k=Shapes.linkTypes[i.linkType]?i.linkType:'_'+i.stroke+'|'+(i.dash||'')+'|'+(i.double?1:0);const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
   for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c,sample:sample.get(k)});
   for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.short||Shapes.linkTypes[k]?.name||'Connector',count:v.n});
   if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
+  if(n.status!==false&&ctx.doc.display?.statusMarks!==false){const st=new Set(items.filter(i=>i.kind==='node').map(i=>i.data?.status));if(st.has('Planned'))rows.push({kind:'mark',mark:'planned',text:'Planned'});if(st.has('To remove'))rows.push({kind:'mark',mark:'remove',text:'To be removed'})}
   if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
   return rows}
 // Legend layout: rows flow into columns of maxRows; each column is as wide as its longest entry.
-function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false,per=Math.max(3,n.maxRows||8),cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,colX=[],colW=[];
-  for(let c=0;c<cols;c++){const part=rows.slice(c*inCol,(c+1)*inCol);colW.push(Math.max(120,...part.map(r=>Core.textWidth(r.text,size)+(counts&&r.count?Core.textWidth(' ×'+r.count,size)+14:0)+64)));colX.push(c?colX[c-1]+colW[c-1]:0)}
-  const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,colX.at(-1)+colW.at(-1)+12);n.h=40+inCol*rh+6;return{rows,size,rh,counts,inCol,colX,colW}}
+function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false;
+  const layout=per=>{const cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,colX=[],colW=[];for(let c=0;c<cols;c++){const part=rows.slice(c*inCol,(c+1)*inCol);colW.push(Math.max(120,...part.map(r=>Core.textWidth(r.text,size)+(counts&&r.count?Core.textWidth(' ×'+r.count,size)+14:0)+64)));colX.push(c?colX[c-1]+colW[c-1]:0)}return{inCol,colX,colW,w:colX.at(-1)+colW.at(-1)+12}};
+  // a pinned legend wraps into taller columns rather than run under a title block on the same edge
+  let per=Math.max(3,n.maxRows||8),L=layout(per);const avail=typeof Constraints!=='undefined'&&n.pin?Constraints.availableWidth(page,ctx.doc,n):Infinity;while(L.w>avail&&per<rows.length){per++;L=layout(per)}
+  const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,L.w);n.h=40+L.inCol*rh+6;return{rows,size,rh,counts,inCol:L.inCol,colX:L.colX,colW:L.colW}}
 function drawLegend(n,g,ctx,page){
   const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx);
   el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill||ctx.bg,stroke:n.stroke||'#a2b2c6','stroke-width':1},g);
@@ -3602,6 +3633,7 @@ function drawLegend(n,g,ctx,page){
     if(col&&i%inCol===0)el('line',{x1:x0-2,y1:n.y+38,x2:x0-2,y2:n.y+n.h-8,stroke:n.stroke||'#a2b2c6','stroke-opacity':.45},g);
     if(r.kind==='device'){const s=r.sample,holder=el('g',{transform:`translate(${x0+8} ${y+1})`},g);holder.innerHTML=Shapes.iconSvg(r.type,{size:26,display:s?.display==='card'?'symbol':s?.display||'symbol',accent:(s&&colorFor(s,ctx))||s?.stroke||'#2f5ea8',fill:s?.fill&&s.fill!=='none'?s.fill:ctx.bg})}
     else if(r.kind==='zone')el('rect',{x:x0+12,y:cy-7,width:24,height:14,rx:3,fill:r.zone.fill,stroke:r.zone.stroke,'stroke-dasharray':r.zone.dash?'3 2':null},g);
+    else if(r.kind==='mark'){el('rect',{x:x0+14,y:cy-8,width:20,height:16,rx:3,fill:'none',stroke:r.mark==='planned'?'#2563eb':'#94a3b8','stroke-dasharray':r.mark==='planned'?'3 2':null},g);if(r.mark==='remove')el('path',{d:`M${x0+17} ${cy-5}l14 10m0 -10l-14 10`,stroke:'#dc2626','stroke-width':1.8},g)}
     else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+40}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
     else el('rect',{x:x0+12,y:cy-6,width:22,height:12,rx:3,fill:r.color},g);
     const t=el('text',{x:x0+50,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
@@ -4708,7 +4740,7 @@ function zonePanel(z){const c=C.cidr(z.data?.subnet);return labelsList(z)+sectio
 function subnetInfo(z,c){const plan=Analysis.ipPlan(S.doc).find(r=>r.zone===z);return`<table class="kv"><tr><td>Network</td><td>${c.text}</td></tr><tr><td>Mask</td><td>${c.maskText}</td></tr><tr><td>Usable</td><td>${C.int2ip(c.first)} – ${C.int2ip(c.last)}</td></tr><tr><td>Broadcast</td><td>${C.int2ip(c.broadcast)}</td></tr><tr><td>Hosts</td><td>${c.hosts.toLocaleString()}</td></tr>${plan?`<tr><td>In use</td><td>${plan.used} (${(plan.used/Math.max(1,c.hosts)*100).toFixed(1)}%)</td></tr><tr><td>Next free</td><td>${plan.next||'—'}</td></tr>`:''}</table>`}
 function textPanel(t){const devs=items().filter(n=>n.kind==='node'&&Shapes.isDevice(n));return labelsList(t)+section('Box',`${row(field('Fill',color('fill',t.fill||'')),field('Border',color('stroke',t.stroke||'')))}${row(field('Wrap width',inp('labels.0.wrapWidth',t.labels?.[0]?.wrapWidth||0,'number','min="0"')),field('Corner',inp('rx',t.rx??6,'number','min="0"')))}${field('Callout points to',sel('target',[['','(nothing)'],...devs.map(d=>[d.id,Analysis.nameOf(d)])],t.target||''))}`,'box')+geometry(t,false)+common(t)}
 function tablePanel(t){return section('Table',`${row(field('Rows',inp('_rows',t.rows.length,'number','min="1" max="500"')),field('Columns',inp('_cols',t.cols.length,'number','min="1" max="30"')))}${row(field('Text size',inp('size',t.size||11,'number','min="6" max="40"')),field('Row height',inp('rowH',t.rowH,'number','min="12" max="120"')))}${field('Column widths',inp('_widths',t.cols.map(Math.round).join(', ')))}${chk('header',t.header!==false,'Header row')}${chk('boldFirstCol',!!t.boldFirstCol,'Bold first column')}${row(field('Lines',color('stroke',t.stroke)),field('Header',color('headerFill',t.headerFill)))}${field('Contents (CSV — edit and click Apply)',`<textarea id="tableCsv" rows="6" spellcheck="false">${h(t.rows.map(r=>r.map(v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v).join(',')).join('\n'))}</textarea>`)}${row(btn('tableApplyCsv','Apply CSV'),btn('tableCopy','Copy for Excel'))}<p class="muted">Double-click a cell to edit; Tab moves to the next cell. {{doc.name}}, {{page.number}}, {{date}} fields work in cells.</p>`,'table')+common(t)}
-function legendPanel(l){return section('Legend',`${field('Title',inp('title',l.title||'LEGEND'))}${chk('devices',l.devices!==false,'Device types')}${chk('links',l.links!==false,'Link types')}${chk('zones',!!l.zones,'Zones')}${chk('colors',l.colors!==false,'Colour-by values')}${chk('counts',l.counts!==false,'Show counts')}${field('Rows per column',inp('maxRows',l.maxRows||8,'number','min="3" max="40"'))}${row(field('Background',color('fill',l.fill||'#ffffff')),field('Border',color('stroke',l.stroke||'#a2b2c6')))}<p class="muted">The legend updates automatically from what is on this page.</p>`,'legend')+common(l)}
+function legendPanel(l){return section('Legend',`${field('Title',inp('title',l.title||'LEGEND'))}${chk('devices',l.devices!==false,'Device types')}${chk('links',l.links!==false,'Link types')}${chk('zones',!!l.zones,'Zones')}${chk('colors',l.colors!==false,'Colour-by values')}${chk('counts',l.counts!==false,'Show counts')}${field('Rows per column',inp('maxRows',l.maxRows||8,'number','min="3" max="40"'))}${row(field('Background',color('fill',l.fill||'#ffffff')),field('Border',color('stroke',l.stroke||'#a2b2c6')))}<p class="muted">The legend updates automatically from what is on the page.</p>${field('Covers',sel('scope',[['page','This page'],['doc','Whole drawing']],l.scope||'page'))}${chk('status',l.status!==false,'Planned / to-remove marks')}${btn('legendGen','Open legend generator…','class="wide"')}`,'legend')+common(l)}
 function propsFor(n){return n.kind==='node'?nodePanel(n):n.kind==='edge'?edgePanel(n):n.kind==='zone'?zonePanel(n):n.kind==='text'?textPanel(n):n.kind==='table'?tablePanel(n):n.kind==='legend'?legendPanel(n):common(n)}
 
 function labelPanel(owner,l){return section('Label',`${field('Text',area('L.text',l.text,4,'data-live="1"'))}${row(field('Size',inp('L.size',l.size,'number','min="5" max="144"')),field('Rotation °',inp('L.rotation',l.rotation||0,'number')))}${row(field('Colour',color('L.color',l.color)),field('Align',sel('L.align',[['start','Left'],['middle','Centre'],['end','Right']],l.align||'middle')))}${row(field('Font',sel('L.font',[['','Sans (default)'],[C.MONO,'Monospace'],['Georgia, serif','Serif']],l.font||'')),field('Wrap width',inp('L.wrapWidth',l.wrapWidth||0,'number','min="0"')))}${chk('L.bold',l.bold,'Bold')}${chk('L.italic',l.italic,'Italic')}${chk('L.underline',l.underline,'Underline')}${chk('L.background',l.background,'Background halo')}${l.anchor?field('Position along connector',`<input type="range" min="0" max="1" step="0.01" data-bind="L.anchor.t" value="${l.anchor.t}">`):''}${row(btn('editLabel','Edit on canvas'),btn('deleteLabel','Delete label'))}`,'label')}
@@ -4735,7 +4767,7 @@ function multiData(a){const nodes=a.filter(n=>n.kind==='node');if(!nodes.length)
 
 // ---------- page & document ----------
 function pagePanel(){const p=pg(),papers=[...Object.keys(C.PAPERS),'Custom'].map(k=>[k,k]);const bgs=S.doc.pages.filter(x=>x.isBackground&&x!==p);
-  return section('Page setup',`${field('Page name',`<input data-page="name" value="${h(p.name)}">`)}${row(field('Paper',`<select data-page="paper">${papers.map(([v,t])=>`<option ${p.paper===v?'selected':''}>${t}</option>`).join('')}</select>`),field('Orientation',`<select data-page="orientation"><option value="landscape" ${p.orientation==='landscape'?'selected':''}>Landscape</option><option value="portrait" ${p.orientation==='portrait'?'selected':''}>Portrait</option></select>`))}${p.paper==='Custom'?row(field('Width mm',`<input data-page="customW" type="number" value="${p.customW}" min="50">`),field('Height mm',`<input data-page="customH" type="number" value="${p.customH}" min="50">`)):''}${row(field('Margin mm',`<input data-page="margin" type="number" value="${p.margin}" min="0" max="60">`),field('Page colour',`<input type="color" data-page="bg" value="${p.bg||'#ffffff'}">`))}${chk('_as',p.autoSize!==false,'Auto-size: grow (and shrink back) to fit the drawing').replace('data-bind="_as"','data-page="autoSize"')}<p class="muted">Smallest size: ${p.minPaper==='Custom'?(p.minW||p.customW)+' × '+(p.minH||p.customH)+' mm':(p.minPaper||p.paper)} — choosing a paper size sets it.</p>${btn('fitPageToDrawing','Fit page to drawing now','class="wide"')}`,'psetup')
+  return section('Page setup',`${field('Page name',`<input data-page="name" value="${h(p.name)}">`)}${row(field('Paper',`<select data-page="paper">${papers.map(([v,t])=>`<option ${p.paper===v?'selected':''}>${t}</option>`).join('')}</select>`),field('Orientation',`<select data-page="orientation"><option value="landscape" ${p.orientation==='landscape'?'selected':''}>Landscape</option><option value="portrait" ${p.orientation==='portrait'?'selected':''}>Portrait</option></select>`))}${p.paper==='Custom'?row(field('Width mm',`<input data-page="customW" type="number" value="${p.customW}" min="50">`),field('Height mm',`<input data-page="customH" type="number" value="${p.customH}" min="50">`)):''}${row(field('Margin mm',`<input data-page="margin" type="number" value="${p.margin}" min="0" max="60">`),field('Page colour',`<input type="color" data-page="bg" value="${p.bg||'#ffffff'}">`))}${field('When the drawing changes',`<select data-page="autoSize"><option value="paper" ${p.autoSize!==false&&p.autoSize!=='fit'?'selected':''}>Grow / shrink by standard sheets</option><option value="fit" ${p.autoSize==='fit'?'selected':''}>Hug the drawing (free size)</option><option value="off" ${p.autoSize===false?'selected':''}>Keep this size</option></select>`)}<p class="muted">Smallest size: ${p.minPaper==='Custom'?(p.minW||p.customW)+' × '+(p.minH||p.customH)+' mm':(p.minPaper||p.paper)} — choosing a paper size sets it.</p>${row(btn('fitPageDialog','Fit page to drawing…'),btn('fitPageQuick','Fit now'))}`,'psetup')
   +section('Background',`${chk('_isbg',p.isBackground,'This is a background page (title block, border, logo)').replace('data-bind="_isbg"','data-page="isBackground"')}${p.isBackground?'':field('Use background page',`<select data-page="background"><option value="">(none)</option>${bgs.map(b=>`<option value="${b.id}" ${p.background===b.id?'selected':''}>${h(b.name)}</option>`).join('')}</select>`)}${btn('newBackground','＋ New background page with title block','class="wide"')}`,'pbg')
   +section('Print',`${field('Sizing',`<select data-page="printSizing"><option value="fit" ${p.printSizing==='fit'?'selected':''}>Fit drawing to one sheet</option><option value="actual" ${p.printSizing==='actual'?'selected':''}>Actual size (page area)</option><option value="tile" ${p.printSizing==='tile'?'selected':''}>Tile across several sheets</option></select>`)}${p.printSizing==='tile'?row(field('Sheet paper',`<select data-page="tilePaper">${['A4','A3','Letter'].map(v=>`<option ${(p.tilePaper||'A4')===v?'selected':''}>${v}</option>`).join('')}</select>`),field('Scale',`<input data-page="tileScale" type="number" value="${p.tileScale||1}" min="0.25" max="4" step="0.25">`)):''}${row(btn('print','Print page'),btn('printAll','Print all'))}`,'pprint')
   +section('Guides & pages',`${row(btn('guideX','＋ Vertical guide'),btn('guideY','＋ Horizontal guide'))}${btn('clearGuides','Clear guides','class="wide"')}${row(btn('duplicatePage','Duplicate page'),btn('deletePage','Delete page'))}${row(btn('pageLeft','◂ Move left'),btn('pageRight','Move right ▸'))}`,'pguides')}
@@ -4783,7 +4815,7 @@ function onChange(e){
   const t=e.target,v=convert(e);
   if(t.dataset.live&&t._remembered){t._remembered=false;changed();lastKey='';render('panel');return}
   if(t.dataset.bind&&!t.dataset.nobind&&!t.id?.startsWith('gen')){apply(t.dataset.bind,t.type==='color'||t.classList.contains('hex')?(t.value||null):v);return}
-  if(t.dataset.page){const k=t.dataset.page;let val=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;if(k==='margin'&&(val<0||val>60))return notify('Margin must be 0–60 mm.');if((k==='customW'||k==='customH')&&(val<50||val>5000))return notify('Custom sizes must be 50–5000 mm.');if(k==='background'&&!val)val=null;mutate(()=>{pg()[k]=val;if(k==='paper'){pg().minPaper=val;if(val==='Custom'){pg().minW=pg().customW;pg().minH=pg().customH}}if(k==='customW'||k==='customH'){pg().minPaper='Custom';pg().minW=pg().customW;pg().minH=pg().customH}if(k==='isBackground'&&val)for(const p of S.doc.pages)if(p.background===pg().id&&p===pg())p.background=null});if(['paper','orientation','customW','customH'].includes(k))fit();return}
+  if(t.dataset.page){const k=t.dataset.page;let val=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;if(k==='autoSize')val=val==='off'?false:val==='fit'?'fit':true;if(k==='margin'&&(val<0||val>60))return notify('Margin must be 0–60 mm.');if((k==='customW'||k==='customH')&&(val<50||val>5000))return notify('Custom sizes must be 50–5000 mm.');if(k==='background'&&!val)val=null;mutate(()=>{pg()[k]=val;if(k==='paper'){pg().minPaper=val;if(val==='Custom'){pg().minW=pg().customW;pg().minH=pg().customH}}if(k==='customW'||k==='customH'){pg().minPaper='Custom';pg().minW=pg().customW;pg().minH=pg().customH}if(k==='isBackground'&&val)for(const p of S.doc.pages)if(p.background===pg().id&&p===pg())p.background=null});if(['paper','orientation','customW','customH'].includes(k))fit();return}
   if(t.dataset.doc){const k=t.dataset.doc,val=t.type==='checkbox'?t.checked:t.type==='number'?+t.value:t.value;mutate(()=>{if(k==='name')S.doc.name=val||'Untitled network';else setPath(S.doc,k,val)});return}
   if(t.dataset.displayField){const k=t.dataset.displayField;mutate(()=>{const f=S.doc.display.fields||=[];if(t.checked){if(!f.includes(k))f.push(k)}else S.doc.display.fields=f.filter(x=>x!==k)});return}
   if(t.dataset.fieldLabel){const f=S.doc.fields.find(x=>x.key===t.dataset.fieldLabel);if(f)mutate(()=>f.label=t.value||f.key);return}
@@ -4844,11 +4876,12 @@ const actions={
   bold:()=>toggleLabelFlag('bold'),italic:()=>toggleLabelFlag('italic'),labelBg:()=>toggleLabelFlag('background'),alignL:()=>setLabelAlign('start'),alignC:()=>setLabelAlign('middle'),alignR:()=>setLabelAlign('end'),
   addLabel:()=>{if(!ensureEditable())return;const n=picked()[0];let l;mutate(()=>{const b=C.box(n);l=C.label('Label',b.x+b.w/2,b.y+b.h+22+(n.labels?.length||0)*16,11);if(n.kind==='edge'){l.anchor={t:.5,dx:0,dy:14};l.background=true}n.labels??=[];n.labels.push(l);S.activeLabel={owner:n.id,id:l.id}});editLabel(n.id,l.id)},editLabel:()=>S.activeLabel&&editLabel(S.activeLabel.owner,S.activeLabel.id),deleteLabel:()=>erase(),
   // insert
-  addPage:()=>addPage(),newBackground,zone:()=>insertAnnotation('zone',...centerOfView()),wrapZone:wrapInZone,textAnn:()=>insertAnnotation('text',...centerOfView()),callout:()=>{const n=picked().find(x=>x.kind==='node');const c=n?[n.x+n.w+30,n.y]:centerOfView();insertAnnotation('callout',...c)},table:()=>insertAnnotation('table',...centerOfView()),titleBlock,legend:()=>{const ps=C.pageSize(pg()),l=insertAnnotation('legend',pg().margin*C.PX+130,ps.h-pg().margin*C.PX-110);if(l){renderNow();mutate(()=>{const m=pg().margin*C.PX;C.move(l,m+10-l.x,ps.h-m-10-l.h-l.y);l.pin='bl'})}},revision:()=>insertAnnotation('revision',...centerOfView()),image:()=>$('imageInput').click(),rack:()=>addNode('rack',...centerOfView()),
+  addPage:()=>addPage(),newBackground,zone:()=>insertAnnotation('zone',...centerOfView()),wrapZone:wrapInZone,textAnn:()=>insertAnnotation('text',...centerOfView()),callout:()=>{const n=picked().find(x=>x.kind==='node');const c=n?[n.x+n.w+30,n.y]:centerOfView();insertAnnotation('callout',...c)},table:()=>insertAnnotation('table',...centerOfView()),titleBlock,legend:()=>openLegend(),revision:()=>insertAnnotation('revision',...centerOfView()),image:()=>$('imageInput').click(),rack:()=>addNode('rack',...centerOfView()),
   // design
   layoutHier:()=>Builder.layoutPage('hier'),layoutLR:()=>Builder.layoutPage('hier',{direction:'LR'}),layoutGrid:()=>Builder.layoutPage('grid'),layoutCircle:()=>Builder.layoutPage('circular',{clusters:false}),layoutRadial:()=>Builder.layoutPage('radial',{clusters:false}),layoutForce:()=>Builder.layoutPage('force',{clusters:false}),layoutSel:()=>Builder.layoutPage('hier',{clusters:false}),
   rerouteAll:()=>{mutate(()=>{for(const e of items())if(e.kind==='edge'&&e.routing==='auto')Conn.markDirty(e.id)});notify('Auto-routed connectors recalculated.')},allAuto:()=>{const list=(S.selected.size?editable():items()).filter(e=>e.kind==='edge');if(!list.length)return;mutate(()=>list.forEach(e=>{e.routing='auto';e.curve='straight';Conn.markDirty(e.id)}));notify(list.length+' connector(s) switched to auto-routing.')},
-  fitPageToDrawing:()=>{S.quietResize=true;mutate(()=>{const p=pg();Builder.autoSizePage(p,{allowShrink:true});p.minPaper=p.paper;if(p.paper==='Custom'){p.minW=p.customW;p.minH=p.customH}});S.quietResize=false;fit()},orientation:()=>{mutate(()=>pg().orientation=pg().orientation==='landscape'?'portrait':'landscape');fit()},
+  fitPageDialog:()=>openFitPage(),legendGen:()=>openLegend(),
+  fitPageQuick:()=>{S.quietResize=true;mutate(()=>Constraints.fitPage(pg(),S.doc,{}));S.quietResize=false;fit()},fitPageToDrawing:()=>openFitPage(),orientation:()=>{mutate(()=>pg().orientation=pg().orientation==='landscape'?'portrait':'landscape');fit()},
   // data & analysis
   importDialog:()=>openImportDialog({}),importText:()=>openImportDialog({tab:'text'}),importNeighbors:()=>openImportDialog({tab:'cdp'}),linkData:()=>openImportDialog({update:true}),vlans:()=>openVlans(),fields:()=>actions.docProps(),
   repInventory:()=>showReport(Analysis.inventory(S.doc)),repCables:()=>showReport(Analysis.cables(S.doc)),repBom:()=>showReport(Analysis.bom(S.doc)),repIp:()=>showReport(Analysis.ipReport(S.doc)),repRack:()=>showReport(Analysis.rackReport(S.doc)),repPoe:()=>showReport(Analysis.poeReport(S.doc)),repCctv:()=>showReport(Analysis.cctvReport(S.doc)),repVlan:()=>showReport(Analysis.vlanReport(S.doc)),
@@ -4891,6 +4924,7 @@ const actions={
   zoomIn:()=>zoomAt(1.2),zoomOut:()=>zoomAt(1/1.2),fit:()=>fit(),fitSelection:()=>fit(true),zoom100:()=>setZoom(1),
   present:()=>{const on=!document.body.classList.contains('presenting');document.body.classList.toggle('presenting',on);if(on){S.selected.clear();setMode('select');document.documentElement.requestFullscreen?.().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen?.();setTimeout(fit,60)},
   toggleLeft:()=>setChrome('leftOpen',!S.prefs.leftOpen),toggleRight:()=>setChrome('rightOpen',!S.prefs.rightOpen),
+  resetLayout:()=>resetLayout(),
   toggleRibbon:()=>{document.body.classList.remove('ribbonPeek');setChrome('ribbonCollapsed',!S.prefs.ribbonCollapsed)},toggleHeader:()=>setChrome('showHeader',S.prefs.showHeader===false),toggleStatus:()=>setChrome('showStatus',S.prefs.showStatus===false),
   focusMode:()=>{const on=!document.body.classList.contains('focus');if(on){S.prefs.beforeFocus={leftOpen:S.prefs.leftOpen,rightOpen:S.prefs.rightOpen,showHeader:S.prefs.showHeader,ribbonCollapsed:S.prefs.ribbonCollapsed,showStatus:S.prefs.showStatus};Object.assign(S.prefs,{leftOpen:false,rightOpen:false,showHeader:false,ribbonCollapsed:true})}else Object.assign(S.prefs,S.prefs.beforeFocus||{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});document.body.classList.toggle('focus',on);savePrefs();applyLayoutPrefs();if(on)notify('Focus mode: ribbon tabs still open their tools · Ctrl+. or the button at top-right to exit.',3500)},
   uiTheme:()=>{S.prefs.theme=S.prefs.theme==='dark'?'light':S.prefs.theme==='light'?'auto':'dark';savePrefs();applyUiTheme();notify('Interface theme: '+S.prefs.theme)},
@@ -4920,15 +4954,16 @@ const RIBBON=[
   {id:'insert',name:'Insert',groups:[
     {name:'Pages',items:[B('addPage','New page','page','',true),B('newBackground','Background page','bgpage','Border + title block shared by pages')]},
     {name:'Containers',items:[B('zone','Zone','zone','Network zone / container',true),B('wrapZone','Wrap in zone','wrap','Create a zone around the selection'),B('rack','Rack','rack','42U rack elevation')]},
-    {name:'Annotation',items:[B('textAnn','Text','text'),B('callout','Callout','callout','Callout pointing at the selected device'),B('table','Table','table'),B('titleBlock','Title block','title'),B('legend','Legend','legend','Auto-updating legend'),B('revision','Revision table','revision')]},
+    {name:'Annotation',items:[B('legendGen','Legend','legend','Legend generator — devices, links, zones, colours; auto-updating',true),B('textAnn','Text','text'),B('callout','Callout','callout','Callout pointing at the selected device'),B('table','Table','table'),B('titleBlock','Title block','title'),B('revision','Revision table','revision')]},
     {name:'Media',items:[B('image','Image / logo','image','PNG, JPG, SVG — or paste a screenshot with Ctrl+V'),B('saveSymbol','Save to library','plus','Save the selection as a reusable symbol')]}]},
   {id:'design',name:'Design',groups:[
     {name:'Themes',items:[X(()=>`<div class="themeRow">${Object.entries(Shapes.themes).map(([k,t])=>`<button class="themeSw ${S.doc.theme===k?'active':''}" data-theme-apply="${k}" title="${t.name}"><span style="background:${t.page}"><i style="background:${t.device.stroke==='category'?'#ea580c':t.device.stroke}"></i><i style="background:${t.zones[0][1]}"></i></span><em>${t.name}</em></button>`).join('')}</div>`)]},
-    {name:'Page',items:[X(()=>`<label class="rsel"><select id="paperSel">${[...Object.keys(Core.PAPERS),'Custom'].map(p=>`<option ${pg().paper===p?'selected':''}>${p}</option>`).join('')}</select></label>`),B('orientation','Orientation','page'),B('fitPageToDrawing','Fit to drawing','fitpage')]},
+    {name:'Page',items:[B('fitPageDialog','Fit page to drawing','fitpage','Resize the page and its border around the drawing — options',true),X(()=>`<label class="rsel"><select id="paperSel">${[...Object.keys(Core.PAPERS),'Custom'].map(p=>`<option ${pg().paper===p?'selected':''}>${p}</option>`).join('')}</select></label>`),X(()=>{const v=pg().autoSize===false?'off':pg().autoSize==='fit'?'fit':'paper';return`<label class="rsel" title="How the page reacts when the drawing changes"><select id="autoSizeSel"><option value="paper" ${v==='paper'?'selected':''}>Auto-size: standard sheets</option><option value="fit" ${v==='fit'?'selected':''}>Auto-size: hug drawing</option><option value="off" ${v==='off'?'selected':''}>Auto-size: off</option></select></label>`}),B('orientation','Orientation','page')]},
     {name:'Auto-layout',items:[B('layoutHier','Top-down','layout','Hierarchical layout by tier (L)',true),B('layoutLR','Left-right','lr'),B('layoutGrid','Grid','grid'),B('layoutRadial','Hub & spoke','radial'),B('layoutCircle','Ring','circle'),B('layoutForce','Organic','organic')]},
     {name:'Connectors',items:[B('rerouteAll','Re-route all','reroute'),B('allAuto','Make auto','connect','Switch connectors (selection or page) to auto-routing'),X(()=>`<label class="rsel" title="Line jumps"><select id="jumpSel">${[['arc','Jumps: arc'],['gap','Jumps: gap'],['none','No jumps']].map(([v,t])=>`<option value="${v}" ${(S.doc.display.jumpStyle||'arc')===v?'selected':''}>${t}</option>`).join('')}</select></label>`)]}]},
   {id:'data',name:'Data',groups:[
     {name:'Import',items:[B('importDialog','CSV / NetBox','import','Build a diagram from device & cable spreadsheets',true),B('importText','Text','text2','Diagram-as-text'),B('importNeighbors','CDP / LLDP','terminal','Paste “show cdp/lldp neighbors” output'),B('linkData','Link data','data','Update shape data of existing devices from a spreadsheet')]},
+    {name:'Legend',items:[B('legendGen','Legend generator','legend','Create or update the legend',true)]},
     {name:'Data graphics',items:[X(()=>{const opts=[['','Colour by…'],['status','Status'],['vlan','VLAN'],['_category','Category'],...S.doc.fields.filter(f=>!['status','vlan','notes'].includes(f.key)).map(f=>[f.key,f.label])];return`<label class="rsel" title="Colour devices by a data field"><select id="colorBySel">${opts.map(([v,t])=>`<option value="${v}" ${S.doc.display.colorBy===v?'selected':''}>${t}</option>`).join('')}</select></label>`}),X(()=>`<label class="rsel" title="Show data under device names"><select id="showFieldSel"><option value="">Show field…</option>${S.doc.fields.filter(f=>!f.multiline).map(f=>`<option value="${f.key}">${S.doc.display.fields?.includes(f.key)?'✓ ':''}${f.label}</option>`).join('')}</select></label>`),B('fields','Fields','fields','Manage shape data fields')]},
     {name:'Registries',items:[B('vlans','VLANs','vlan','VLAN registry'),B('repIp','IP plan','ip')]},
     {name:'Reports',items:[B('repInventory','Inventory','report',''),B('repCables','Cable schedule','connect'),B('repBom','BOM','fields','Bill of materials with optional prices'),B('repRack','Racks','rack'),B('repVlan','VLAN table','vlan')]}]},
@@ -4949,7 +4984,7 @@ const RIBBON=[
     {name:'Behaviour',items:[T('deleteConnectors','Delete links with shapes','trash'),T('liveCheck','Live design check','check')]},
     {name:'Snap',items:[T('snap','Snap to grid','magnet'),X(()=>`<label class="rsel" title="Grid spacing"><select id="gridStepSel">${[5,10,20,25,50].map(v=>`<option value="${v}" ${+S.prefs.gridStep===v?'selected':''}>Grid ${v}px</option>`).join('')}</select></label>`)]},
     {name:'Zoom',items:[B('fit','Fit page','fit','Shift+1'),B('fitSelection','Selection','fitpage','Shift+2'),B('zoom100','100%','hundred','Ctrl+1'),B('zoomIn','Zoom in','zoomIn','Ctrl+='),B('zoomOut','Zoom out','zoomOut','Ctrl+-')]},
-    {name:'Layout',items:[B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
+    {name:'Layout',items:[B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('resetLayout','Reset layout','reroute','Restore title bar, ribbon, panels and status bar'),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
     {name:'Window',items:[T('wheelZoom','Wheel zooms','wheel'),B('uiTheme','Light / dark','moon'),B('present','Present','present','Full-screen; arrows change page; Esc exits',true)]},
     {name:'Help',items:[B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
 ];
@@ -5136,9 +5171,51 @@ function renamePage(){const v=prompt('Page name',pg().name);if(v?.trim())mutate(
 
 // ---------- theme & layout prefs ----------
 function applyUiTheme(){const t=S.prefs.theme,dark=t==='dark'||t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=dark?'dark':'light';render()}
-function applyLayoutPrefs(){const c=document.body.classList;c.toggle('noLeft',!S.prefs.leftOpen);c.toggle('noRight',!S.prefs.rightOpen);c.toggle('noHeader',S.prefs.showHeader===false);c.toggle('ribbonCollapsed',!!S.prefs.ribbonCollapsed);if(!S.prefs.ribbonCollapsed)c.remove('ribbonPeek');c.toggle('noStatus',S.prefs.showStatus===false);if(S.doc)renderRibbon();setTimeout(()=>render(),20)}
+function applyLayoutPrefs(){const c=document.body.classList;c.toggle('noLeft',!S.prefs.leftOpen);c.toggle('noRight',!S.prefs.rightOpen);c.toggle('noHeader',S.prefs.showHeader===false);c.toggle('ribbonCollapsed',!!S.prefs.ribbonCollapsed);if(!S.prefs.ribbonCollapsed)c.remove('ribbonPeek');c.toggle('noStatus',S.prefs.showStatus===false);if(S.doc)renderRibbon();setTimeout(()=>{render();checkLayout()},60)}
 function setChrome(k,v){S.prefs[k]=v;savePrefs();applyLayoutPrefs()}
+const CHROME_DEFAULTS={leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true};
+function resetLayout(quiet){Object.assign(S.prefs,CHROME_DEFAULTS);delete S.prefs.beforeFocus;document.body.classList.remove('focus','ribbonPeek','presenting');savePrefs();applyLayoutPrefs();if(!quiet)notify('Layout reset: title bar, ribbon, panels and status bar restored.')}
+// Safety net: if any layout choice ever leaves the canvas without room, put the default layout back.
+function checkLayout(){const w=$('workarea')?.getBoundingClientRect();if(!w||innerHeight<300||innerWidth<500)return;if(w.height<120||w.width<160){resetLayout(true);notify('The canvas had no room, so the layout was reset. View ▸ Layout has the options; Ctrl+. toggles focus mode.',6000)}}
 function presentStep(dir){const fg=S.doc.pages.map((p,i)=>[p,i]).filter(([p])=>!p.isBackground).map(x=>x[1]),k=fg.indexOf(S.pageIndex),next=fg[Math.max(0,Math.min(fg.length-1,k+dir))];if(next!==undefined&&next!==S.pageIndex)gotoPage(next)}
+
+// ---------- legend generator ----------
+function openLegend(){
+  const sel=picked().find(n=>n.kind==='legend'),existing=sel||items().find(n=>n.kind==='legend'),o={title:'LEGEND',scope:'page',devices:true,links:true,zones:false,colors:true,status:true,counts:true,maxRows:8,place:'bl',...(existing?{title:existing.title,scope:existing.scope||'page',devices:existing.devices!==false,links:existing.links!==false,zones:!!existing.zones,colors:existing.colors!==false,status:existing.status!==false,counts:existing.counts!==false,maxRows:existing.maxRows||8,place:existing.pin||'free'}:{})};
+  const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?'selected':''}>${t}</option>`,ck=(k,t)=>`<label class="check"><input type="checkbox" data-lg="${k}" ${o[k]?'checked':''}>${t}</label>`;
+  const d=openDialog('Legend generator',`<p class="muted">${existing?'Updates the legend on this page'+(sel?' (selected)':'')+'.':'Adds a legend to this page.'} Legends rebuild themselves from the drawing whenever it changes.</p>
+  <div class="row"><label class="fld"><span>Title</span><input data-lg="title" value="${html(o.title)}"></label><label class="fld"><span>Covers</span><select data-lg="scope">${opt('page','This page',o.scope)}${opt('doc','Whole drawing (all pages)',o.scope)}</select></label></div>
+  <div class="fld"><span>Include</span><div class="checks">${ck('devices','Device types (as drawn)')}${ck('links','Link types')}${ck('zones','Zones')}${ck('colors','Colour-by values')}${ck('status','Planned / to-remove marks')}${ck('counts','Counts')}</div></div>
+  <div class="row"><label class="fld"><span>Rows per column</span><input data-lg="maxRows" type="number" min="3" max="40" value="${o.maxRows}"></label><label class="fld"><span>Placement</span><select data-lg="place">${opt('bl','Pinned bottom-left',o.place)}${opt('br','Pinned bottom-right',o.place)}${opt('tl','Pinned top-left',o.place)}${opt('tr','Pinned top-right',o.place)}${opt('free','Free (where it is / centre of view)',o.place)}</select></label></div>
+  <div class="legendPreview" id="lgPreview"></div>
+  <footer><button data-close>Cancel</button><button data-lg-all>Add to every page</button><button class="primary" data-lg-apply>${existing?'Update legend':'Create legend'}</button></footer>`);
+  const read=()=>{const r={...o};d.querySelectorAll('[data-lg]').forEach(i=>{r[i.dataset.lg]=i.type==='checkbox'?i.checked:i.type==='number'?Math.max(3,+i.value||8):i.value});return r};
+  const props=r=>({title:r.title||'LEGEND',scope:r.scope,devices:r.devices,links:r.links,zones:r.zones,colors:r.colors,status:r.status,counts:r.counts,maxRows:r.maxRows});
+  const preview=()=>{const r=read(),t={id:'preview',kind:'legend',x:0,y:0,w:10,h:10,labels:[],...props(r)},svg=document.createElementNS(NS,'svg'),ctx=makeCtx(pg());RCTX=ctx;drawLegend(t,el('g',{},svg),ctx,pg());RCTX=null;svg.setAttribute('viewBox',`-2 -2 ${t.w+4} ${t.h+4}`);svg.setAttribute('width',Math.min(560,t.w));$('lgPreview').replaceChildren(svg);if(!legendRows(t,pg(),ctx).length)$('lgPreview').insertAdjacentHTML('beforeend','<p class="muted">Nothing to list yet with these options.</p>')};
+  const placeOn=(page,l,place)=>{RCTX=makeCtx(page);legendMeasure(l,page,RCTX);RCTX=null;if(place==='free'){delete l.pin;return}l.pin=place;Constraints.place(l,Constraints.area(page),{l:10,r:10,t:10,b:10})};
+  d.oninput=preview;d.onchange=preview;preview();
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const r=read();
+    if(e.target.closest('[data-lg-apply]')){closeDialog();mutate(()=>{let l=existing;if(!l){const c=centerOfView();l={id:C.uid(),kind:'legend',x:c[0]-100,y:c[1]-60,w:200,h:120,labels:[],layer:S.activeLayer};items().push(l)}Object.assign(l,props(r));if(r.place!=='free'||!existing)placeOn(pg(),l,r.place);else delete l.pin;select([l.id])});notify('Legend '+(existing?'updated':'created')+'. It keeps itself up to date as the drawing changes.')}
+    if(e.target.closest('[data-lg-all]')){closeDialog();let k=0;mutate(()=>{for(const p of S.doc.pages){if(p.isBackground||p.items.some(i=>i.kind==='legend'))continue;const l={id:C.uid(),kind:'legend',x:0,y:0,w:200,h:120,labels:[],layer:S.activeLayer,...props(r)};p.items.push(l);placeOn(p,l,r.place==='free'?'bl':r.place);k++}});notify(k?`Legend added to ${k} page(s).`:'Every page already has a legend.')}}}
+
+// ---------- fit page to drawing ----------
+function openFitPage(){
+  const p=pg(),o={...Constraints.FIT_DEFAULTS,...p.fit,margin:p.margin,keep:p.autoSize==='fit'};
+  const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?'selected':''}>${t}</option>`;
+  const d=openDialog('Fit page to drawing',`<p class="muted">Resizes the page — and the border and title block that follow it — around what is on the page.</p>
+  <div class="fld"><span>Page size</span><div class="seg fitMode"><button data-fit-mode="free" class="${o.mode!=='paper'?'active':''}">Free size · hug the drawing</button><button data-fit-mode="paper" class="${o.mode==='paper'?'active':''}">Smallest standard sheet</button></div></div>
+  <div class="row r3"><label class="fld"><span>Padding (mm)</span><input data-fit="pad" type="number" min="0" max="200" value="${o.pad}"></label><label class="fld"><span>Round up to</span><select data-fit="round">${opt(1,'1 mm',o.round)}${opt(5,'5 mm',o.round)}${opt(10,'10 mm',o.round)}${opt(25,'25 mm',o.round)}</select></label><label class="fld"><span>Border inset (margin mm)</span><input data-fit="margin" type="number" min="0" max="60" value="${o.margin}"></label></div>
+  <div class="row"><label class="fld"><span>Orientation (standard sheet)</span><select data-fit="orient">${opt('auto','Best fit',o.orient)}${opt('keep','Keep current',o.orient)}</select></label><span></span></div>
+  <label class="check"><input type="checkbox" data-fit="reserve" ${o.reserve?'checked':''}>Keep room for the title block and legend</label>
+  <label class="check"><input type="checkbox" data-fit="keep" ${o.keep?'checked':''}>Keep hugging the drawing as I edit (Auto-size: Hug drawing)</label>
+  <p class="fitResult" id="fitResult"></p>
+  <footer><button data-close>Cancel</button><button class="primary" data-fit-apply>Fit page</button></footer>`);
+  let mode=o.mode==='paper'?'paper':'free';
+  const read=()=>{const r={mode};d.querySelectorAll('[data-fit]').forEach(i=>{r[i.dataset.fit]=i.type==='checkbox'?i.checked:i.type==='number'?Math.max(0,+i.value||0):i.value});r.round=+r.round||5;return r};
+  const preview=()=>{const r=read(),copy=C.copy(p);copy.margin=r.margin;const res=Constraints.fitPage(copy,S.doc,r),[w,h]=C.dimensions(copy);$('fitResult').innerHTML=res?`Page will be <b>${copy.paper==='Custom'?`${Math.round(w)} × ${Math.round(h)} mm (custom)`:copy.paper+' '+copy.orientation} </b>· now ${p.paper==='Custom'?p.customW+' × '+p.customH+' mm':p.paper+' '+p.orientation}`:'There is nothing on this page to fit.'};
+  d.oninput=preview;d.onchange=preview;preview();
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const m=e.target.closest('[data-fit-mode]');if(m){mode=m.dataset.fitMode;d.querySelectorAll('[data-fit-mode]').forEach(b=>b.classList.toggle('active',b===m));preview();return}
+    if(e.target.closest('[data-fit-apply]')){const r=read();closeDialog();S.quietResize=true;mutate(()=>{p.margin=r.margin;p.fit={mode:r.mode,pad:r.pad,round:r.round,orient:r.orient,reserve:r.reserve};Constraints.fitPage(p,S.doc,p.fit);p.autoSize=r.keep?'fit':true});S.quietResize=false;fit();notify(`Page fitted: ${p.paper==='Custom'?p.customW+' × '+p.customH+' mm':p.paper+' '+p.orientation}${r.keep?' — and it will keep hugging the drawing.':'.'}`)}}}
 
 </script>
 <script>
@@ -5260,6 +5337,7 @@ function wire(){
     if(id==='displaySel'&&t.value){S.prefs.newDisplay=t.value;savePrefs();const ns=sel.filter(n=>n.kind==='node'&&Shapes.kindOf(n.type)==='device');if(ns.length)mutate(()=>ns.forEach(n=>n.display=t.value));else notify('New devices will use the '+t.value+' style.');t.value='';return}
     if(id==='strokeColor'||id==='fillColor'){if(!ensureEditable())return;mutate(()=>sel.forEach(n=>n[id==='strokeColor'?'stroke':'fill']=t.value));return}
     if(id==='paperSel'){mutate(()=>{pg().paper=t.value;pg().minPaper=t.value});fit();return}
+    if(id==='autoSizeSel'){const v=t.value;mutate(()=>pg().autoSize=v==='off'?false:v==='fit'?'fit':true);if(v==='fit')fit();return}
     if(id==='jumpSel'){mutate(()=>S.doc.display.jumpStyle=t.value);return}
     if(id==='colorBySel'){mutate(()=>S.doc.display.colorBy=t.value);return}
     if(id==='showFieldSel'&&t.value){const k=t.value;mutate(()=>{const f=S.doc.display.fields||=[];S.doc.display.fields=f.includes(k)?f.filter(x=>x!==k):[...f,k]});renderRibbon();return}
@@ -5317,6 +5395,7 @@ function wire(){
   document.body.addEventListener('drop',e=>{if(e.target.closest('#canvas'))return;const f=e.dataTransfer.files?.[0];if(f){e.preventDefault();handleFile(f)}});
   // window
   new ResizeObserver(()=>render()).observe($('workarea'));
+  window.addEventListener('resize',()=>{clearTimeout(window.__lt);window.__lt=setTimeout(checkLayout,300)});
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.prefs.theme==='auto')applyUiTheme()});
   window.addEventListener('beforeunload',e=>{clearTimeout(autosaveTimer);if(S.dirty)autosave()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.dirty)Workspace.saveCurrent(true)});
@@ -5324,6 +5403,7 @@ function wire(){
 }
 async function boot(){
   try{Object.assign(S.prefs,JSON.parse(localStorage.getItem('port-v3-prefs')||'{}'))}catch{}
+  if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
   applyUiTheme();applyLayoutPrefs();wire();

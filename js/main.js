@@ -48,6 +48,7 @@ function wire(){
     if(id==='displaySel'&&t.value){S.prefs.newDisplay=t.value;savePrefs();const ns=sel.filter(n=>n.kind==='node'&&Shapes.kindOf(n.type)==='device');if(ns.length)mutate(()=>ns.forEach(n=>n.display=t.value));else notify('New devices will use the '+t.value+' style.');t.value='';return}
     if(id==='strokeColor'||id==='fillColor'){if(!ensureEditable())return;mutate(()=>sel.forEach(n=>n[id==='strokeColor'?'stroke':'fill']=t.value));return}
     if(id==='paperSel'){mutate(()=>{pg().paper=t.value;pg().minPaper=t.value});fit();return}
+    if(id==='autoSizeSel'){const v=t.value;mutate(()=>pg().autoSize=v==='off'?false:v==='fit'?'fit':true);if(v==='fit')fit();return}
     if(id==='jumpSel'){mutate(()=>S.doc.display.jumpStyle=t.value);return}
     if(id==='colorBySel'){mutate(()=>S.doc.display.colorBy=t.value);return}
     if(id==='showFieldSel'&&t.value){const k=t.value;mutate(()=>{const f=S.doc.display.fields||=[];S.doc.display.fields=f.includes(k)?f.filter(x=>x!==k):[...f,k]});renderRibbon();return}
@@ -105,6 +106,7 @@ function wire(){
   document.body.addEventListener('drop',e=>{if(e.target.closest('#canvas'))return;const f=e.dataTransfer.files?.[0];if(f){e.preventDefault();handleFile(f)}});
   // window
   new ResizeObserver(()=>render()).observe($('workarea'));
+  window.addEventListener('resize',()=>{clearTimeout(window.__lt);window.__lt=setTimeout(checkLayout,300)});
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.prefs.theme==='auto')applyUiTheme()});
   window.addEventListener('beforeunload',e=>{clearTimeout(autosaveTimer);if(S.dirty)autosave()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.dirty)Workspace.saveCurrent(true)});
@@ -112,6 +114,7 @@ function wire(){
 }
 async function boot(){
   try{Object.assign(S.prefs,JSON.parse(localStorage.getItem('port-v3-prefs')||'{}'))}catch{}
+  if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
   applyUiTheme();applyLayoutPrefs();wire();

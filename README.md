@@ -27,7 +27,7 @@ No installation, no account, no server: everything runs in the browser, and draw
 | **Pages & print** | Multiple pages, **background pages** with border + title block (fields: doc, page, sheet n of m, date), layers (visible / locked / print), page hyperlinks for drill-down, print/PDF fit / actual size / **tiled** across sheets, presentation mode. |
 | **Export** | **Visio `.vsdx`** (shapes, glued connectors, Shape Data, layers, hyperlinks), **draw.io**, SVG, PNG (2×/4×/transparent), copy page as image, PDF via print, native JSON, share link (drawing compressed into the URL hash). |
 | **Persistence** | Drawings auto-save to **IndexedDB** in your browser — including on GitHub Pages — with a **My drawings** manager (open / duplicate / download / delete, backup & restore all), optional **persistent storage** request, plus a quick localStorage recovery copy. Shape packs and your symbol library persist too. |
-| **Workspace layout** | Hide the title bar, collapse the ribbon (tabs pop it open as an overlay; double-click a tab or Ctrl+F1 to pin it), hide the shapes panel / inspector (Ctrl+Alt+←/→), hide the status bar, or **Focus mode** (Ctrl+.) for canvas-only editing. Choices are remembered. |
+| **Workspace layout** | View ▸ Layout or the buttons at the right of the tab row: hide the title bar, collapse the ribbon (tabs pop it open as an overlay; double-click a tab or Ctrl+F1 to pin it), hide the shapes panel / inspector (Ctrl+Alt+←/→), hide the status bar, or **Focus mode** (Ctrl+.) for canvas-only editing. Choices are remembered; View ▸ Layout ▸ Reset layout (or opening the app with `?reset`) restores the default, and the app resets itself if a layout ever leaves the canvas without room. |
 | **Productivity** | Ribbon UI, command palette (Ctrl+K), find & replace across text and data, format painter, smart guides, snapping, rulers, overview map, explorer tree, dark mode, smooth trackpad pinch-zoom (Chrome, Edge, Firefox and Safari gestures), full keyboard shortcuts (press `?`). |
 
 ### Everything stays linked
@@ -35,12 +35,14 @@ The drawing is kept consistent automatically after every edit:
 
 * **Page auto-size** — the page grows to the next sheet (A3 → A2 → A1 …, or a custom size beyond A0) when shapes go past its edge, shrinks back to the size you chose when they return, and shifts the drawing if something is dragged past the top/left edge. Switch it off per page.
 * **Pinned blocks** — title blocks, legends and borders pin to a page corner or the margin frame and follow the page when it resizes. Background pages re-anchor to every sheet they sit behind, so one title block works for A3 and A1 sheets alike.
+* **Legend generator** (Insert ▸ Legend or Data ▸ Legend): this page or the whole drawing; device types, link types, zones, colour-by values, planned/remove marks, counts; rows per column; pinned to any corner or free; update the selected legend or add one to every page. A pinned legend wraps so it never runs under the title block.
 * **Legend** — generated from the page: device types (drawn as they actually appear, including colour-by-data), link types, colour-by values and optionally zones, with counts. Updates as you add or remove things.
 * **Containers** — zones carry their members and grow when a member is pushed past an edge; racks carry their equipment and keep U positions when the rack height changes.
 * **Connectors** — glued ends follow devices, auto-routes re-route around whatever moved, interface names follow port renames and re-attachment, and deleting a device removes its links (optional, like Visio).
 * **Text & fields** — `{{fields}}` in labels, title blocks and tables update live from shape data and document properties.
 * **Live design check** — the status bar shows the current error/warning count and opens the full list.
 * **Dragging** auto-scrolls the view at the window edge.
+* **Fit page to drawing** (Design ▸ Page, the inspector or the status bar): free size that hugs the drawing, or the smallest standard sheet; padding, rounding, border inset, orientation, room for the title block and legend — and an option to keep hugging as you edit. The page border and title block follow.
 * **Older drawings** are upgraded on open: existing borders, field-driven title blocks and legends are recognised and pinned.
 
 ### Templates

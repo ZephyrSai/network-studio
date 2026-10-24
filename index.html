@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=69c87881">
+<link rel="stylesheet" href="css/app.css?v=53e99095">
 <style id="printRules"></style>
 </head>
 <body>
@@ -64,7 +64,7 @@
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
   <span id="pageInfo"></span>
-  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-330" max="300" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit page">Fit</button></div>
+  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-330" max="300" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit the view to the page">Fit</button><button data-action="fitPageDialog" title="Fit the page (and its border) to the drawing…">Fit page</button></div>
 </footer>
 
 <div id="contextMenu" class="menu" hidden></div>
@@ -86,19 +86,19 @@
 <script src="js/router.js?v=0c90e0a3"></script>
 <script src="js/layout.js?v=51056f31"></script>
 <script src="js/connectors.js?v=b2de2b0d"></script>
-<script src="js/constraints.js?v=db8d2619"></script>
+<script src="js/constraints.js?v=201ac2fa"></script>
 <script src="js/vsdx.js?v=1795b2a5"></script>
-<script src="js/render.js?v=d87081c6"></script>
+<script src="js/render.js?v=b27ac066"></script>
 <script src="js/analysis.js?v=293cdf67"></script>
 <script src="js/io.js?v=c35fb27d"></script>
 <script src="js/packs.js?v=85a99e86"></script>
 <script src="js/builder.js?v=b9669f82"></script>
 <script src="js/templates.js?v=d03e6802"></script>
 <script src="js/app.js?v=0f091004"></script>
-<script src="js/inspector.js?v=24dfbeed"></script>
-<script src="js/actions.js?v=4fb6130e"></script>
-<script src="js/panels.js?v=da1c0a29"></script>
+<script src="js/inspector.js?v=22b0ac80"></script>
+<script src="js/actions.js?v=c896c6a4"></script>
+<script src="js/panels.js?v=66a4b905"></script>
 <script src="js/workspace.js?v=ca2e8f8f"></script>
-<script src="js/main.js?v=ecef1329"></script>
+<script src="js/main.js?v=137acf71"></script>
 </body>
 </html>

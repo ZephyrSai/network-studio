@@ -109,18 +109,21 @@ function drawTable(n,g,ctx){
   if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}}
 
 function legendRows(n,page,ctx){
-  const rows=[],count=new Map(),sample=new Map(),links=new Map(),items=page.items.filter(i=>itemVisible(i,ctx));
+  const rows=[],count=new Map(),sample=new Map(),links=new Map(),src=n.scope==='doc'?ctx.doc.pages.filter(p=>!p.isBackground).flatMap(p=>p.items):page.items,items=src.filter(i=>itemVisible(i,ctx));
   if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1);if(!sample.has(k))sample.set(k,i)}
   if(n.links!==false)for(const i of items)if(i.kind==='edge'){const k=Shapes.linkTypes[i.linkType]?i.linkType:'_'+i.stroke+'|'+(i.dash||'')+'|'+(i.double?1:0);const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
   for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c,sample:sample.get(k)});
   for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.short||Shapes.linkTypes[k]?.name||'Connector',count:v.n});
   if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
+  if(n.status!==false&&ctx.doc.display?.statusMarks!==false){const st=new Set(items.filter(i=>i.kind==='node').map(i=>i.data?.status));if(st.has('Planned'))rows.push({kind:'mark',mark:'planned',text:'Planned'});if(st.has('To remove'))rows.push({kind:'mark',mark:'remove',text:'To be removed'})}
   if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
   return rows}
 // Legend layout: rows flow into columns of maxRows; each column is as wide as its longest entry.
-function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false,per=Math.max(3,n.maxRows||8),cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,colX=[],colW=[];
-  for(let c=0;c<cols;c++){const part=rows.slice(c*inCol,(c+1)*inCol);colW.push(Math.max(120,...part.map(r=>Core.textWidth(r.text,size)+(counts&&r.count?Core.textWidth(' ×'+r.count,size)+14:0)+64)));colX.push(c?colX[c-1]+colW[c-1]:0)}
-  const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,colX.at(-1)+colW.at(-1)+12);n.h=40+inCol*rh+6;return{rows,size,rh,counts,inCol,colX,colW}}
+function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false;
+  const layout=per=>{const cols=Math.max(1,Math.ceil(rows.length/per)),inCol=Math.ceil(rows.length/cols)||1,colX=[],colW=[];for(let c=0;c<cols;c++){const part=rows.slice(c*inCol,(c+1)*inCol);colW.push(Math.max(120,...part.map(r=>Core.textWidth(r.text,size)+(counts&&r.count?Core.textWidth(' ×'+r.count,size)+14:0)+64)));colX.push(c?colX[c-1]+colW[c-1]:0)}return{inCol,colX,colW,w:colX.at(-1)+colW.at(-1)+12}};
+  // a pinned legend wraps into taller columns rather than run under a title block on the same edge
+  let per=Math.max(3,n.maxRows||8),L=layout(per);const avail=typeof Constraints!=='undefined'&&n.pin?Constraints.availableWidth(page,ctx.doc,n):Infinity;while(L.w>avail&&per<rows.length){per++;L=layout(per)}
+  const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,L.w);n.h=40+L.inCol*rh+6;return{rows,size,rh,counts,inCol:L.inCol,colX:L.colX,colW:L.colW}}
 function drawLegend(n,g,ctx,page){
   const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx);
   el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill||ctx.bg,stroke:n.stroke||'#a2b2c6','stroke-width':1},g);
@@ -129,6 +132,7 @@ function drawLegend(n,g,ctx,page){
     if(col&&i%inCol===0)el('line',{x1:x0-2,y1:n.y+38,x2:x0-2,y2:n.y+n.h-8,stroke:n.stroke||'#a2b2c6','stroke-opacity':.45},g);
     if(r.kind==='device'){const s=r.sample,holder=el('g',{transform:`translate(${x0+8} ${y+1})`},g);holder.innerHTML=Shapes.iconSvg(r.type,{size:26,display:s?.display==='card'?'symbol':s?.display||'symbol',accent:(s&&colorFor(s,ctx))||s?.stroke||'#2f5ea8',fill:s?.fill&&s.fill!=='none'?s.fill:ctx.bg})}
     else if(r.kind==='zone')el('rect',{x:x0+12,y:cy-7,width:24,height:14,rx:3,fill:r.zone.fill,stroke:r.zone.stroke,'stroke-dasharray':r.zone.dash?'3 2':null},g);
+    else if(r.kind==='mark'){el('rect',{x:x0+14,y:cy-8,width:20,height:16,rx:3,fill:'none',stroke:r.mark==='planned'?'#2563eb':'#94a3b8','stroke-dasharray':r.mark==='planned'?'3 2':null},g);if(r.mark==='remove')el('path',{d:`M${x0+17} ${cy-5}l14 10m0 -10l-14 10`,stroke:'#dc2626','stroke-width':1.8},g)}
     else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+40}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
     else el('rect',{x:x0+12,y:cy-6,width:22,height:12,rx:3,fill:r.color},g);
     const t=el('text',{x:x0+50,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
