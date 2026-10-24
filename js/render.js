@@ -169,15 +169,24 @@ function sceneSvg(page,{doc=S.doc,print=true,pad=15,area=null,prefix='o'}={}){
   drawScene(el('g',{},root),page,ctx);return root}
 
 // ---------- editor canvas ----------
-const need={scene:true,overlay:true,panel:true};let frame=0,frameTimer=0;
+const need={scene:true,page:true,overlay:true,panel:true};let frame=0,frameTimer=0;
 // rAF pauses in background tabs, so a timer backs it up
-function render(part){if(part)need[part]=true;else{need.scene=need.overlay=need.panel=true}if(!frame){frame=requestAnimationFrame(renderNow);frameTimer=setTimeout(renderNow,150)}}
+function render(part){if(part)need[part]=true;else{need.scene=need.page=need.overlay=need.panel=true}if(!frame){frame=requestAnimationFrame(renderNow);frameTimer=setTimeout(renderNow,150)}}
 function renderNow(){
   cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
   svg.setAttribute('viewBox',`${S.view.x} ${S.view.y} ${cw/z} ${ch/z}`);
+  // zooming only needs the page sheet (grid density, hairlines) and the overlay — not every shape
+  if(need.scene||need.page)drawPageLayer(z);
   if(need.scene){
-    Conn.sync(items(),{pageId:pg().id});const world=$('scene'),bgl=$('bgLayer'),pl=$('pageLayer');
-    pl.replaceChildren();bgl.replaceChildren();world.replaceChildren();
+    Conn.sync(items(),{pageId:pg().id});const world=$('scene'),bgl=$('bgLayer');
+    bgl.replaceChildren();world.replaceChildren();
+    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg()){const v=Constraints.bgView(bgPage,pg());drawScene(el('g',{opacity:.9},bgl),v,makeCtx(v,{prefix:'bg',fieldPage:pg()}))}
+    drawScene(world,pg(),makeCtx(pg(),{interactive:true}));scheduleMinimap();
+  }
+  renderOverlay();renderRulers();updateMinimapView();
+  if(need.panel){updatePanel();renderChrome()}
+  need.scene=need.page=need.overlay=need.panel=false}
+function drawPageLayer(z){const pl=$('pageLayer');pl.replaceChildren();
     const b=Core.pageSize(pg()),m=pg().margin*Core.PX,dark=document.documentElement.dataset.theme==='dark';
     el('rect',{x:-50000,y:-50000,width:100000,height:100000,fill:'transparent','data-role':'background'},pl);
     el('rect',{x:4,y:5,width:b.w,height:b.h,fill:dark?'#00000055':'#c9d3e055','pointer-events':'none'},pl);
@@ -185,12 +194,7 @@ function renderNow(){
     if(S.prefs.grid){const step=gridStep(),k=step*z<7?5:1,gs=step*k,p=el('pattern',{id:'gridPattern',width:gs,height:gs,patternUnits:'userSpaceOnUse'},el('defs',{},pl));const light=isDarkColor(pg().bg);el('path',{d:`M${gs} 0H0V${gs}`,fill:'none',stroke:light?'#ffffff':'#3b5b8c','stroke-opacity':light?.08:.09,'stroke-width':1/z},p);el('rect',{x:0,y:0,width:b.w,height:b.h,fill:'url(#gridPattern)','pointer-events':'none'},pl)}
     el('rect',{x:m,y:m,width:b.w-2*m,height:b.h-2*m,fill:'none',stroke:'#93a9c6','stroke-opacity':.7,'stroke-dasharray':'5 5','stroke-width':1/z,'pointer-events':'none'},pl);
     if(S.prefs.guides)for(const gl of pg().guideLines||[])el('line',{x1:gl.axis==='x'?gl.pos:-5000,y1:gl.axis==='y'?gl.pos:-5000,x2:gl.axis==='x'?gl.pos:5000,y2:gl.axis==='y'?gl.pos:5000,stroke:'#9b70c6','stroke-width':1.2/z,'stroke-dasharray':`${8/z} ${5/z}`,'data-role':'guide','data-guide':gl.id,cursor:gl.axis==='x'?'ew-resize':'ns-resize'},pl);
-    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg()){const v=Constraints.bgView(bgPage,pg());drawScene(el('g',{opacity:.9},bgl),v,makeCtx(v,{prefix:'bg',fieldPage:pg()}))}
-    drawScene(world,pg(),makeCtx(pg(),{interactive:true}));scheduleMinimap();
-  }
-  renderOverlay();renderRulers();updateMinimapView();
-  if(need.panel){updatePanel();renderChrome()}
-  need.scene=need.overlay=need.panel=false}
+}
 const isDarkColor=c=>{const m=/^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(c||'#fff');if(!m)return false;const[r,g,b]=m.slice(1).map(h=>parseInt(h,16));return(r*299+g*587+b*114)/1000<110};
 const gridStep=()=>Math.max(1,+S.prefs.gridStep||10);
 

@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=fe394759">
+<link rel="stylesheet" href="css/app.css?v=69c87881">
 <style id="printRules"></style>
 </head>
 <body>
@@ -45,9 +45,10 @@
     <canvas id="rulerX" class="ruler x"></canvas><canvas id="rulerY" class="ruler y"></canvas><div class="rulerCorner" data-action="toggle_rulers" title="Hide rulers"></div>
     <svg id="canvas" xmlns="http://www.w3.org/2000/svg" aria-label="Drawing canvas"><g id="pageLayer"></g><g id="bgLayer"></g><g id="scene"></g><g id="overlay"></g></svg>
     <div id="hint"></div>
+    <button class="focusExit" data-action="focusMode" title="Exit focus mode (Ctrl+.)">Exit focus ✕</button>
     <div id="toast" hidden role="status"></div>
     <textarea id="inlineText" hidden aria-label="Edit text"></textarea>
-    <div id="minimap" title="Overview — click or drag to navigate"><svg id="miniSvg" preserveAspectRatio="xMidYMid meet"><g id="miniScene"></g><rect id="miniView" fill="#376be522" stroke="#376be5"></rect></svg></div>
+    <div id="minimap" title="Overview — click or drag to navigate"><button class="miniClose" data-action="toggle_minimap" title="Hide overview (View ▸ Overview)">×</button><svg id="miniSvg" preserveAspectRatio="xMidYMid meet"><g id="miniScene"></g><rect id="miniView" fill="#376be522" stroke="#376be5"></rect></svg></div>
     <div class="presentBar"><button onclick="presentStep(-1)">◀</button><span id="presentPage"></span><button onclick="presentStep(1)">▶</button><button data-action="present">Exit</button></div>
   </main>
   <aside class="right" id="rightPanel">
@@ -77,27 +78,27 @@
 <dialog id="dlg"></dialog>
 <noscript>Port Network Studio needs JavaScript.</noscript>
 
-<script src="js/core.js?v=86f4cf9b"></script>
+<script src="js/core.js?v=f4d1bcac"></script>
 <script src="js/stencils.js?v=51c82413"></script>
 <script src="js/packs/extended.js?v=05ccca0c"></script>
 <script src="js/shapes.js?v=d0c995c0"></script>
-<script src="js/icons.js?v=8b2bdc5b"></script>
+<script src="js/icons.js?v=9dbe47c2"></script>
 <script src="js/router.js?v=0c90e0a3"></script>
 <script src="js/layout.js?v=51056f31"></script>
 <script src="js/connectors.js?v=b2de2b0d"></script>
-<script src="js/constraints.js?v=9b0e54b4"></script>
+<script src="js/constraints.js?v=db8d2619"></script>
 <script src="js/vsdx.js?v=1795b2a5"></script>
-<script src="js/render.js?v=5d09db93"></script>
+<script src="js/render.js?v=d87081c6"></script>
 <script src="js/analysis.js?v=293cdf67"></script>
-<script src="js/io.js?v=1b81eac8"></script>
+<script src="js/io.js?v=c35fb27d"></script>
 <script src="js/packs.js?v=85a99e86"></script>
 <script src="js/builder.js?v=b9669f82"></script>
-<script src="js/templates.js?v=02a71dec"></script>
-<script src="js/app.js?v=2684a869"></script>
+<script src="js/templates.js?v=d03e6802"></script>
+<script src="js/app.js?v=0f091004"></script>
 <script src="js/inspector.js?v=24dfbeed"></script>
-<script src="js/actions.js?v=28c986ee"></script>
-<script src="js/panels.js?v=b766c890"></script>
+<script src="js/actions.js?v=4fb6130e"></script>
+<script src="js/panels.js?v=da1c0a29"></script>
 <script src="js/workspace.js?v=ca2e8f8f"></script>
-<script src="js/main.js?v=009fd108"></script>
+<script src="js/main.js?v=ecef1329"></script>
 </body>
 </html>

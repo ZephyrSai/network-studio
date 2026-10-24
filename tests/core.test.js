@@ -63,3 +63,10 @@ test('pinned title block follows the page corner; background pages re-anchor per
   assert.equal(r.paper,'A2');assert.deepEqual(r.gap0.map(Math.round),r.gap1.map(Math.round));assert.equal(r.frameW,r.a3W)});
 
 test('zones grow to keep members inside',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const p=Core.page('t'),z=Core.zone('Z',100,100,300,200),n=Core.node('server',300,180,'S'),o=Core.node('server',600,180,'Out');p.items.push(z,n,o);Core.move(n,50,0);Constraints.sync(p);const w=z.w;Core.move(o,0,0);return{inside:Core.inside(Core.box(n),Core.box(z)),w,outsideStays:!Core.overlaps(Core.box(o),Core.box(z))}})()`,ctx);assert.ok(r.inside);assert.ok(r.w>300);assert.ok(r.outsideStays,'a device whose centre is outside is not pulled in')});
+
+test('drawings saved before pinning get their border, title block and legend anchored',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const d=Core.newDoc('old');delete d.meta.pinsUpgraded;const fg=d.pages[0],bg=Core.page('bg');bg.isBackground=true;d.pages.push(bg);fg.background=bg.id;
+  const a=Constraints.area(bg);bg.items.push({id:'fr',kind:'zone',x:a.x,y:a.y,w:a.w,h:a.h,fill:'none',stroke:'#000',style:'outline',labels:[],locked:true},{id:'tb',kind:'table',x:a.x+a.w-300,y:a.y+a.h-100,w:300,h:100,cols:[100,200],rowH:20,rows:[['Sheet','{{page.number}}']],labels:[]});
+  const fa=Constraints.area(fg);fg.items.push({id:'lg',kind:'legend',x:fa.x+12,y:fa.y+fa.h-150,w:200,h:130,labels:[]});fg.paper='A2';fg.minPaper='A2';
+  Constraints.upgrade(d);const v=Constraints.bgItems(bg,fg),A=Constraints.area(fg),lg=fg.items[0],tb=v.find(i=>i.id==='tb'),fr=v.find(i=>i.id==='fr');
+  return{pins:[bg.items[0].pin,bg.items[1].pin,lg.pin],frame:Math.round(fr.w-A.w),tbGap:[Math.round(A.x+A.w-tb.x-tb.w),Math.round(A.y+A.h-tb.y-tb.h)],legendGap:Math.round(A.y+A.h-lg.y-lg.h),again:Constraints.upgrade(d)}})()`,ctx);
+  assert.deepEqual(r.pins,['frame','br','bl']);assert.equal(r.frame,0);assert.deepEqual(r.tbGap,[0,0]);assert.equal(r.legendGap,20);assert.equal(r.again,0)});

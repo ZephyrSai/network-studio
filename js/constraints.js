@@ -30,8 +30,9 @@ const Constraints=(()=>{
   // ---------- page auto-size ----------
   function candidates(p){const base=p.minPaper||p.paper;if(base==='Custom')return[];const ser=SERIES.A.includes(base)?SERIES.A:SERIES.US.includes(base)?SERIES.US:[base];return ser.slice(Math.max(0,ser.indexOf(base)))}
   // pinned blocks may sit on empty zone areas, but must not cover devices, links, text or tables
-  function overlapsContent(page,content){const pins=page.items.filter(n=>n.pin&&n.pin!=='frame');return pins.some(p=>{const pb=C.box(p);return content.some(n=>n.kind!=='zone'&&C.overlaps(pb,C.bounds([n],n.kind!=='edge')))})}
-  function autoSize(page){
+  function blockers(page,doc){const bg=doc&&page.background&&doc.pages.find(p=>p.id===page.background);return[...page.items.filter(n=>n.pin&&n.pin!=='frame'),...(bg&&bg!==page?bgItems(bg,page).filter(n=>n.pin&&n.pin!=='frame'):[])]}
+  function overlapsContent(page,content,doc){const pins=blockers(page,doc);return pins.some(p=>{const pb=C.box(p);return content.some(n=>n.kind!=='zone'&&C.overlaps(pb,C.bounds([n],n.kind!=='edge')))})}
+  function autoSize(page,doc){
     if(page.autoSize===false||page.isBackground)return null;
     page.minPaper??=page.paper;if(page.minPaper==='Custom'){page.minW??=page.customW;page.minH??=page.customH}
     const pinned=page.items.filter(n=>n.pin),offs=new Map(pinned.map(n=>[n,offsets(n,area(page))])),content=page.items.filter(n=>!n.pin);
@@ -40,18 +41,27 @@ const Constraints=(()=>{
     if(content.length){let b=C.bounds(content,true);const m=4;
       if(b.x<0||b.y<0){const dx=b.x<0?Math.ceil(m-b.x):0,dy=b.y<0?Math.ceil(m-b.y):0;for(const n of content)C.move(n,dx,dy);for(const g of page.guideLines||[])g.pos+=g.axis==='x'?dx:dy;shift=[dx,dy];b={...b,x:b.x+dx,y:b.y+dy}}
       const need={w:b.x+b.w+m,h:b.y+b.h+m};let done=false;
-      for(const paper of candidates(page)){const s=C.pageSize({...page,paper});if(s.w+.5<need.w||s.h+.5<need.h)continue;page.paper=paper;const a=area(page);for(const n of pinned)place(n,a,offs.get(n));if(!overlapsContent(page,content)){done=true;break}}
+      for(const paper of candidates(page)){const s=C.pageSize({...page,paper});if(s.w+.5<need.w||s.h+.5<need.h)continue;page.paper=paper;const a=area(page);for(const n of pinned)place(n,a,offs.get(n));if(!overlapsContent(page,content,doc)){done=true;break}}
       if(!done){// beyond the largest sheet (or a custom page): grow a custom sheet in 10 mm steps
-        let extra=0;for(const n of pinned)if(n.pin!=='frame'&&n.pin.includes('b'))extra=Math.max(extra,C.box(n).h+16);
+        let extra=0;for(const n of blockers(page,doc))if(n.pin.includes('b'))extra=Math.max(extra,C.box(n).h+16);
         const minW=page.minPaper==='Custom'?page.minW:C.dimensions({...page,paper:page.minPaper})[0],minH=page.minPaper==='Custom'?page.minH:C.dimensions({...page,paper:page.minPaper})[1];
-        page.paper='Custom';page.customW=Math.max(minW,Math.ceil(need.w/C.PX/10)*10);page.customH=Math.max(minH,Math.ceil((need.h+(overlapsContent(page,content)?extra:0))/C.PX/10)*10);for(const n of pinned)place(n,area(page),offs.get(n));
-        if(overlapsContent(page,content)){page.customH=Math.ceil((need.h+extra)/C.PX/10)*10;for(const n of pinned)place(n,area(page),offs.get(n))}}}
+        page.paper='Custom';page.customW=Math.max(minW,Math.ceil(need.w/C.PX/10)*10);page.customH=Math.max(minH,Math.ceil((need.h+(overlapsContent(page,content,doc)?extra:0))/C.PX/10)*10);for(const n of pinned)place(n,area(page),offs.get(n));
+        if(overlapsContent(page,content,doc)){page.customH=Math.ceil((need.h+extra)/C.PX/10)*10;for(const n of pinned)place(n,area(page),offs.get(n))}}}
     else{page.paper=page.minPaper;if(page.paper==='Custom'){page.customW=page.minW;page.customH=page.minH}for(const n of pinned)place(n,area(page),offs.get(n))}
     const resized=before.paper!==page.paper||before.w!==page.customW||before.h!==page.customH;return{shift,resized}}
 
   // ---------- entry points ----------
   // After every edit: containers first (they change content bounds), then the page, then the pins.
-  function sync(page){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);const r=page.isBackground?null:autoSize(page);if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);const r=page.isBackground?null:autoSize(page,doc);if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
   function pinNow(n,page,pin){n.pin=pin||undefined;if(!pin){delete n.pin;return}place(n,area(page),offsets(n,area(page)))}
-  return{sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
+  // Drawings saved before pinning existed: recognise borders, field-driven title blocks and legends and pin them,
+  // measuring against the sheet size they were laid out for (the current size or any smaller standard sheet).
+  function upgrade(doc){if(!doc||doc.meta?.pinsUpgraded)return 0;let n=0;
+    for(const p of doc.pages){const sizes=[...new Set([p.paper,p.minPaper,...SERIES.A,...SERIES.US].filter(Boolean))],cur=area(p),areas=[cur,...sizes.map(paper=>area({...p,paper})).filter(a=>a.w<=cur.w+1&&a.h<=cur.h+1).sort((a,b)=>b.w*b.h-a.w*a.h)];
+      for(const it of p.items){if(it.pin||it.kind==='edge')continue;const b=C.box(it);
+        if(it.kind==='zone'&&(it.fill==='none'||it.style==='outline')){for(const a of areas)if(Math.abs(b.x-a.x)<4&&Math.abs(b.y-a.y)<4&&Math.abs(b.w-a.w)<6&&Math.abs(b.h-a.h)<6){it.pin='frame';it.autoFit=false;place(it,cur,{});n++;break}continue}
+        const fielded=it.kind==='table'&&it.rows?.some(r=>r.some(c=>String(c).includes('{{'))),legend=it.kind==='legend';if(!fielded&&!legend)continue;
+        for(const a of areas){const o=offsets(it,a),tol=legend?.28:.12,v=o.b<o.t?'b':'t',h=o.r<o.l?'r':'l';if(Math.min(o.b,o.t)<a.h*tol&&Math.min(o.r,o.l)<a.w*tol&&Math.min(o.b,o.t)>-8&&Math.min(o.r,o.l)>-8){it.pin=v+h;place(it,cur,o);n++;break}}}}
+    doc.meta??={};doc.meta.pinsUpgraded=true;return n}
+  return{upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
 })();

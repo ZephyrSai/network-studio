@@ -5,7 +5,19 @@ function wire(){
   const cv=$('canvas');
   cv.addEventListener('pointerdown',beginPointer);cv.addEventListener('pointermove',pointerMove);cv.addEventListener('pointerup',pointerUp);cv.addEventListener('pointercancel',()=>{S.drag=null;S.guideLines=[];render()});
   cv.addEventListener('pointerleave',()=>{if(!S.drag&&S.hoverId){S.hoverId=null;render('overlay')}S.cursor=null;renderRulers()});
-  cv.addEventListener('wheel',e=>{e.preventDefault();if(e.ctrlKey||e.metaKey||S.prefs.wheelZoom&&!e.shiftKey){const f=Math.exp(-e.deltaY*(e.ctrlKey&&!e.metaKey&&Math.abs(e.deltaY)<40?.012:.0022));zoomAt(f,point(e))}else{const dx=e.shiftKey&&!e.deltaX?e.deltaY:e.deltaX,dy=e.shiftKey&&!e.deltaX?0:e.deltaY;S.view.x+=dx/S.view.zoom;S.view.y+=dy/S.view.zoom;render('overlay')}},{passive:false});
+  // Wheel / trackpad: pinch (ctrl+wheel) zooms around the fingers, two-finger scroll pans. Events are folded
+  // into one update per frame so fast trackpads stay smooth.
+  let wz=0,wx=0,wy=0,wAt=null,wFrame=0;
+  const flushWheel=()=>{wFrame=0;if(wz){zoomAt(Math.exp(-wz),wAt);wz=0}if(wx||wy){S.view.x+=wx/S.view.zoom;S.view.y+=wy/S.view.zoom;wx=wy=0;render('overlay')}};
+  cv.addEventListener('wheel',e=>{e.preventDefault();const k=e.deltaMode===1?16:e.deltaMode===2?400:1,dx=e.deltaX*k,dy=e.deltaY*k;
+    if(e.ctrlKey||e.metaKey||S.prefs.wheelZoom&&!e.shiftKey){const pinch=e.ctrlKey&&!e.metaKey&&Math.abs(dy)<50;wz+=dy*(pinch?.011:.0018);wAt=point(e)}
+    else{wx+=e.shiftKey&&!dx?dy:dx;wy+=e.shiftKey&&!dx?0:dy}
+    if(!wFrame)wFrame=requestAnimationFrame(flushWheel)},{passive:false});
+  let gz=null;// Safari sends GestureEvents for pinch instead of ctrl+wheel
+  cv.addEventListener('gesturestart',e=>{e.preventDefault();gz=S.view.zoom});
+  cv.addEventListener('gesturechange',e=>{e.preventDefault();if(gz)zoomAt(gz*e.scale/S.view.zoom,point(e))});
+  cv.addEventListener('gestureend',e=>{e.preventDefault();gz=null});
+  document.addEventListener('gesturestart',e=>e.preventDefault());
   cv.addEventListener('contextmenu',canvasMenu);
   // global clicks: actions, modes, palette, tabs
   document.addEventListener('click',e=>{
@@ -13,7 +25,7 @@ function wire(){
     const a=t.closest('[data-action]');if(a&&!a.disabled){hideMenus();actions[a.dataset.action]?.();return}
     const m=t.closest('[data-mode]');if(m){setMode(m.dataset.mode);return}
     if(t.closest('[data-file-menu]')){const fm=$('fileMenu');if(!fm.hidden){hideMenus();return}openFileMenu(t.closest('[data-file-menu]'));return}
-    const rt=t.closest('[data-rtab]');if(rt){S.ribbonTab=rt.dataset.rtab;renderRibbon();return}
+    const rt=t.closest('[data-rtab]');if(rt){const same=S.ribbonTab===rt.dataset.rtab;S.ribbonTab=rt.dataset.rtab;if(S.prefs.ribbonCollapsed)document.body.classList.toggle('ribbonPeek',!(same&&document.body.classList.contains('ribbonPeek')));renderRibbon();return}
     const lt=t.closest('[data-ltab]');if(lt){S.ltab=lt.dataset.ltab;renderLeft();return}
     const sym=t.closest('[data-symbol]');if(sym&&!S.justDragged){const c=centerOfView();addNode(sym.dataset.symbol,c[0]+(Math.random()-.5)*40,c[1]+(Math.random()-.5)*40);bumpRecent(sym.dataset.symbol);return}
     const lib=t.closest('[data-library]');if(lib){insertLibrary(lib.dataset.library,...centerOfView());return}
@@ -22,7 +34,8 @@ function wire(){
     const ex=t.closest('[data-explore]');if(ex){const[pi,id]=ex.dataset.explore.split(':');if(+pi!==S.pageIndex){S.pageIndex=+pi;clearTransient();fit()}select([id]);const n=find(id);if(n)Ins.ensureVisible(n);return}
     const th=t.closest('[data-theme-apply]');if(th&&!t.closest('#inspector')){mutate(()=>Shapes.applyTheme(S.doc,th.dataset.themeApply));renderRibbon();notify('Theme applied — Undo restores the previous look.');return}
     if(!t.closest('.menu'))hideMenus()});
-  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.menu')&&!e.target.closest('[data-file-menu]'))hideMenus()});
+  document.addEventListener('pointerdown',e=>{const t=e.target?.closest?e.target:document.body;if(!t.closest('.menu')&&!t.closest('[data-file-menu]'))hideMenus();if(document.body.classList.contains('ribbonPeek')&&!t.closest('.ribbon,.ribbonTabs,.menu,dialog')){document.body.classList.remove('ribbonPeek');renderRibbon()}});
+  $('ribbonTabs').addEventListener('dblclick',e=>{if(e.target.closest('[data-rtab]'))actions.toggleRibbon()});
   // inspector
   const ins=$('inspector');ins.addEventListener('change',Ins.onChange);ins.addEventListener('input',Ins.onInput);ins.addEventListener('click',Ins.onClick);$('inspectorTabs').addEventListener('click',Ins.onClick);
   ins.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.target.blur();e.target.focus()}});
@@ -72,7 +85,7 @@ function wire(){
   $('layerSel').addEventListener('change',e=>{S.activeLayer=e.target.value;if(S.ltab==='layers')renderLayers();notify('New shapes go on layer “'+S.doc.layers.find(l=>l.id===S.activeLayer)?.name+'”.',1800)});
   // minimap
   const mm=$('minimap');let mmDrag=false;const mmMove=e=>{const svg=$('miniSvg'),vb=JSON.parse(svg.dataset.vb||'[0,0,1,1]'),r=svg.getBoundingClientRect(),k=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width-vb[2]/k)/2,oy=(r.height-vb[3]/k)/2,x=vb[0]+(e.clientX-r.left-ox)*k,y=vb[1]+(e.clientY-r.top-oy)*k,c=$('canvas');S.view.x=x-c.clientWidth/2/S.view.zoom;S.view.y=y-c.clientHeight/2/S.view.zoom;render('overlay')};
-  mm.addEventListener('pointerdown',e=>{mmDrag=true;mm.setPointerCapture(e.pointerId);mmMove(e)});mm.addEventListener('pointermove',e=>{if(mmDrag)mmMove(e)});mm.addEventListener('pointerup',()=>mmDrag=false);
+  mm.addEventListener('pointerdown',e=>{if(e.target.closest('.miniClose'))return;mmDrag=true;mm.setPointerCapture(e.pointerId);mmMove(e)});mm.addEventListener('pointermove',e=>{if(mmDrag)mmMove(e)});mm.addEventListener('pointerup',()=>mmDrag=false);
   // keyboard & clipboard
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('dialog[open]')&&!document.querySelector('dialog[open]').matches(':modal')){closeDialog();S.highlights.clear();render('overlay');return}onKey(e)});
   window.addEventListener('keyup',e=>{if(e.code==='Space'){S.space=false;$('canvas').style.cursor=S.mode==='pan'?'grab':S.mode==='select'?'default':'crosshair'}});
@@ -107,7 +120,7 @@ async function boot(){
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();
   if(ws){doc=ws.doc;S.docId=ws.id;recovered=true}
   else try{const saved=localStorage.getItem('port-v3-recovery')||localStorage.getItem('port-v2-recovery');if(saved){doc=C.migrate(JSON.parse(saved));recovered=true}}catch(err){console.warn('recovery skipped',err)}
-  if(!doc)doc=Templates.build('campus');S.docId??=Workspace.newId();Packs.installDoc(doc);
+  if(!doc)doc=Templates.build('campus');S.docId??=Workspace.newId();Packs.installDoc(doc);Constraints.upgrade(doc);
   S.doc=doc;S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.activeLayer=doc.layers[0].id;
   renderRibbon();renderLeft();setMode('select');document.title=S.doc.name+' · Port Network Studio';
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
