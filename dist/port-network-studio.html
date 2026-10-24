@@ -5347,7 +5347,7 @@ function wire(){
   // left panel
   $('search').addEventListener('input',renderPalette);$('search').addEventListener('keydown',e=>{if(e.key==='Enter'){const first=$('palette').querySelector('[data-symbol]');if(first)first.click()}if(e.key==='Escape'){e.target.value='';renderPalette()}});
   $('paletteDisplay').addEventListener('change',e=>{S.prefs.paletteDisplay=e.target.value;savePrefs();renderPalette()});
-  $('palette').addEventListener('toggle',e=>{const d=e.target.closest('details[data-cat]');if(!d||$('search').value)return;S.prefs.catOpen??={};S.prefs.catOpen[d.dataset.cat]=d.open;savePrefs();if(d.open&&!d.querySelector('.palette')?.children.length)renderPalette()},true);
+  $('palette').addEventListener('toggle',e=>{const d=e.target.closest('details[data-cat]');if(!d||$('search').value)return;S.prefs.catOpen??={};if(S.prefs.catOpen[d.dataset.cat]!==d.open){S.prefs.catOpen[d.dataset.cat]=d.open;savePrefs()}const pal=d.querySelector('.palette');if(d.open&&pal&&!pal.children.length)renderPalette()},true);
   $('explorerSearch').addEventListener('input',renderExplorer);
   $('palette').addEventListener('dragstart',e=>{const s=e.target.closest('[data-symbol]'),l=e.target.closest('[data-library]');if(s){e.dataTransfer.setData('application/x-port-symbol',s.dataset.symbol);e.dataTransfer.effectAllowed='copy'}if(l)e.dataTransfer.setData('application/x-port-library',l.dataset.library)});
   cv.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy'});
