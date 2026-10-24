@@ -79,7 +79,7 @@ tools/              build.mjs (cache-busting + single-file build), build-packs.m
 ```
 
 ```bash
-npm test             # node --test tests/
+npm test             # node --test tests/*.test.js
 npm run build        # stamp asset versions in index.html + build dist/port-network-studio.html
 npm run packs        # refresh js/packs/extended.js from the Iconify API
 ```
