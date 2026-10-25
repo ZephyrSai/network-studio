@@ -41,7 +41,10 @@ function scale(n,b,sx,sy,fonts=true,weights=false){const tr=p=>[b.x+(p[0]-b.x)*s
   if(n.kind==='table'){n.cols=n.cols.map(c=>c*sx);n.rowH*=sy;if(fonts)n.size*=k}
   (n.labels||[]).forEach(l=>{if(!l.anchor)[l.x,l.y]=tr([l.x,l.y]);if(fonts)l.size=Math.max(4,l.size*k);if(l.wrapWidth)l.wrapWidth*=Math.abs(sx)});if(weights&&n.strokeWidth)n.strokeWidth*=k}
 function rotateVec([x,y],deg){const a=deg*Math.PI/180;return[x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a)]}
-function portPoint(n,p){const[x,y]=rotateVec([(p.x-.5)*n.w*(n.flipX?-1:1),(p.y-.5)*n.h*(n.flipY?-1:1)],n.rotation||0);return[n.x+n.w/2+x,n.y+n.h/2+y]}
+// Connection points sit on what is drawn: for icons that are smaller than their box, the glyph's outline (set by the renderer).
+let glyphOf=null;function setGlyph(fn){glyphOf=fn}
+function glyphBox(n){return glyphOf&&n.kind==='node'?glyphOf(n):null}
+function portPoint(n,p){const g=glyphBox(n),lx=g?g.x+p.x*g.w-n.w/2:(p.x-.5)*n.w,ly=g?g.y+p.y*g.h-n.h/2:(p.y-.5)*n.h;const[x,y]=rotateVec([lx*(n.flipX?-1:1),ly*(n.flipY?-1:1)],n.rotation||0);return[n.x+n.w/2+x,n.y+n.h/2+y]}
 // Direction a connector leaves a port: outward normal of the nearest side, after flip/rotation.
 function portDir(n,p){const d=[p.x,1-p.x,p.y,1-p.y],m=Math.min(...d);if(m>.35)return null;const i=d.indexOf(m);let v=[[-1,0],[1,0],[0,-1],[0,1]][i];v=[v[0]*(n.flipX?-1:1),v[1]*(n.flipY?-1:1)];v=rotateVec(v,n.rotation||0);return Math.abs(v[0])>=Math.abs(v[1])?(v[0]>0?'right':'left'):(v[1]>0?'down':'up')}
 // Convert a page point to normalised local coordinates of a node (inverse of portPoint).
@@ -114,6 +117,6 @@ const inCidr=(ip,c)=>((ip&c.mask)>>>0)===c.net;
 const ipsIn=s=>(String(s??'').match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g)||[]).filter(x=>ip2int(x)!=null);
 function fillFields(s,lookup){return String(s??'').replace(/\{\{\s*([\w.]+)\s*\}\}/g,(m,k)=>{const v=lookup(k);return v==null?m:String(v)})}
 
-return{copy,uid,PX,FONT,MONO,PAPERS,KINDS,textWidth,textLines,labelMetrics,setResolver,setSampler,resolve:(o,l)=>resolveText(o,l),corners,bounds,box,inside,overlaps,center,move,scale,rotateVec,portPoint,portDir,localPoint,label,defaultPorts,node,edge,zone,text,page,newDoc,FIELDS,LINK_FIELDS,ZONE_FIELDS,SWITCHES,POE_LOADS,CAMERAS,RECORDERS,duplicate,splitEdge,join,dimensions,pageSize,validate,migrate,ip2int,int2ip,cidr,inCidr,ipsIn,fillFields};
+return{copy,uid,PX,FONT,MONO,PAPERS,KINDS,textWidth,textLines,labelMetrics,setResolver,setSampler,setGlyph,glyphBox,resolve:(o,l)=>resolveText(o,l),corners,bounds,box,inside,overlaps,center,move,scale,rotateVec,portPoint,portDir,localPoint,label,defaultPorts,node,edge,zone,text,page,newDoc,FIELDS,LINK_FIELDS,ZONE_FIELDS,SWITCHES,POE_LOADS,CAMERAS,RECORDERS,duplicate,splitEdge,join,dimensions,pageSize,validate,migrate,ip2int,int2ip,cidr,inCidr,ipsIn,fillFields};
 })();
 if(typeof module!=='undefined')module.exports=Core;

@@ -19,13 +19,29 @@ function resolveLabel(owner,l,ctx=RCTX){
     return owner.data?.[k]??''})}
 Core.setResolver((owner,l)=>resolveLabel(owner,l,RCTX));
 // data lines shown under device names count as part of the label when routing around it
-Conn.setLabelExtra(n=>{const d=(RCTX?.doc||S.doc)?.display;if(!d?.fields?.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type])return 0;const k=d.fields.filter(f=>n.data?.[f]!==undefined&&String(n.data[f]).trim()!=='').length;return k?k*(n.labels[0].size*.84*1.22)+2:0});
+Conn.setLabelExtra(n=>{const d=(RCTX?.doc||S.doc)?.display,keys=shownFields(n,d);if(!keys.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type])return 0;const k=keys.filter(f=>n.data?.[f]!==undefined&&String(n.data[f]).trim()!=='').length;return k?k*(n.labels[0].size*.84*1.22)+2:0});
+
+// ---------- icon outlines: where connectors meet the drawing ----------
+// Symbol icons are fitted ("meet") into the device box and often have padding, so a connector ending on the box edge
+// looks like it stops short. Measure each icon's drawn outline once (per type and line width) and expose it to
+// Core.portPoint, so connection points sit on the icon itself.
+const glyphCache=new Map();let glyphHost=null;
+function glyphFrac(type,sw){const key=type+'|'+sw;if(glyphCache.has(key))return glyphCache.get(key);let out=null;
+  try{const s=Stencils?.shapes?.[type],tpl=s&&iconTemplate(type);if(tpl&&typeof document!=='undefined'){
+    if(!glyphHost){glyphHost=document.createElementNS('http://www.w3.org/2000/svg','svg');glyphHost.setAttribute('style','position:absolute;left:-9999px;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none');document.body.append(glyphHost)}
+    const g=tpl.cloneNode(true);g.setAttribute('stroke-width',sw);glyphHost.replaceChildren(g);const bb=g.getBBox(),[vx,vy,vw,vh]=s.vb.split(/[\s,]+/).map(Number),pad=sw/2;
+    if(bb.width>0&&bb.height>0)out={vb:[vx,vy,vw,vh],x:bb.x-pad,y:bb.y-pad,w:bb.width+2*pad,h:bb.height+2*pad}}}catch{}
+  glyphCache.set(key,out);return out}
+Core.setGlyph(n=>{if((n.display||'symbol')!=='symbol'||n.image||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||n.type==='rack')return null;const f=glyphFrac(n.type,n.strokeWidth??2);if(!f)return null;
+  const[vx,vy,vw,vh]=f.vb,k=Math.min(n.w/vw,n.h/vh),ox=(n.w-vw*k)/2,oy=(n.h-vh*k)/2,x=Math.max(0,ox+(f.x-vx)*k),y=Math.max(0,oy+(f.y-vy)*k);
+  return{x,y,w:Math.min(n.w-x,f.w*k),h:Math.min(n.h-y,f.h*k)}});
 
 // ---------- colour by data ("data graphics") ----------
 function colorMap(doc,page){const key=doc.display?.colorBy;if(!key)return null;const map=new Map();
   if(key==='_category'){for(const[k,v]of Object.entries(Shapes.CATEGORY))map.set(k,v);return{key,map}}
   if(key==='vlan')for(const v of doc.vlans||[])if(v.color)map.set(String(v.id),v.color);
   if(key==='status')for(const[k,v]of Object.entries(Shapes.STATUS))map.set(k,v);
+  for(const[k,v]of Object.entries(doc.display?.colorMap?.[key]||{}))map.set(k,v);
   const values=[...new Set(doc.pages.flatMap(p=>p.items).filter(n=>n.kind==='node').map(n=>String(n.data?.[key]??'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   let i=0;for(const v of values)if(!map.has(v))map.set(v,Shapes.PALETTE[i++%Shapes.PALETTE.length]);return{key,map}}
 function colorFor(n,ctx){const c=ctx.colors;if(!c||!Shapes.isDevice(n))return null;if(c.key==='_category')return c.map.get(Stencils?.shapes?.[n.type]?.cat)||null;const v=String(n.data?.[c.key]??'');return v?c.map.get(v)||null:'#cbd5e1'}
@@ -79,9 +95,11 @@ function drawNode(n,g,ctx){
 }
 function rackOf(n,page){if(!Shapes.rackItems[n.type])return null;const b=Core.box(n),c=[b.x+b.w/2,b.y+b.h/2];return page.items.find(r=>r.kind==='node'&&r.type==='rack'&&Core.inside({x:c[0],y:c[1],w:0,h:0},Shapes.rackInner(r)))||null}
 
+// Fields shown under a device label: the document-wide ones plus the device's own (Show on drawing).
+function shownFields(n,display){const g=display?.fields||[],own=n.showFields;return own?.length?[...new Set([...g,...own])]:g}
 function drawDataLines(n,g,ctx){
-  const keys=ctx.doc.display?.fields;if(!keys?.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||!n.labels?.length)return;
-  const vals=keys.map(k=>n.data?.[k]).filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='');if(!vals.length)return;
+  const keys=shownFields(n,ctx.doc.display);if(!keys.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||!n.labels?.length)return;
+  const named=ctx.doc.display?.prefixFields,vals=keys.filter(k=>n.data?.[k]!==undefined&&n.data[k]!==null&&String(n.data[k]).trim()!=='').map(k=>named?`${ctx.doc.fields?.find(f=>f.key===k)?.label||k}: ${n.data[k]}`:n.data[k]);if(!vals.length)return;
   const l=n.labels[0],m=Core.labelMetrics(l,resolveLabel(n,l,ctx)),size=Math.max(7,l.size*.84),lh=size*1.22,y=l.y+m.top+m.h+size*.95;
   const hb=ctx.bgAt?ctx.bgAt(l.x,y):ctx.bg,dw=Math.max(...vals.map(v=>Core.textWidth(String(v),size))),dl=l.align==='start'?l.x:l.align==='end'?l.x-dw:l.x-dw/2;el('rect',{x:dl-2,y:y-size,width:dw+4,height:(vals.length-1)*lh+size*1.25,rx:2,fill:hb,'pointer-events':'none'},g);const t=el('text',{x:l.x,y,'text-anchor':l.align||'middle','font-family':Core.FONT,'font-size':size,fill:l.color||'#34465e','fill-opacity':.75,'pointer-events':'none'},g);
   vals.forEach((v,i)=>{const s=el('tspan',{x:l.x,dy:i?lh:0},t);s.textContent=String(v)})}
@@ -108,15 +126,22 @@ function drawTable(n,g,ctx){
     let x=n.x;n.cols.forEach((cw,c)=>{if(c)el('line',{x1:x,y1:n.y,x2:x,y2:n.y+n.h,stroke:s,'stroke-width':.7},g);const v=resolveLabel(null,{text:String(row[c]??'')},ctx),t=el('text',{x:x+6,y:y+n.rowH/2+size*.36,'font-family':Core.FONT,'font-size':size,'font-weight':head||(n.boldFirstCol&&c===0)?650:400,fill:n.color||'#1e293b','pointer-events':'none'},g);t.textContent=fitText(v,size,cw-10,head);x+=cw})});
   if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}}
 
+// Rough colour names for legend rows that need telling apart.
+const COLOUR_NAMES=[['black','#111827'],['grey','#64748b'],['silver','#cbd5e1'],['white','#ffffff'],['red','#dc2626'],['orange','#ea580c'],['amber','#d97706'],['yellow','#eab308'],['lime','#65a30d'],['green','#16a34a'],['teal','#0d9488'],['cyan','#0891b2'],['blue','#2563eb'],['navy','#1e3a8a'],['indigo','#4f46e5'],['purple','#7c3aed'],['pink','#db2777'],['brown','#92400e']];
+function colourName(c){const m=/^#?([0-9a-f]{6})$/i.exec(String(c||'').trim());if(!m)return String(c||'');const v=parseInt(m[1],16),rgb=[v>>16,v>>8&255,v&255];let best='',bd=1e9;for(const[n,h]of COLOUR_NAMES){const w=parseInt(h.slice(1),16),d=(rgb[0]-(w>>16))**2+(rgb[1]-(w>>8&255))**2+(rgb[2]-(w&255))**2;if(d<bd){bd=d;best=n}}return best}
 function legendRows(n,page,ctx){
   const rows=[],count=new Map(),sample=new Map(),links=new Map(),src=n.scope==='doc'?ctx.doc.pages.filter(p=>!p.isBackground).flatMap(p=>p.items):page.items,items=src.filter(i=>itemVisible(i,ctx));
   if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1);if(!sample.has(k))sample.set(k,i)}
-  if(n.links!==false)for(const i of items)if(i.kind==='edge'){const k=Shapes.linkTypes[i.linkType]?i.linkType:'_'+i.stroke+'|'+(i.dash||'')+'|'+(i.double?1:0);const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
-  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c,sample:sample.get(k)});
-  for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.short||Shapes.linkTypes[k]?.name||'Connector',count:v.n});
-  if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
-  if(n.status!==false&&ctx.doc.display?.statusMarks!==false){const st=new Set(items.filter(i=>i.kind==='node').map(i=>i.data?.status));if(st.has('Planned'))rows.push({kind:'mark',mark:'planned',text:'Planned'});if(st.has('To remove'))rows.push({kind:'mark',mark:'remove',text:'To be removed'})}
-  if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
+  if(n.links!==false)for(const i of items)if(i.kind==='edge'){const look=i.stroke+'|'+(i.dash||'')+'|'+(i.strokeWidth||2)+'|'+(i.double?1:0),k=(Shapes.linkTypes[i.linkType]?i.linkType:'_')+'#'+look;const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
+  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',key:'device:'+k,type:k,text:ctx.doc.typeStyles?.[k]?.label||Shapes.nameOf(k),count:c,sample:sample.get(k)});
+  // one row per look: if links of one type are styled differently, each look gets its own row (the legend never lies)
+  const byType=new Map();for(const[k,v]of links){const t=k.split('#')[0];if(!byType.has(t))byType.set(t,[]);byType.get(t).push([k,v])}
+  for(const[t,list]of byType){list.sort((a,b)=>b[1].n-a[1].n);const lt=Shapes.linkTypes[t],base=ctx.doc.linkStyles?.[t]?.label||lt?.short||lt?.name||'Connector';
+    list.forEach(([k,v],i)=>{const e=v.e,others=list.filter((_,j)=>j!==i).map(([,o])=>o.e),cn=colourName(e.stroke),sameName=others.some(o=>colourName(o.stroke)===cn&&o.stroke!==e.stroke),sameLook=others.some(o=>o.stroke===e.stroke&&(o.dash||'')===(e.dash||''));
+      const extra=i===0?'':' ('+[sameName?e.stroke:cn,e.dash?'dashed':'',sameLook?(e.strokeWidth||2)+' px':'',e.double?'double':''].filter(Boolean).join(', ')+')';rows.push({kind:'link',key:'link:'+k,edge:e,text:base+extra,count:v.n})})}
+  if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',key:'zone:'+z.id,zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
+  if(n.status!==false&&ctx.doc.display?.statusMarks!==false){const st=new Set(items.filter(i=>i.kind==='node').map(i=>i.data?.status));if(st.has('Planned'))rows.push({kind:'mark',key:'mark:planned',mark:'planned',text:'Planned'});if(st.has('To remove'))rows.push({kind:'mark',key:'mark:remove',mark:'remove',text:'To be removed'})}
+  if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',key:'swatch:'+ctx.colors.key+'='+k,color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
   return rows}
 // Legend layout: rows flow into columns of maxRows; each column is as wide as its longest entry.
 function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false;
@@ -125,7 +150,7 @@ function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,r
   let per=Math.max(3,n.maxRows||8),L=layout(per);const avail=typeof Constraints!=='undefined'&&n.pin?Constraints.availableWidth(page,ctx.doc,n):Infinity;while(L.w>avail&&per<rows.length){per++;L=layout(per)}
   const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,L.w);n.h=40+L.inCol*rh+6;return{rows,size,rh,counts,inCol:L.inCol,colX:L.colX,colW:L.colW}}
 function drawLegend(n,g,ctx,page){
-  const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx);
+  const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx),hits=[];
   el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill||ctx.bg,stroke:n.stroke||'#a2b2c6','stroke-width':1},g);
   const title=el('text',{x:n.x+14,y:n.y+24,'font-family':Core.FONT,'font-size':13,'font-weight':700,fill:n.color||'#34465e','letter-spacing':.6},g);title.textContent=n.title||'LEGEND';
   rows.forEach((r,i)=>{const col=Math.floor(i/inCol),x0=n.x+6+colX[col],cw=colW[col],y=n.y+36+(i%inCol)*rh,cy=y+rh/2;
@@ -136,8 +161,11 @@ function drawLegend(n,g,ctx,page){
     else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+40}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
     else el('rect',{x:x0+12,y:cy-6,width:22,height:12,rx:3,fill:r.color},g);
     const t=el('text',{x:x0+50,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
-    if(counts&&r.count){const c=el('text',{x:x0+cw-10,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size-1,fill:n.color||'#34465e','fill-opacity':.55},g);c.textContent='×'+r.count}});
-  if(ctx.interactive)el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}
+    if(counts&&r.count){const c=el('text',{x:x0+cw-10,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size-1,fill:n.color||'#34465e','fill-opacity':.55},g);c.textContent='×'+r.count}
+    if(ctx.interactive&&r.key&&r.kind!=='mark')hits.push({x:x0+2,y,w:cw-4,key:r.key,tip:`Double-click to restyle ${r.kind==='link'?'every link like this':r.kind==='device'?'every '+r.text:r.kind==='zone'?'this zone':'this colour'}`})});
+  if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g);
+    // rows on top: still select / drag the legend, and double-click restyles the row
+    for(const h of hits)el('title',{},el('rect',{x:h.x,y:h.y,width:h.w,height:rh,rx:4,class:'lgRow','data-id':n.id,'data-role':'object','data-legend-row':h.key},g)).textContent=h.tip}}
 
 function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return null;const id=`${ctx.prefix}-m-${e.id}-${side}`,m=el('marker',{id,viewBox:'-8 -6 12 12',refX:0,refY:0,markerWidth:7,markerHeight:7,markerUnits:'strokeWidth',orient:'auto-start-reverse',overflow:'visible'},defs);
   if(type==='dot')el('circle',{cx:-2,cy:0,r:3.2,fill:color},m);else if(type==='circle')el('circle',{cx:-3,cy:0,r:3,fill:ctx.bg,stroke:color,'stroke-width':1.3},m);else if(type==='diamond')el('path',{d:'M0 0L-4 -3L-8 0L-4 3Z',fill:color},m);else if(type==='openArrow')el('path',{d:'M-7 -4L0 0L-7 4',fill:'none',stroke:color,'stroke-width':1.4},m);else if(type==='bar')el('path',{d:'M-1 -4.5V4.5',stroke:color,'stroke-width':1.6},m);else el('path',{d:'M1 0L-7 -4L-7 4Z',fill:color},m);return`url(#${id})`}

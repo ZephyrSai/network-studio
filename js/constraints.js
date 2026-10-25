@@ -21,7 +21,7 @@ const Constraints=(()=>{
 
   // ---------- containers ----------
   function fitZones(page){let changed=false;const zones=page.items.filter(z=>z.kind==='zone'&&z.autoFit!==false&&!z.pin&&!z.locked).sort((a,b)=>a.w*a.h-b.w*b.h);
-    for(const z of zones){const members=page.items.filter(n=>n!==z&&n.kind!=='edge'&&!n.pin&&centerIn(n,z)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h));if(!members.length)continue;
+    for(const z of zones){const members=page.items.filter(n=>n!==z&&n.kind!=='edge'&&!n.pin&&n.type!=='revcloud'&&n.type!=='revdelta'&&centerIn(n,z)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h));if(!members.length)continue;
       const b=C.bounds(members,true),pad=16,head=z.labels?.[0]?Math.max(30,z.labels[0].y+z.labels[0].size*.4-z.y+8):12;
       const x0=Math.min(z.x,b.x-pad),y0=Math.min(z.y,b.y-head),x1=Math.max(z.x+z.w,b.x+b.w+pad),y1=Math.max(z.y+z.h,b.y+b.h+pad);
       if(x0<z.x-.5||y0<z.y-.5||x1>z.x+z.w+.5||y1>z.y+z.h+.5){const dx=x0-z.x,dy=y0-z.y;(z.labels||[]).forEach(l=>{l.x+=dx;l.y+=dy});z.x=x0;z.y=y0;z.w=x1-x0;z.h=y1-y0;changed=true}}
@@ -68,7 +68,28 @@ const Constraints=(()=>{
     const a=area(page);for(const n of pinned)place(n,a,offs.get(n));
     return{shift:Math.abs(dx)>.01||Math.abs(dy)>.01?[dx,dy]:null,resized:before.paper!==page.paper||before.w!==page.customW||before.h!==page.customH||before.o!==page.orientation}}
   function measureLegends(page,doc){if(typeof legendMeasure!=='function')return'';let sig='';for(const n of page.items)if(n.kind==='legend'){const prev=RCTX;RCTX=makeCtx(page,{doc});legendMeasure(n,page,RCTX);RCTX=prev;sig+=n.w+'x'+n.h+';'}return sig}
-  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
+  // ---------- labels out of the connectors' way ----------
+  // A device's name label normally sits under the icon. When connectors leave the device downwards they would run
+  // through the label (and its halo hides them), so the label moves beside the icon — right, else left — and back
+  // under it once nothing leaves downwards. Labels the user placed somewhere else are never touched.
+  function leaveSide(p,q){const dx=q[0]-p[0],dy=q[1]-p[1];return Math.abs(dy)>=Math.abs(dx)?(dy>0?'down':'up'):(dx>0?'right':'left')}
+  function labelSides(page,doc){if(doc?.display?.smartLabels===false)return false;const sides=new Map(),byId=new Map(page.items.map(n=>[n.id,n]));let changed=false;
+    for(const e of page.items)if(e.kind==='edge'&&e.points?.length>1){const pts=e.points.filter((p,i,a)=>!i||Math.hypot(p[0]-a[i-1][0],p[1]-a[i-1][1])>.5);if(pts.length<2)continue;
+      for(const[k,p,q]of[['from',pts[0],pts[1]],['to',pts.at(-1),pts.at(-2)]]){const id=e[k]?.node;if(!id)continue;if(!sides.has(id))sides.set(id,new Set());sides.get(id).add(leaveSide(p,q))}}
+    for(const n of page.items){if(n.kind!=='node'||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||n.rotation)continue;const l=n.labels?.[0];if(!l||l.anchor||!String(l.text||'').trim())continue;
+      const sd=sides.get(n.id)||new Set(),g=C.glyphBox(n)||{x:0,y:0,w:n.w,h:n.h},cx=n.x+n.w/2;
+      const below=!l.auto&&Math.abs(l.x-cx)<2&&(l.align||'middle')==='middle'&&l.y>n.y+n.h-2&&l.y-(n.y+n.h)<48;
+      // a side is only used if the label fits there without landing on another device or label
+      const box=side=>{const w=C.textWidth(String(l.text).split('\n').sort((a,b)=>b.length-a.length)[0],l.size)+4,lines=String(l.text).split('\n').length,h=lines*l.size*1.22,y=n.y+g.y+g.h/2-h/2;return side==='right'?{x:n.x+g.x+g.w+6,y,w,h}:{x:n.x+g.x-6-w,y,w,h}};
+      const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+      const fits=side=>{const b=box(side);return!page.items.some(m=>m!==n&&m.kind==='node'&&(hit(b,C.box(m))||m.labels?.[0]&&String(m.labels[0].text||'').trim()&&hit(b,(()=>{const ml=m.labels[0],mw=C.textWidth(String(ml.text).split('\n')[0],ml.size),mx=ml.align==='start'?ml.x:ml.align==='end'?ml.x-mw:ml.x-mw/2;return{x:mx,y:ml.y-ml.size,w:mw,h:ml.size*1.3}})())))};
+      const want=sd.has('down')?(!sd.has('right')&&fits('right')?'right':!sd.has('left')&&fits('left')?'left':null):null;
+      const place=side=>{const lines=String(l.text).split('\n').length,bh=lines*l.size*1.22,y=n.y+g.y+g.h/2-bh/2+l.size*.92;l.y=y;if(side==='right'){l.align='start';l.x=n.x+g.x+g.w+8}else{l.align='end';l.x=n.x+g.x-8}};
+      let moved=false;if(l.auto&&want!==l.auto){if(want){place(want);l.auto=want}else{l.align='middle';l.x=cx;l.y=n.y+n.h+(l.autoGap??16);delete l.auto;delete l.autoGap}moved=true}
+      else if(below&&want){l.autoGap=l.y-(n.y+n.h);place(want);l.auto=want;moved=true}
+      if(moved)changed=true;if(moved&&typeof Conn!=='undefined')for(const e of page.items)if(e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id))Conn.markDirty(e.id)}
+    return changed}
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);labelSides(page,doc);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
     // legends may re-wrap when the page width changes, which can change the room they need: settle in ≤3 passes
     for(let i=0;i<3;i++){const ri=page.isBackground?null:page.autoSize==='fit'?fitPage(page,doc):autoSize(page,doc);if(ri){r=r?{shift:ri.shift?[(r.shift?.[0]||0)+ri.shift[0],(r.shift?.[1]||0)+ri.shift[1]]:r.shift,resized:r.resized||ri.resized}:ri}const s2=measureLegends(page,doc);if(s2===sig)break;sig=s2}
     if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
@@ -84,5 +105,5 @@ const Constraints=(()=>{
     doc.meta??={};doc.meta.pinsUpgraded=true;return n}
   // Width a pinned block may use along its edge without running under other blocks pinned to the same edge.
   function availableWidth(page,doc,n){const a=area(page);if(!n.pin||n.pin==='frame')return Infinity;const edge=n.pin.includes('b')?'b':'t';return a.w-blockers(page,doc).filter(o=>o.id!==n.id&&o.pin.includes(edge)).reduce((s,o)=>s+C.box(o).w+16,0)}
-  return{availableWidth,FIT_DEFAULTS,fitPage,upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
+  return{availableWidth,FIT_DEFAULTS,fitPage,upgrade,sync,fitZones,labelSides,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
 })();

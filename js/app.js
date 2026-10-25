@@ -11,7 +11,7 @@ const C=Core;
 let autosaveTimer=null;
 function snapshot(){return JSON.stringify({doc:S.doc,pageIndex:S.pageIndex})}
 function remember(){S.history.push(snapshot());if(S.history.length>150)S.history.shift();S.future=[]}
-function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
+function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();Quick.revInfo();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
 function mutate(fn){remember();const r=fn();changed();render();return r}
 let checkTimer=null;
 // Design-rule check runs quietly after edits; the status bar shows the count and opens the full list.
@@ -148,7 +148,11 @@ function doResize(d,p,e){
   const b=d.box;let left=b.x,top=b.y,right=b.x+b.w,bottom=b.y+b.h;const dx=p[0]-d.start[0],dy=p[1]-d.start[1];
   if(d.hx===0)left=Math.min(grid(b.x+dx,e),right-8);if(d.hx===1)right=Math.max(grid(right+dx,e),left+8);if(d.hy===0)top=Math.min(grid(b.y+dy,e),bottom-8);if(d.hy===1)bottom=Math.max(grid(bottom+dy,e),top+8);
   let sx=(right-left)/b.w,sy=(bottom-top)/b.h;const corner=d.hx!==.5&&d.hy!==.5,single=d.original.length===1&&d.original[0].kind==='node'&&Shapes.kindOf(d.original[0].type)==='device';
-  if(corner&&(single!==e.shiftKey)||!corner&&e.shiftKey){const s=d.hx===.5?sy:d.hy===.5?sx:Math.max(sx,sy);sx=sy=s;if(d.hx===0)left=right-b.w*s;else right=left+b.w*s;if(d.hy===0)top=bottom-b.h*s;else bottom=top+b.h*s}
+  const lock=corner?((single||d.original.length>1)!==e.shiftKey):e.shiftKey;
+  if(lock){const s=d.hx===.5?sy:d.hy===.5?sx:Math.max(sx,sy);sx=sy=s;if(d.hx===0)left=right-b.w*s;else right=left+b.w*s;if(d.hy===0)top=bottom-b.h*s;else bottom=top+b.h*s}
+  // proportional resize of several items: restore, then scale about the opposite corner with the scale engine
+  if(lock&&d.original.length>1){const live=d.original.map(o=>{const t=find(o.id);if(t)Object.assign(t,C.copy(o));return t}).filter(Boolean);const ox=d.hx===0?b.x+b.w:d.hx===1?b.x:b.x+b.w/2,oy=d.hy===0?b.y+b.h:d.hy===1?b.y:b.y+b.h/2;
+    const r=Scale.apply(live,items(),sx,{origin:[ox,oy]});for(const id of r.reroute)Conn.markDirty(id);return}
   for(const old of d.original){const t=find(old.id);if(!t)continue;Object.assign(t,C.copy(old));
     if(t.kind==='node'||t.kind==='zone'||t.kind==='text'){const ob={x:old.x,y:old.y,w:old.w,h:old.h};const nx=left+(old.x-b.x)*sx,ny=top+(old.y-b.y)*sy;t.x=nx;t.y=ny;t.w=old.w*sx;t.h=old.h*sy;
       for(const l of t.labels||[]){const o2=old.labels.find(x=>x.id===l.id);if(t.kind==='zone'||t.kind==='text'){l.x=nx+(o2.x-ob.x)*(t.kind==='text'?1:Math.min(1,sx));l.y=ny+(o2.y-ob.y);if(t.kind==='text')l.wrapWidth=Math.max(30,t.w-20)}else if(o2.y>ob.y+ob.h){l.x=nx+t.w/2+(o2.x-ob.x-ob.w/2)*sx;l.y=ny+t.h+(o2.y-ob.y-ob.h)}else if(o2.y<ob.y){l.x=nx+t.w/2+(o2.x-ob.x-ob.w/2)*sx;l.y=ny+(o2.y-ob.y)}else{l.x=nx+(o2.x-ob.x)*sx;l.y=ny+(o2.y-ob.y)*sy;if(l.wrapWidth)l.wrapWidth*=sx}}}
@@ -178,7 +182,7 @@ function finishConnect(d,e,p){
   const edge=createEdge(d.from,target.ref,d.fromP,target.p);changed();select([edge.id]);render()}
 function createEdge(from,to,a,b,mid=[]){
   const e=C.edge([a,...mid,b],from?{...from}:null,to?{...to}:null),st=S.routeStyle;e.routing=st==='curved'?'free':st;if(st==='curved'){e.curve='smooth';const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;e.points=[a,[(a[0]+b[0])/2-dy/l*40,(a[1]+b[1])/2+dx/l*40],b]}
-  Shapes.applyLinkType(e,S.linkType);e.layer=S.activeLayer;e.jumps=true;
+  Shapes.applyLinkType(e,S.linkType,S.doc);e.layer=S.activeLayer;e.jumps=true;
   for(const[k,f]of[['from','fromIf'],['to','toIf']]){const r=e[k],n=r&&find(r.node),port=r?.port&&n?.ports.find(q=>q.id===r.port);if(port&&!genericPort(port.name))e[f]=port.name}
   if(['hv','vh'].includes(e.routing))Conn.orthogonalize(e);items().push(e);Conn.markDirty(e.id);return e}
 function finishTrace(){const tr=S.trace;if(!tr||tr.points.length<2)return notify('Place at least two points.');mutate(()=>{const pts=C.copy(tr.points);const e=createEdge(tr.from,tr.to,pts[0],pts.at(-1),pts.slice(1,-1));e.routing=S.routeStyle;Conn.orthogonalize(e);select([e.id])});S.trace=null;S.hover=null;setMode('select')}
@@ -199,6 +203,7 @@ function quickAddMenu(e,p,d){
     const n=Shapes.make(type,0,0);C.move(n,grid(p[0]-n.w/2)-n.x,grid(p[1]-n.h/2)-n.y);n.display=S.prefs.newDisplay==='symbol'?n.display:S.prefs.newDisplay;n.layer=S.activeLayer;items().push(n);createEdge(d.from,{node:n.id,port:null},d.fromP,C.center(n));changed();select([n.id]);render()}}
 
 function onDoubleClick(e,p,t,n){
+  const lr=e.target?.closest?.('[data-legend-row]');if(lr&&n?.kind==='legend'){openLegendRow(n,lr.dataset.legendRow);return}
   const role=t?.dataset.role;if(n&&isLocked(n))return;
   if(role==='label'){editLabel(n.id,t.dataset.label);return}
   if(n?.kind==='edge'){if(['auto','straight'].includes(n.routing)||role==='edge'&&!S.selected.has(n.id)||e.altKey){editEdgeLabel(n);return}
@@ -229,7 +234,9 @@ function addNode(type,x,y,opts={}){
     const target=opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
     items().push(n);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
     select([n.id]);return n});if(S.mode!=='select')setMode('select');return n}
-function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(!t||S.doc.theme==='port')return;if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
+function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(t&&S.doc.theme!=='port'){if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
+  // a style set for this type from the legend applies to new ones too
+  const ts=S.doc.typeStyles?.[n.type];if(ts){if(ts.stroke)n.stroke=ts.stroke;if(ts.display&&Shapes.kindOf(n.type)==='device')n.display=ts.display}}
 function insertAnnotation(kind,x,y){
   if(kind==='zone'){const z=mutate(()=>{const z=C.zone('Network zone',grid(x-160),grid(y-100),320,200);z.layer=S.activeLayer;items().unshift(z);select([z.id]);return z});return z}
   if(kind==='text'){const t=mutate(()=>{const t=C.text('Text',grid(x-120),grid(y-20),240,50,14);t.layer=S.activeLayer;items().push(t);select([t.id]);return t});editLabel(t.id,t.labels[0].id,true);return t}
@@ -290,3 +297,6 @@ function onKey(e){
   if(k==='?'){actions.shortcuts();return}
   if(k==='l'&&!e.shiftKey){actions.layoutHier();return}
   if(k==='f'&&!e.shiftKey){fit(S.selected.size>0);return}}
+
+// Double-click on a legend row: restyle every link / device of that type.
+function openLegendRow(n,key){Quick.openLegendStyle(n.id,key)}

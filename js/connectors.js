@@ -22,7 +22,7 @@ function simplify(points){const out=[];for(const q of points){if(out.length&&dis
 
 // ---------- endpoint resolution (port glue or dynamic shape glue) ----------
 function refPoint(e,key,byId){const r=e[key],n=r&&byId.get(r.node);if(!n)return key==='from'?e.points[0]:e.points.at(-1);if(r.port){const p=n.ports?.find(q=>q.id===r.port);if(p)return C.portPoint(n,p)}return C.center(n)}
-function boundaryPoint(n,toward){const c=C.center(n),dx=toward[0]-c[0],dy=toward[1]-c[1];if(!dx&&!dy)return c;const hw=n.w/2+1,hh=n.h/2+1,round=n.display==='circle'||n.type==='ellipse';if(round){const r=Math.min(hw,hh),l=Math.hypot(dx,dy);return[c[0]+dx/l*r,c[1]+dy/l*r]}const k=Math.min(hw/Math.abs(dx||1e-9),hh/Math.abs(dy||1e-9));return[c[0]+dx*k,c[1]+dy*k]}
+function boundaryPoint(n,toward){const g=!n.rotation&&C.glyphBox(n),c=g?[n.x+g.x+g.w/2,n.y+g.y+g.h/2]:C.center(n),dx=toward[0]-c[0],dy=toward[1]-c[1];if(!dx&&!dy)return c;const hw=(g?g.w:n.w)/2+1,hh=(g?g.h:n.h)/2+1,round=n.display==='circle'||n.type==='ellipse';if(round){const r=Math.min(hw,hh),l=Math.hypot(dx,dy);return[c[0]+dx/l*r,c[1]+dy/l*r]}const k=Math.min(hw/Math.abs(dx||1e-9),hh/Math.abs(dy||1e-9));return[c[0]+dx*k,c[1]+dy*k]}
 const slots=new Map();
 function resolveEnd(e,key,byId){
   const r=e[key];if(!r)return null;const n=byId.get(r.node);if(!n)return null;

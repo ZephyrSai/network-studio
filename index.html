@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=9468c012">
+<link rel="stylesheet" href="css/app.css?v=dd1135c7">
 <style id="printRules"></style>
 </head>
 <body>
@@ -61,6 +61,7 @@
   <div id="pageTabs" class="pageTabs"></div>
   <div class="spacer"></div>
   <button id="issueCount" class="issueBtn" data-action="check" hidden></button>
+  <button id="revInfo" class="revBtn" data-action="newRevision" title="Revisions">Rev</button>
   <span id="selectionCount">Ready</span>
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
@@ -79,29 +80,33 @@
 <dialog id="dlg"></dialog>
 <noscript>Port Network Studio needs JavaScript.</noscript>
 
-<script src="js/core.js?v=f4d1bcac"></script>
+<script src="js/core.js?v=3cca1d52"></script>
 <script src="js/stencils.js?v=51c82413"></script>
 <script src="js/packs/extended.js?v=05ccca0c"></script>
-<script src="js/shapes.js?v=d0c995c0"></script>
-<script src="js/icons.js?v=9dbe47c2"></script>
+<script src="js/shapes.js?v=4c12f77d"></script>
+<script src="js/icons.js?v=064d7d80"></script>
 <script src="js/router.js?v=0c90e0a3"></script>
 <script src="js/layout.js?v=51056f31"></script>
-<script src="js/connectors.js?v=b2de2b0d"></script>
-<script src="js/constraints.js?v=201ac2fa"></script>
+<script src="js/connectors.js?v=69f2aecd"></script>
+<script src="js/constraints.js?v=0c2357e8"></script>
 <script src="js/merge.js?v=5c93b5a8"></script>
+<script src="js/scale.js?v=39784bcb"></script>
+<script src="js/revisions.js?v=3ef91001"></script>
 <script src="js/vsdx.js?v=1795b2a5"></script>
-<script src="js/render.js?v=cfdfce87"></script>
+<script src="js/render.js?v=1d47663d"></script>
 <script src="js/analysis.js?v=110fa96d"></script>
-<script src="js/io.js?v=e068fd76"></script>
-<script src="js/packs.js?v=85a99e86"></script>
+<script src="js/io.js?v=699caa2f"></script>
+<script src="js/packs.js?v=c53d4c17"></script>
 <script src="js/builder.js?v=b9669f82"></script>
 <script src="js/templates.js?v=6669f418"></script>
-<script src="js/app.js?v=0f091004"></script>
-<script src="js/inspector.js?v=22b0ac80"></script>
-<script src="js/actions.js?v=b0601bba"></script>
-<script src="js/panels.js?v=b1152728"></script>
-<script src="js/workspace.js?v=f06642be"></script>
+<script src="js/app.js?v=d53079ff"></script>
+<script src="js/inspector.js?v=2006fab1"></script>
+<script src="js/actions.js?v=3e0f4c3b"></script>
+<script src="js/panels.js?v=07086c0a"></script>
+<script src="js/workspace.js?v=b99b295a"></script>
 <script src="js/tplpanel.js?v=20a3c26f"></script>
-<script src="js/main.js?v=8f3d6207"></script>
+<script src="js/quick.js?v=d33dd1c2"></script>
+<script src="js/inventory.js?v=87e8c0aa"></script>
+<script src="js/main.js?v=996c12c3"></script>
 </body>
 </html>

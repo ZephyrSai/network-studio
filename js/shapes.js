@@ -25,7 +25,13 @@ const basic={
   arrow:{name:'Block arrow',w:130,h:60,paths:(w,h)=>{const k=Math.min(w*.35,h*.9);return[{d:`M0 ${f(h*.28)}H${f(w-k)}V0L${w} ${h/2}L${f(w-k)} ${h}V${f(h*.72)}H0Z`}]}},
   chevron:{name:'Chevron / stage',w:130,h:60,paths:(w,h)=>{const k=Math.min(w*.25,h*.5);return[{d:`M0 0H${f(w-k)}L${w} ${h/2}L${f(w-k)} ${h}H0L${f(k)} ${h/2}Z`}]}},
   frame:{name:'Frame / boundary',w:220,h:150,fill:'none',dash:'6 4',paths:(w,h)=>[{d:`M0 0H${w}V${h}H0Z`}]},
+  // revision markup: scalloped cloud around a change, and the delta triangle carrying the revision it belongs to
+  revcloud:{name:'Revision cloud',w:200,h:120,fill:'none',stroke:'#dc2626',paths:(w,h)=>[{d:revCloud(w,h)}]},
+  revdelta:{name:'Revision delta',w:30,h:26,fill:'#ffffff',stroke:'#dc2626',paths:(w,h)=>[{d:`M${f(w/2)} 0L${w} ${h}H0Z`}]},
 };
+// Scallops of similar size all round the box, bulging outwards (clockwise arcs).
+function revCloud(w,h){const r=Math.max(5,Math.min(14,Math.min(w,h)/5)),nx=Math.max(1,Math.round(w/(2*r))),ny=Math.max(1,Math.round(h/(2*r))),sx=w/nx,sy=h/ny,a=(c,dx,dy)=>`A${f(c*.62)} ${f(c*.62)} 0 0 1 `;let d='M0 0';
+  for(let i=1;i<=nx;i++)d+=a(sx)+`${f(i*sx)} 0`;for(let j=1;j<=ny;j++)d+=a(sy)+`${w} ${f(j*sy)}`;for(let i=nx-1;i>=0;i--)d+=a(sx)+`${f(i*sx)} ${h}`;for(let j=ny-1;j>=0;j--)d+=a(sy)+`0 ${f(j*sy)}`;return d+'Z'}
 
 // ---------- rack elevations ----------
 const RU=18,RACK={rail:16,top:26,bottom:16,inner:190};
@@ -89,7 +95,8 @@ const linkTypes={
   power:{name:'Power feed',short:'Power',stroke:'#ca8a04',width:1.75,dash:'10 4 2 4',speed:'',media:'Power'},
   logical:{name:'Logical flow',short:'Logical flow',stroke:'#64748b',width:1.5,dash:'4 4',endMarker:'arrow',speed:'',media:''},
 };
-function applyLinkType(e,id){const t=linkTypes[id];if(!t)return;e.linkType=id;e.stroke=t.stroke;e.strokeWidth=t.width;e.dash=t.dash;e.double=!!t.double;if(t.endMarker)e.endMarker=t.endMarker;e.data??={};if(t.speed&&!e.data.speed)e.data.speed=t.speed;if(t.media&&!e.data.media)e.data.media=t.media}
+// doc: when given, its linkStyles (set from the legend) override the type's default look
+function applyLinkType(e,id,doc){const t=linkTypes[id];if(!t)return;e.linkType=id;e.stroke=t.stroke;e.strokeWidth=t.width;e.dash=t.dash;e.double=!!t.double;const o=doc?.linkStyles?.[id];if(o){if(o.stroke)e.stroke=o.stroke;if(o.width)e.strokeWidth=o.width;if(o.dash!=null)e.dash=o.dash;if(o.double!=null)e.double=!!o.double}if(t.endMarker)e.endMarker=t.endMarker;e.data??={};if(t.speed&&!e.data.speed)e.data.speed=t.speed;if(t.media&&!e.data.media)e.data.media=t.media}
 // "10G", "2.5 Gbps", "100M" → Mbps
 function speedMbps(s){const m=/([\d.]+)\s*([kmgt])?/i.exec(String(s??''));if(!m)return null;const v=+m[1],u=(m[2]||'m').toLowerCase();return v*({k:.001,m:1,g:1000,t:1e6}[u])}
 
@@ -110,10 +117,10 @@ function applyTheme(doc,id){
   for(const p of doc.pages){p.bg=t.page;let z=0;
     for(const n of p.items){
       const lab=l=>l.color=t.label;
-      if(n.kind==='node'&&!n.image&&!basic[n.type]&&n.type!=='rack'&&!rackItems[n.type]){const cat=ST().shapes[n.type]?.cat;n.stroke=t.device.stroke==='category'?CATEGORY[cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}
-      if(n.kind==='node'&&basic[n.type]&&n.type!=='note'){n.stroke=t.device.stroke==='category'?'#475569':t.device.stroke;n.fill=t.page==='#ffffff'?'#ffffff':t.zones[0][0]}
+      if(n.kind==='node'&&!n.image&&!basic[n.type]&&n.type!=='rack'&&!rackItems[n.type]){const cat=ST().shapes[n.type]?.cat;n.stroke=t.device.stroke==='category'?CATEGORY[cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display;const ts=doc.typeStyles?.[n.type];if(ts?.stroke)n.stroke=ts.stroke;if(ts?.display)n.display=ts.display}
+      if(n.kind==='node'&&basic[n.type]&&n.type!=='note'&&n.type!=='revcloud'&&n.type!=='revdelta'){n.stroke=t.device.stroke==='category'?'#475569':t.device.stroke;n.fill=t.page==='#ffffff'?'#ffffff':t.zones[0][0]}
       if(n.kind==='zone'){const[a,b]=t.zones[z++%t.zones.length];n.fill=a;n.stroke=b}
-      if(n.kind==='edge'&&t.links)n.stroke=t.links;else if(n.kind==='edge'&&linkTypes[n.linkType])n.stroke=linkTypes[n.linkType].stroke;
+      if(n.kind==='edge'&&t.links)n.stroke=t.links;else if(n.kind==='edge'&&linkTypes[n.linkType])n.stroke=doc.linkStyles?.[n.linkType]?.stroke||linkTypes[n.linkType].stroke;
       if(n.kind==='text'||n.kind==='zone'||n.kind==='edge'||n.kind==='node'){if(!(n.kind==='node'&&rackItems[n.type]))(n.labels||[]).forEach(lab)}
       if(n.kind==='table'){n.color=t.label;n.stroke=t.zones[0][1];n.headerFill=t.zones[0][0];n.fill=t.page}
       if(n.kind==='legend'){n.color=t.label;n.fill=t.page;n.stroke=t.zones[0][1]}

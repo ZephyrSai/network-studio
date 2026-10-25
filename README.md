@@ -61,6 +61,24 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 
 ---
 
+### Quick editing, legend, revisions, scaling and inventory
+* **Right-click to configure a whole selection.** Change the link type (copper → fibre), line colour, width, style and arrows; device colour, fill, size, display and status; zone colour and style; and text size. *Select similar* picks every item with the same link type, device type or style.
+* **Restyle from the legend.** Double-click a legend row, or use its button in the Legend panel. Change "10G fibre" to orange and every fibre link follows, and so do new ones. You can also rename the row, or change a device type's colour or display. If links of one type are styled differently, the legend shows a separate row for each look.
+* **Revisions** (*Insert ▸ Revisions*, or the "Rev …" indicator in the status bar):
+  * Changes are tracked against the last issued revision.
+  * *New revision* bumps the number (1.0→1.1, A→B, P01→P02), logs the date, description and author, and can draw revision clouds with deltas around everything that changed. It can also clear clouds from earlier revisions.
+  * Revision tables fill themselves from the history, and one can be added stacked above the title block.
+  * When you save a changed drawing, the app asks whether to issue a new revision. It can instead issue the next one automatically, or not ask at all.
+  * Clouds and deltas you add yourself are finalised with the revision you issue, and they live on a "Revisions" layer you can hide.
+* **Scale** (*Arrange ▸ Scale…*, right-click, or drag a corner): scale the selection, or the whole page, by a percentage.
+  * Devices keep their proportions and ports, and labels stay aligned.
+  * Connector bends scale with the drawing, and racks move as whole units.
+  * Zones are aware of their members: scaling a zone brings its contents, items never leave their zone, and nothing gets scaled into one.
+  * Dragging a corner of a multi-selection keeps its aspect ratio (Shift frees it).
+* **Inventory** (*Data ▸ Inventory*): choose and order columns from any field, custom fields, zone, subnet, rack/U, links or connected devices. Show one row per device or count identical rows like a BOM. Filter, sort, edit values in place (for example, fill in OS for many devices at once), then download a CSV for Excel, copy it, or place it on a page.
+* **Show fields on the drawing.** Select devices, right-click ▸ *Show on drawing* ▸ *OS / firmware*, and only those devices show their OS under the label. Field names can be shown too. The same toggle is in *Data ▸ Show on drawing* and on each inventory column (👁).
+* **Connectors meet the drawing.** Connection points sit on each icon's drawn outline, not its padded box. When links leave a device downwards, its name label moves beside the icon, but only if it fits there and you haven't placed it yourself.
+
 ## Using it
 
 * **Drag** shapes from the left panel (or click to drop at the centre). Search understands synonyms: `fw`, `nvr`, `ap`, `plc`…
@@ -102,8 +120,12 @@ js/builder.js       auto-layout glue, CSV / NetBox / text / CDP / LLDP importers
 js/templates.js     starter drawings
 js/merge.js         add a template / drawing / page / zone block to a drawing (ids, layers, VLANs, subnets, hostnames)
 js/tplpanel.js      Templates tab: drag and drop, add options, My templates, My drawings
+js/scale.js         zone-aware scaling engine
+js/revisions.js     revision log, change tracking, clouds / deltas, revision tables
+js/quick.js         right-click quick configure, legend restyle, Scale dialog, revisions UI
+js/inventory.js     inventory builder and per-device fields on the drawing
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
-tests/              node:test suites (router, layout, vsdx, core/importers, merge)
+tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview
 ```
 

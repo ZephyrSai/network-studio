@@ -285,7 +285,7 @@ body.presenting .presentBar:hover{opacity:1}
 body.presenting .presentBar button{border-radius:20px}
 
 @media (max-width:1250px){.layout{grid-template-columns:232px minmax(200px,1fr) 262px}.ltabs button{font-size:11px;letter-spacing:-.2px}body.noLeft .layout{grid-template-columns:0 minmax(200px,1fr) 262px}body.noRight .layout{grid-template-columns:232px minmax(200px,1fr) 0}.tbtn span:not(.i){display:none}.doc input{width:220px}}
-@media (max-width:860px){body{--hh:48px;--rh:70px}body.noLeft .layout,body.noRight .layout{grid-template-columns:0 1fr 0}header.top>.tbtn:nth-last-of-type(-n+5){display:none}.tabDoc{display:none}footer.status{gap:6px}#selectionCount,#zoomRange{display:none}body.noHeader{--hh:0px}body.ribbonCollapsed{--rh:0px}body.noStatus{--sh:0px}.layout{grid-template-columns:0 1fr 0}.workarea{grid-column:1/-1}aside.left,aside.right{position:fixed;top:calc(var(--hh) + var(--th) + var(--rh));bottom:var(--sh);width:280px;z-index:40;box-shadow:var(--shadow);display:none}aside.left{left:0}aside.right{right:0}body.showLeft aside.left,body.showRight aside.right{display:flex;flex-direction:column}.brand span,.doc .sub,#cursorPos,#pageInfo,.layerPick{display:none}.doc{min-width:0;padding-left:10px}.doc input{width:104px}#minimap{display:none}.two{grid-template-columns:1fr}}
+@media (max-width:860px){body{--hh:48px;--rh:70px}body.noLeft .layout,body.noRight .layout{grid-template-columns:0 1fr 0}header.top>.tbtn:nth-last-of-type(-n+5){display:none}.tabDoc{display:none}footer.status{gap:6px}#selectionCount,#zoomRange,#revInfo{display:none}body.noHeader{--hh:0px}body.ribbonCollapsed{--rh:0px}body.noStatus{--sh:0px}.layout{grid-template-columns:0 1fr 0}.workarea{grid-column:1/-1}aside.left,aside.right{position:fixed;top:calc(var(--hh) + var(--th) + var(--rh));bottom:var(--sh);width:280px;z-index:40;box-shadow:var(--shadow);display:none}aside.left{left:0}aside.right{right:0}body.showLeft aside.left,body.showRight aside.right{display:flex;flex-direction:column}.brand span,.doc .sub,#cursorPos,#pageInfo,.layerPick{display:none}.doc{min-width:0;padding-left:10px}.doc input{width:104px}#minimap{display:none}.two{grid-template-columns:1fr}}
 @media print{body{overflow:visible;background:#fff;display:block}body>*{display:none!important}body>#printPreview{display:block!important;position:static;background:#fff;overflow:visible}#printPreview>.previewbar{display:none!important}#printPages{display:block;padding:0}.print-sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}.print-sheet:last-child{break-after:auto;page-break-after:auto}}
 
 /* packs, workspace, online icons */
@@ -293,6 +293,7 @@ body.presenting .presentBar button{border-radius:20px}
 .packBar button{font-size:11.5px;padding:5px 6px}
 details.packCat>summary{color:var(--blue)}
 .iconGridOnline .stencil img{width:34px;height:34px;object-fit:contain}
+.iconGridOnline .ipv{display:flex;width:34px;height:34px;align-items:center;justify-content:center;color:var(--blue);border-radius:6px}.iconGridOnline .ipv:not(.ok){background:var(--panel2)}.iconGridOnline .ipv:not(.ok)::after{content:'…';color:var(--muted)}
 .iconGridOnline .stencil{height:70px}
 #iconResults .tiny,.tiny{font-size:10.5px;opacity:.8}
 #iconResults a{color:var(--blue)}
@@ -358,6 +359,39 @@ label.check>input[type=checkbox]{flex:none}
 
 ::selection{background:var(--blue);color:#fff}
 
+/* quick configure menu */
+.ctxHead{font-size:11px;color:var(--muted);padding:5px 12px 4px;letter-spacing:.02em}
+.swGrid{display:grid;grid-template-columns:repeat(6,22px);gap:5px;padding:7px 9px}
+.swGrid button{width:22px;height:22px;min-width:0;padding:0;border-radius:5px;border:1px solid var(--border);background:var(--c)!important}
+.swGrid button.none{background:repeating-linear-gradient(45deg,transparent 0 4px,#cbd5e1 4px 5px)!important}
+.swGrid button:hover{transform:scale(1.12)}.swGrid button.on{outline:2px solid var(--blue);outline-offset:1px}
+.swGrid.big{grid-template-columns:repeat(7,26px)}.swGrid.big button{width:26px;height:26px}
+.swPick{position:relative;width:22px;height:22px;border-radius:5px;border:1px dashed var(--muted);overflow:hidden;cursor:pointer;background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}
+.swGrid.big .swPick{width:26px;height:26px}.swPick input{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+.lnw{display:inline-block;width:26px;background:currentColor;border-radius:2px;margin-right:4px;vertical-align:middle}
+.lns{display:inline-block;width:26px;border-top:2px solid currentColor;margin-right:4px;vertical-align:middle}
+/* legend rows on the page and in the inspector */
+.lgRow{fill:transparent;cursor:pointer}.lgRow:hover{fill:rgba(55,107,229,.09)}
+.lgList{display:flex;flex-direction:column;gap:3px}.lgList button{display:flex;align-items:center;gap:7px;text-align:left;font-size:11.5px;padding:4px 7px}
+.lgList em{margin-left:auto;font-style:normal;color:var(--muted);font-size:10.5px}.lgSw{display:inline-block;width:16px;height:11px;border-radius:3px;flex:none}.lgSw.line{height:0;width:22px;border-radius:0}
+/* revisions */
+.revBtn{border:0;background:none;font-size:11.5px;color:var(--muted);padding:2px 6px;white-space:nowrap}.revBtn.pending{color:#c2410c;font-weight:600}
+.rvHist input{width:100%;border:1px solid transparent;background:transparent;padding:3px 5px;font-size:12px}.rvHist input:focus{border-color:var(--blue-line);background:var(--input)}
+.rvHist td:nth-child(1){width:70px}.rvHist td:nth-child(2){width:120px}.rvHist td:nth-child(4){width:110px}.rvHist td:last-child{width:30px}
+
+/* inventory */
+dialog.inventory{width:min(1200px,97vw)}
+.invGrid{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.invCols #invColList{max-height:52vh;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:4px;margin-bottom:8px}
+.invCol{display:flex;align-items:center;gap:3px;padding:2px 4px;border-radius:5px}.invCol.on{background:var(--blue-soft)}
+.invCol label{flex:1;display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.invCol button{border:0;background:none;padding:1px 4px;font-size:11px;color:var(--muted)}.invCol button:hover{color:var(--text)}.invCol .eye{opacity:.35}.invCol .eye.on{opacity:1}
+.invWrap{max-height:52vh;overflow:auto}.invWrap table{min-width:100%;white-space:nowrap}.invCell{width:100%;min-width:104px;border:1px solid transparent;background:transparent;padding:2px 4px;font-size:12px}.invCell:hover{border-color:var(--border)}.invCell:focus{border-color:var(--blue-line);background:var(--input)}.invCell.dirty{background:#fff7ed;color:#9a3412}
+#invFilter{width:100%;margin:2px 0 4px}
+.checks.cols2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;max-height:50vh;overflow:auto}
+.submenu .ck{display:inline-block;width:12px}.submenu em{margin-left:auto;padding-left:10px;font-style:normal;color:var(--muted);font-size:10.5px}
+@media (max-width:860px){.invGrid{grid-template-columns:1fr}.checks.cols2{grid-template-columns:1fr}}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -412,6 +446,7 @@ label.check>input[type=checkbox]{flex:none}
   <div id="pageTabs" class="pageTabs"></div>
   <div class="spacer"></div>
   <button id="issueCount" class="issueBtn" data-action="check" hidden></button>
+  <button id="revInfo" class="revBtn" data-action="newRevision" title="Revisions">Rev</button>
   <span id="selectionCount">Ready</span>
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
@@ -474,7 +509,10 @@ function scale(n,b,sx,sy,fonts=true,weights=false){const tr=p=>[b.x+(p[0]-b.x)*s
   if(n.kind==='table'){n.cols=n.cols.map(c=>c*sx);n.rowH*=sy;if(fonts)n.size*=k}
   (n.labels||[]).forEach(l=>{if(!l.anchor)[l.x,l.y]=tr([l.x,l.y]);if(fonts)l.size=Math.max(4,l.size*k);if(l.wrapWidth)l.wrapWidth*=Math.abs(sx)});if(weights&&n.strokeWidth)n.strokeWidth*=k}
 function rotateVec([x,y],deg){const a=deg*Math.PI/180;return[x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a)]}
-function portPoint(n,p){const[x,y]=rotateVec([(p.x-.5)*n.w*(n.flipX?-1:1),(p.y-.5)*n.h*(n.flipY?-1:1)],n.rotation||0);return[n.x+n.w/2+x,n.y+n.h/2+y]}
+// Connection points sit on what is drawn: for icons that are smaller than their box, the glyph's outline (set by the renderer).
+let glyphOf=null;function setGlyph(fn){glyphOf=fn}
+function glyphBox(n){return glyphOf&&n.kind==='node'?glyphOf(n):null}
+function portPoint(n,p){const g=glyphBox(n),lx=g?g.x+p.x*g.w-n.w/2:(p.x-.5)*n.w,ly=g?g.y+p.y*g.h-n.h/2:(p.y-.5)*n.h;const[x,y]=rotateVec([lx*(n.flipX?-1:1),ly*(n.flipY?-1:1)],n.rotation||0);return[n.x+n.w/2+x,n.y+n.h/2+y]}
 // Direction a connector leaves a port: outward normal of the nearest side, after flip/rotation.
 function portDir(n,p){const d=[p.x,1-p.x,p.y,1-p.y],m=Math.min(...d);if(m>.35)return null;const i=d.indexOf(m);let v=[[-1,0],[1,0],[0,-1],[0,1]][i];v=[v[0]*(n.flipX?-1:1),v[1]*(n.flipY?-1:1)];v=rotateVec(v,n.rotation||0);return Math.abs(v[0])>=Math.abs(v[1])?(v[0]>0?'right':'left'):(v[1]>0?'down':'up')}
 // Convert a page point to normalised local coordinates of a node (inverse of portPoint).
@@ -547,7 +585,7 @@ const inCidr=(ip,c)=>((ip&c.mask)>>>0)===c.net;
 const ipsIn=s=>(String(s??'').match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g)||[]).filter(x=>ip2int(x)!=null);
 function fillFields(s,lookup){return String(s??'').replace(/\{\{\s*([\w.]+)\s*\}\}/g,(m,k)=>{const v=lookup(k);return v==null?m:String(v)})}
 
-return{copy,uid,PX,FONT,MONO,PAPERS,KINDS,textWidth,textLines,labelMetrics,setResolver,setSampler,resolve:(o,l)=>resolveText(o,l),corners,bounds,box,inside,overlaps,center,move,scale,rotateVec,portPoint,portDir,localPoint,label,defaultPorts,node,edge,zone,text,page,newDoc,FIELDS,LINK_FIELDS,ZONE_FIELDS,SWITCHES,POE_LOADS,CAMERAS,RECORDERS,duplicate,splitEdge,join,dimensions,pageSize,validate,migrate,ip2int,int2ip,cidr,inCidr,ipsIn,fillFields};
+return{copy,uid,PX,FONT,MONO,PAPERS,KINDS,textWidth,textLines,labelMetrics,setResolver,setSampler,setGlyph,glyphBox,resolve:(o,l)=>resolveText(o,l),corners,bounds,box,inside,overlaps,center,move,scale,rotateVec,portPoint,portDir,localPoint,label,defaultPorts,node,edge,zone,text,page,newDoc,FIELDS,LINK_FIELDS,ZONE_FIELDS,SWITCHES,POE_LOADS,CAMERAS,RECORDERS,duplicate,splitEdge,join,dimensions,pageSize,validate,migrate,ip2int,int2ip,cidr,inCidr,ipsIn,fillFields};
 })();
 if(typeof module!=='undefined')module.exports=Core;
 
@@ -849,7 +887,13 @@ const basic={
   arrow:{name:'Block arrow',w:130,h:60,paths:(w,h)=>{const k=Math.min(w*.35,h*.9);return[{d:`M0 ${f(h*.28)}H${f(w-k)}V0L${w} ${h/2}L${f(w-k)} ${h}V${f(h*.72)}H0Z`}]}},
   chevron:{name:'Chevron / stage',w:130,h:60,paths:(w,h)=>{const k=Math.min(w*.25,h*.5);return[{d:`M0 0H${f(w-k)}L${w} ${h/2}L${f(w-k)} ${h}H0L${f(k)} ${h/2}Z`}]}},
   frame:{name:'Frame / boundary',w:220,h:150,fill:'none',dash:'6 4',paths:(w,h)=>[{d:`M0 0H${w}V${h}H0Z`}]},
+  // revision markup: scalloped cloud around a change, and the delta triangle carrying the revision it belongs to
+  revcloud:{name:'Revision cloud',w:200,h:120,fill:'none',stroke:'#dc2626',paths:(w,h)=>[{d:revCloud(w,h)}]},
+  revdelta:{name:'Revision delta',w:30,h:26,fill:'#ffffff',stroke:'#dc2626',paths:(w,h)=>[{d:`M${f(w/2)} 0L${w} ${h}H0Z`}]},
 };
+// Scallops of similar size all round the box, bulging outwards (clockwise arcs).
+function revCloud(w,h){const r=Math.max(5,Math.min(14,Math.min(w,h)/5)),nx=Math.max(1,Math.round(w/(2*r))),ny=Math.max(1,Math.round(h/(2*r))),sx=w/nx,sy=h/ny,a=(c,dx,dy)=>`A${f(c*.62)} ${f(c*.62)} 0 0 1 `;let d='M0 0';
+  for(let i=1;i<=nx;i++)d+=a(sx)+`${f(i*sx)} 0`;for(let j=1;j<=ny;j++)d+=a(sy)+`${w} ${f(j*sy)}`;for(let i=nx-1;i>=0;i--)d+=a(sx)+`${f(i*sx)} ${h}`;for(let j=ny-1;j>=0;j--)d+=a(sy)+`0 ${f(j*sy)}`;return d+'Z'}
 
 // ---------- rack elevations ----------
 const RU=18,RACK={rail:16,top:26,bottom:16,inner:190};
@@ -913,7 +957,8 @@ const linkTypes={
   power:{name:'Power feed',short:'Power',stroke:'#ca8a04',width:1.75,dash:'10 4 2 4',speed:'',media:'Power'},
   logical:{name:'Logical flow',short:'Logical flow',stroke:'#64748b',width:1.5,dash:'4 4',endMarker:'arrow',speed:'',media:''},
 };
-function applyLinkType(e,id){const t=linkTypes[id];if(!t)return;e.linkType=id;e.stroke=t.stroke;e.strokeWidth=t.width;e.dash=t.dash;e.double=!!t.double;if(t.endMarker)e.endMarker=t.endMarker;e.data??={};if(t.speed&&!e.data.speed)e.data.speed=t.speed;if(t.media&&!e.data.media)e.data.media=t.media}
+// doc: when given, its linkStyles (set from the legend) override the type's default look
+function applyLinkType(e,id,doc){const t=linkTypes[id];if(!t)return;e.linkType=id;e.stroke=t.stroke;e.strokeWidth=t.width;e.dash=t.dash;e.double=!!t.double;const o=doc?.linkStyles?.[id];if(o){if(o.stroke)e.stroke=o.stroke;if(o.width)e.strokeWidth=o.width;if(o.dash!=null)e.dash=o.dash;if(o.double!=null)e.double=!!o.double}if(t.endMarker)e.endMarker=t.endMarker;e.data??={};if(t.speed&&!e.data.speed)e.data.speed=t.speed;if(t.media&&!e.data.media)e.data.media=t.media}
 // "10G", "2.5 Gbps", "100M" → Mbps
 function speedMbps(s){const m=/([\d.]+)\s*([kmgt])?/i.exec(String(s??''));if(!m)return null;const v=+m[1],u=(m[2]||'m').toLowerCase();return v*({k:.001,m:1,g:1000,t:1e6}[u])}
 
@@ -934,10 +979,10 @@ function applyTheme(doc,id){
   for(const p of doc.pages){p.bg=t.page;let z=0;
     for(const n of p.items){
       const lab=l=>l.color=t.label;
-      if(n.kind==='node'&&!n.image&&!basic[n.type]&&n.type!=='rack'&&!rackItems[n.type]){const cat=ST().shapes[n.type]?.cat;n.stroke=t.device.stroke==='category'?CATEGORY[cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}
-      if(n.kind==='node'&&basic[n.type]&&n.type!=='note'){n.stroke=t.device.stroke==='category'?'#475569':t.device.stroke;n.fill=t.page==='#ffffff'?'#ffffff':t.zones[0][0]}
+      if(n.kind==='node'&&!n.image&&!basic[n.type]&&n.type!=='rack'&&!rackItems[n.type]){const cat=ST().shapes[n.type]?.cat;n.stroke=t.device.stroke==='category'?CATEGORY[cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display;const ts=doc.typeStyles?.[n.type];if(ts?.stroke)n.stroke=ts.stroke;if(ts?.display)n.display=ts.display}
+      if(n.kind==='node'&&basic[n.type]&&n.type!=='note'&&n.type!=='revcloud'&&n.type!=='revdelta'){n.stroke=t.device.stroke==='category'?'#475569':t.device.stroke;n.fill=t.page==='#ffffff'?'#ffffff':t.zones[0][0]}
       if(n.kind==='zone'){const[a,b]=t.zones[z++%t.zones.length];n.fill=a;n.stroke=b}
-      if(n.kind==='edge'&&t.links)n.stroke=t.links;else if(n.kind==='edge'&&linkTypes[n.linkType])n.stroke=linkTypes[n.linkType].stroke;
+      if(n.kind==='edge'&&t.links)n.stroke=t.links;else if(n.kind==='edge'&&linkTypes[n.linkType])n.stroke=doc.linkStyles?.[n.linkType]?.stroke||linkTypes[n.linkType].stroke;
       if(n.kind==='text'||n.kind==='zone'||n.kind==='edge'||n.kind==='node'){if(!(n.kind==='node'&&rackItems[n.type]))(n.labels||[]).forEach(lab)}
       if(n.kind==='table'){n.color=t.label;n.stroke=t.zones[0][1];n.headerFill=t.zones[0][0];n.fill=t.page}
       if(n.kind==='legend'){n.color=t.label;n.fill=t.page;n.stroke=t.zones[0][1]}
@@ -989,7 +1034,7 @@ data:'M4 4c0-1 12-1 12 0v12c0 1-12 1-12 0zM4 4c0 1 12 1 12 0M4 10c0 1 12 1 12 0'
 check:'M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5zM7 10l2 2 4-4',spof:'M10 3l8 14H2zM10 8v4M10 14v.5',trace:'M4 4a2 2 0 1 0 0-.1M16 16a2 2 0 1 0 0-.1M6 4h6a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h6',traffic:'M2 15l4-5 4 3 4-7 4 4',poe:'M11 2 5 11h5l-1 7 6-9h-5z',storage:'M4 4h12v4H4zM4 10h12v4H4zM6 6h.1M6 12h.1',filter:'M3 4h14l-5 6v6l-4-2v-4z',clear:'M5 5l10 10M15 5 5 15',ip:'M3 5h14v10H3zM6 8v4M9 8v4h1.5a1.5 1.5 0 0 0 0-3H9',
 align0:'M3 2v16M6 5h10v3H6zM6 12h6v3H6z',align1:'M10 2v16M5 5h10v3H5zM7 12h6v3H7z',align2:'M17 2v16M4 5h10v3H4zM8 12h6v3H8z',align3:'M2 3h16M5 6v10h3V6zM12 6v6h3V6z',align4:'M2 10h16M5 5v10h3V5zM12 7v6h3V7z',align5:'M2 17h16M5 4v10h3V4zM12 8v6h3V8z',distH:'M2 3v14M18 3v14M7 6h6v8H7z',distV:'M3 2h14M3 18h14M6 7h8v6H6z',samew:'M3 6h14v3H3zM6 12h8v3H6zM3 17h14',front:'M7 7h10v10H7zM3 3h10v4M3 3v10h4',back:'M3 3h10v10H3zM13 7h4v10H7v-4',forward:'M10 3v10M6 9l4 4 4-4M4 17h12',backward:'M10 17V7M6 11l4-4 4 4M4 3h12',group:'M2 2h4v4H2zM14 2h4v4h-4zM2 14h4v4H2zM14 14h4v4h-4zM6 4h8M6 16h8M4 6v8M16 6v8',ungroup:'M2 2h6v6H2zM12 12h6v6h-6z',rotate:'M15 4v4h-4M15 8a6 6 0 1 0 1 5',flipH:'M10 2v16M8 5 3 15h5zM12 5l5 10h-5z',lock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6 0v3',unlock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6-1',layers:'M10 2 2 6l8 4 8-4zM2 10l8 4 8-4M2 14l8 4 8-4',
 gridOn:'M3 3h14v14H3zM3 8h14M3 12h14M8 3v14M12 3v14',ruler:'M2 7h16v6H2zM5 7v3M8 7v2M11 7v3M14 7v2',guide:'M7 2v16M2 13h16',ports:'M4 10a2 2 0 1 0 0-.1M16 10a2 2 0 1 0 0-.1M10 4a2 2 0 1 0 0-.1M6 10h8',map:'M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2zM7 2v14M13 4v14',zoomIn:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4M8 6v4',zoomOut:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4',fit:'M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5',hundred:'M4 7l2-1v9M9 6h3v9H9zM14 6h3v9h-3z',present:'M2 3h16v10H2zM10 13v4M6 17h8',moon:'M15 13a7 7 0 0 1-8-10 7 7 0 1 0 8 10z',magnet:'M5 3v7a5 5 0 0 0 10 0V3h-3v7a2 2 0 0 1-4 0V3z',arrows:'M10 3l3 3h-6zM10 17l3-3H7zM3 10l3-3v6zM17 10l-3-3v6z',wheel:'M7 2h6a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zM10 5v3',panels:'M2 3h16v14H2zM6 3v14M14 3v14',
-file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',
+file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
 };
 function icon(name,size=18){const d=Icons[name];return d?`<svg class="ico" viewBox="0 0 20 20" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`:''}
 
@@ -2159,7 +2204,7 @@ function simplify(points){const out=[];for(const q of points){if(out.length&&dis
 
 // ---------- endpoint resolution (port glue or dynamic shape glue) ----------
 function refPoint(e,key,byId){const r=e[key],n=r&&byId.get(r.node);if(!n)return key==='from'?e.points[0]:e.points.at(-1);if(r.port){const p=n.ports?.find(q=>q.id===r.port);if(p)return C.portPoint(n,p)}return C.center(n)}
-function boundaryPoint(n,toward){const c=C.center(n),dx=toward[0]-c[0],dy=toward[1]-c[1];if(!dx&&!dy)return c;const hw=n.w/2+1,hh=n.h/2+1,round=n.display==='circle'||n.type==='ellipse';if(round){const r=Math.min(hw,hh),l=Math.hypot(dx,dy);return[c[0]+dx/l*r,c[1]+dy/l*r]}const k=Math.min(hw/Math.abs(dx||1e-9),hh/Math.abs(dy||1e-9));return[c[0]+dx*k,c[1]+dy*k]}
+function boundaryPoint(n,toward){const g=!n.rotation&&C.glyphBox(n),c=g?[n.x+g.x+g.w/2,n.y+g.y+g.h/2]:C.center(n),dx=toward[0]-c[0],dy=toward[1]-c[1];if(!dx&&!dy)return c;const hw=(g?g.w:n.w)/2+1,hh=(g?g.h:n.h)/2+1,round=n.display==='circle'||n.type==='ellipse';if(round){const r=Math.min(hw,hh),l=Math.hypot(dx,dy);return[c[0]+dx/l*r,c[1]+dy/l*r]}const k=Math.min(hw/Math.abs(dx||1e-9),hh/Math.abs(dy||1e-9));return[c[0]+dx*k,c[1]+dy*k]}
 const slots=new Map();
 function resolveEnd(e,key,byId){
   const r=e[key];if(!r)return null;const n=byId.get(r.node);if(!n)return null;
@@ -2283,7 +2328,7 @@ const Constraints=(()=>{
 
   // ---------- containers ----------
   function fitZones(page){let changed=false;const zones=page.items.filter(z=>z.kind==='zone'&&z.autoFit!==false&&!z.pin&&!z.locked).sort((a,b)=>a.w*a.h-b.w*b.h);
-    for(const z of zones){const members=page.items.filter(n=>n!==z&&n.kind!=='edge'&&!n.pin&&centerIn(n,z)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h));if(!members.length)continue;
+    for(const z of zones){const members=page.items.filter(n=>n!==z&&n.kind!=='edge'&&!n.pin&&n.type!=='revcloud'&&n.type!=='revdelta'&&centerIn(n,z)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h));if(!members.length)continue;
       const b=C.bounds(members,true),pad=16,head=z.labels?.[0]?Math.max(30,z.labels[0].y+z.labels[0].size*.4-z.y+8):12;
       const x0=Math.min(z.x,b.x-pad),y0=Math.min(z.y,b.y-head),x1=Math.max(z.x+z.w,b.x+b.w+pad),y1=Math.max(z.y+z.h,b.y+b.h+pad);
       if(x0<z.x-.5||y0<z.y-.5||x1>z.x+z.w+.5||y1>z.y+z.h+.5){const dx=x0-z.x,dy=y0-z.y;(z.labels||[]).forEach(l=>{l.x+=dx;l.y+=dy});z.x=x0;z.y=y0;z.w=x1-x0;z.h=y1-y0;changed=true}}
@@ -2330,7 +2375,28 @@ const Constraints=(()=>{
     const a=area(page);for(const n of pinned)place(n,a,offs.get(n));
     return{shift:Math.abs(dx)>.01||Math.abs(dy)>.01?[dx,dy]:null,resized:before.paper!==page.paper||before.w!==page.customW||before.h!==page.customH||before.o!==page.orientation}}
   function measureLegends(page,doc){if(typeof legendMeasure!=='function')return'';let sig='';for(const n of page.items)if(n.kind==='legend'){const prev=RCTX;RCTX=makeCtx(page,{doc});legendMeasure(n,page,RCTX);RCTX=prev;sig+=n.w+'x'+n.h+';'}return sig}
-  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
+  // ---------- labels out of the connectors' way ----------
+  // A device's name label normally sits under the icon. When connectors leave the device downwards they would run
+  // through the label (and its halo hides them), so the label moves beside the icon — right, else left — and back
+  // under it once nothing leaves downwards. Labels the user placed somewhere else are never touched.
+  function leaveSide(p,q){const dx=q[0]-p[0],dy=q[1]-p[1];return Math.abs(dy)>=Math.abs(dx)?(dy>0?'down':'up'):(dx>0?'right':'left')}
+  function labelSides(page,doc){if(doc?.display?.smartLabels===false)return false;const sides=new Map(),byId=new Map(page.items.map(n=>[n.id,n]));let changed=false;
+    for(const e of page.items)if(e.kind==='edge'&&e.points?.length>1){const pts=e.points.filter((p,i,a)=>!i||Math.hypot(p[0]-a[i-1][0],p[1]-a[i-1][1])>.5);if(pts.length<2)continue;
+      for(const[k,p,q]of[['from',pts[0],pts[1]],['to',pts.at(-1),pts.at(-2)]]){const id=e[k]?.node;if(!id)continue;if(!sides.has(id))sides.set(id,new Set());sides.get(id).add(leaveSide(p,q))}}
+    for(const n of page.items){if(n.kind!=='node'||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||n.rotation)continue;const l=n.labels?.[0];if(!l||l.anchor||!String(l.text||'').trim())continue;
+      const sd=sides.get(n.id)||new Set(),g=C.glyphBox(n)||{x:0,y:0,w:n.w,h:n.h},cx=n.x+n.w/2;
+      const below=!l.auto&&Math.abs(l.x-cx)<2&&(l.align||'middle')==='middle'&&l.y>n.y+n.h-2&&l.y-(n.y+n.h)<48;
+      // a side is only used if the label fits there without landing on another device or label
+      const box=side=>{const w=C.textWidth(String(l.text).split('\n').sort((a,b)=>b.length-a.length)[0],l.size)+4,lines=String(l.text).split('\n').length,h=lines*l.size*1.22,y=n.y+g.y+g.h/2-h/2;return side==='right'?{x:n.x+g.x+g.w+6,y,w,h}:{x:n.x+g.x-6-w,y,w,h}};
+      const hit=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
+      const fits=side=>{const b=box(side);return!page.items.some(m=>m!==n&&m.kind==='node'&&(hit(b,C.box(m))||m.labels?.[0]&&String(m.labels[0].text||'').trim()&&hit(b,(()=>{const ml=m.labels[0],mw=C.textWidth(String(ml.text).split('\n')[0],ml.size),mx=ml.align==='start'?ml.x:ml.align==='end'?ml.x-mw:ml.x-mw/2;return{x:mx,y:ml.y-ml.size,w:mw,h:ml.size*1.3}})())))};
+      const want=sd.has('down')?(!sd.has('right')&&fits('right')?'right':!sd.has('left')&&fits('left')?'left':null):null;
+      const place=side=>{const lines=String(l.text).split('\n').length,bh=lines*l.size*1.22,y=n.y+g.y+g.h/2-bh/2+l.size*.92;l.y=y;if(side==='right'){l.align='start';l.x=n.x+g.x+g.w+8}else{l.align='end';l.x=n.x+g.x-8}};
+      let moved=false;if(l.auto&&want!==l.auto){if(want){place(want);l.auto=want}else{l.align='middle';l.x=cx;l.y=n.y+n.h+(l.autoGap??16);delete l.auto;delete l.autoGap}moved=true}
+      else if(below&&want){l.autoGap=l.y-(n.y+n.h);place(want);l.auto=want;moved=true}
+      if(moved)changed=true;if(moved&&typeof Conn!=='undefined')for(const e of page.items)if(e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id))Conn.markDirty(e.id)}
+    return changed}
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);labelSides(page,doc);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
     // legends may re-wrap when the page width changes, which can change the room they need: settle in ≤3 passes
     for(let i=0;i<3;i++){const ri=page.isBackground?null:page.autoSize==='fit'?fitPage(page,doc):autoSize(page,doc);if(ri){r=r?{shift:ri.shift?[(r.shift?.[0]||0)+ri.shift[0],(r.shift?.[1]||0)+ri.shift[1]]:r.shift,resized:r.resized||ri.resized}:ri}const s2=measureLegends(page,doc);if(s2===sig)break;sig=s2}
     if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
@@ -2346,7 +2412,7 @@ const Constraints=(()=>{
     doc.meta??={};doc.meta.pinsUpgraded=true;return n}
   // Width a pinned block may use along its edge without running under other blocks pinned to the same edge.
   function availableWidth(page,doc,n){const a=area(page);if(!n.pin||n.pin==='frame')return Infinity;const edge=n.pin.includes('b')?'b':'t';return a.w-blockers(page,doc).filter(o=>o.id!==n.id&&o.pin.includes(edge)).reduce((s,o)=>s+C.box(o).w+16,0)}
-  return{availableWidth,FIT_DEFAULTS,fitPage,upgrade,sync,fitZones,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
+  return{availableWidth,FIT_DEFAULTS,fitPage,upgrade,sync,fitZones,labelSides,autoSize,bgItems,bgView,area,PINS,pinNow,place,offsets};
 })();
 
 </script>
@@ -2482,6 +2548,130 @@ function docFrom(doc,items,name){const d=C.newDoc(name);d.theme=doc.theme;d.laye
 return{parts,blocks,blockItems,pick,footprint,contentBounds,insert,insertPages,docFrom,parentOf};
 })();
 if(typeof module!=='undefined')module.exports=Merge;
+
+</script>
+<script>
+// Scale a selection (or a whole page) about a point without breaking it:
+// devices keep their icon proportions and ports; labels stay where they sit relative to their shape (below stays below,
+// centred stays centred); zones, text boxes and tables resize; racks and rack equipment move as rigid units so slots
+// still line up; connector bends scale with the geometry, so arrangements are kept without re-routing; connectors that
+// leave the selection are re-routed. Pinned items (legend, title block, frame) follow the page and are not scaled.
+const Scale=(()=>{
+const C=Core;
+const isRackish=n=>n.kind==='node'&&(n.type==='rack'||/^rk-/.test(n.type));
+const centre=b=>[b.x+b.w/2,b.y+b.h/2];
+
+// list: items to scale; all: every item on the page; k: factor; o: {origin:[x,y], text, lines}
+const centreIn=(n,z)=>{const b=C.box(n),cx=b.x+b.w/2,cy=b.y+b.h/2;return cx>=z.x&&cx<=z.x+z.w&&cy>=z.y&&cy<=z.y+z.h};
+// Smallest zone (of those given) whose area holds n's centre.
+const homeZone=(n,zones)=>zones.filter(z=>z!==n&&centreIn(n,z)).sort((a,b)=>a.w*a.h-b.w*b.h)[0]||null;
+// What really has to scale together: a zone brings everything inside it; a link between two scaled items comes along.
+function expand(list,all){const set=new Set(list.filter(n=>!n.pin).map(n=>n.id));let grew=true;
+  while(grew){grew=false;for(const z of all)if(z.kind==='zone'&&set.has(z.id))for(const m of all)if(!set.has(m.id)&&m.kind!=='edge'&&!m.pin&&m!==z&&!Revisions?.MARKUP?.has?.(m.type)&&centreIn(m,z)){set.add(m.id);grew=true}}
+  for(const e of all)if(e.kind==='edge'&&!set.has(e.id)&&e.from?.node&&e.to?.node&&set.has(e.from.node)&&set.has(e.to.node))set.add(e.id);
+  return all.filter(n=>set.has(n.id))}
+// Move n by the smallest offset that puts its box inside zone z (pad inside) — or, with out=true, outside it.
+function keepIn(n,z,out=false){const b=C.box(n),pad=8;let dx=0,dy=0;
+  if(!out){if(b.x<z.x+pad)dx=z.x+pad-b.x;else if(b.x+b.w>z.x+z.w-pad)dx=z.x+z.w-pad-b.x-b.w;if(b.y<z.y+pad)dy=z.y+pad-b.y;else if(b.y+b.h>z.y+z.h-pad)dy=z.y+z.h-pad-b.y-b.h}
+  else{const opts=[[z.x-pad-(b.x+b.w),0],[z.x+z.w+pad-b.x,0],[0,z.y-pad-(b.y+b.h)],[0,z.y+z.h+pad-b.y]].sort((p,q)=>Math.hypot(...p)-Math.hypot(...q));[dx,dy]=opts[0]}
+  if(dx||dy)C.move(n,dx,dy);return!!(dx||dy)}
+
+function apply(list,all,k,o={}){
+  const items=expand(list,all),set=new Set(items.map(n=>n.id));if(!items.length||!(k>0))return{reroute:[]};
+  // zones that are not being scaled: their members must stay members, and nothing new may wander in
+  const fixedZones=all.filter(z=>z.kind==='zone'&&!z.pin&&!set.has(z.id)),loose=items.filter(n=>n.kind!=='edge'&&n.kind!=='zone'&&!n.pin),home=new Map(loose.map(n=>[n.id,homeZone(n,fixedZones)]));
+  const b=C.bounds(items),org=o.origin||[b.x,b.y],tr=p=>[org[0]+(p[0]-org[0])*k,org[1]+(p[1]-org[1])*k],fk=o.text?k:1;
+  const font=l=>{if(o.text){l.size=Math.max(4,l.size*k);if(l.wrapWidth)l.wrapWidth*=k}};
+  // racks first: equipment inside a scaled rack moves by the rack's own offset
+  const rackShift=new Map();for(const r of items)if(r.type==='rack'){const[cx,cy]=centre(r),[nx,ny]=tr([cx,cy]);rackShift.set(r.id,[nx-cx,ny-cy])}
+  const rackOf=n=>{const[cx,cy]=centre(n);return all.find(r=>r.type==='rack'&&set.has(r.id)&&cx>=r.x&&cx<=r.x+r.w&&cy>=r.y&&cy<=r.y+r.h)};
+  for(const n of items){
+    if(n.kind==='edge'){n.points=n.points.map(tr);for(const l of n.labels||[]){if(!l.anchor)[l.x,l.y]=tr([l.x,l.y]);font(l)}if(o.lines&&n.strokeWidth)n.strokeWidth=Math.max(.5,n.strokeWidth*k);continue}
+    if(isRackish(n)){const s=n.type==='rack'?rackShift.get(n.id):(()=>{const r=rackOf(n);if(r)return rackShift.get(r.id);const[cx,cy]=centre(n),[nx,ny]=tr([cx,cy]);return[nx-cx,ny-cy]})();C.move(n,s[0],s[1]);continue}
+    if(n.kind==='node'){const ob={x:n.x,y:n.y,w:n.w,h:n.h},[cx,cy]=centre(ob),[ncx,ncy]=tr([cx,cy]);n.w*=k;n.h*=k;n.x=ncx-n.w/2;n.y=ncy-n.h/2;
+      for(const l of n.labels||[]){if(l.anchor)continue;const below=l.y>ob.y+ob.h,above=l.y<ob.y;
+        l.x=ncx+(l.x-cx)*k;l.y=below?n.y+n.h+(l.y-ob.y-ob.h)*fk:above?n.y-(ob.y-l.y)*fk:ncy+(l.y-cy)*k;font(l)}
+      if(o.lines&&n.strokeWidth)n.strokeWidth=Math.max(.5,n.strokeWidth*k);continue}
+    if(n.kind==='zone'||n.kind==='text'){const ox=n.x,oy=n.y;[n.x,n.y]=tr([n.x,n.y]);n.w*=k;n.h*=k;
+      for(const l of n.labels||[]){l.x=n.x+(l.x-ox)*(n.kind==='text'?k:fk);l.y=n.y+(l.y-oy)*fk;if(o.text)l.size=Math.max(4,l.size*k);if(l.wrapWidth)l.wrapWidth*=k}
+      if(o.lines&&n.strokeWidth)n.strokeWidth=Math.max(.5,n.strokeWidth*k);continue}
+    if(n.kind==='table'&&o.text){[n.x,n.y]=tr([n.x,n.y]);n.cols=n.cols.map(c=>c*k);n.rowH*=k;n.size*=k;n.w=n.cols.reduce((a,c)=>a+c,0);n.h=Math.max(1,n.rows.length)*n.rowH;continue}
+    // tables without text scaling, unpinned legends, anything else: keep its size, move its anchor point
+    const[nx,ny]=tr([n.x,n.y]);C.move(n,nx-n.x,ny-n.y)}
+  // zone membership is part of the drawing's meaning: put anything that left its zone back, and keep others out
+  const nudged=new Set();for(const n of loose){const z=home.get(n.id);if(z){if(!centreIn(n,z)||C.box(n).x<z.x||C.box(n).y<z.y||C.box(n).x+C.box(n).w>z.x+z.w||C.box(n).y+C.box(n).h>z.y+z.h){if(keepIn(n,z))nudged.add(n.id)}}else{const z2=homeZone(n,fixedZones);if(z2&&keepIn(n,z2,true))nudged.add(n.id)}}
+  // connectors whose other end is outside the scaled set (or whose device was nudged) must be re-routed
+  const reroute=all.filter(e=>e.kind==='edge'&&([e.from?.node,e.to?.node].some(id=>id&&set.has(id))&&[e.from?.node,e.to?.node].some(id=>!id||!set.has(id))||[e.from?.node,e.to?.node].some(id=>id&&nudged.has(id)))).map(e=>e.id);
+  return{reroute,nudged:[...nudged],items}}
+
+// The point a scale is anchored on: 'tl' top-left, 'center', or the corner opposite a dragged handle.
+function origin(list,where='tl'){const b=C.bounds(list.filter(n=>!n.pin));return where==='center'?[b.x+b.w/2,b.y+b.h/2]:[b.x,b.y]}
+
+return{apply,origin};
+})();
+if(typeof module!=='undefined')module.exports=Scale;
+
+</script>
+<script>
+// Revisions: the revision log (doc.revisions), revision tables that fill themselves from it, revision clouds and
+// deltas, and change tracking against the last issued revision so the app can ask (or bump automatically) on save.
+const Revisions=(()=>{
+const C=Core;
+const MARKUP=new Set(['revcloud','revdelta']);
+const today=()=>new Date().toISOString().slice(0,10);
+
+// Next revision after r: 1.0→1.1, A→B, Z→AA, P01→P02, "Rev 3"→"Rev 4". major: 1.4→2.0, P03→C01-style schemes just step.
+function nextRev(r,major=false){r=String(r??'').trim();if(!r)return'A';
+  let m=/^(.*?)(\d+)\.(\d+)$/.exec(r);if(m)return major?`${m[1]}${+m[2]+1}.0`:`${m[1]}${m[2]}.${+m[3]+1}`;
+  m=/^(.*?)(\d+)$/.exec(r);if(m)return m[1]+String(+m[2]+1).padStart(m[2].length,'0');
+  m=/^(.*?)([A-Za-z]+)$/.exec(r);if(m){const up=m[2]===m[2].toUpperCase(),s=m[2].toUpperCase().split('');let i=s.length-1;while(i>=0&&s[i]==='Z'){s[i]='A';i--}if(i<0)s.unshift('A');else s[i]=String.fromCharCode(s[i].charCodeAt(0)+1);const v=s.join('');return m[1]+(up?v:v.toLowerCase())}
+  return r+'.1'}
+
+// What counts as a change: geometry, text, data and style of real content — not routing noise, legends,
+// revision tables or the revision markup itself.
+const round=v=>Math.round((+v||0)*2)/2;
+function fingerprint(n){const o={k:n.kind,t:n.type,l:(n.labels||[]).map(l=>l.text),d:n.data,s:n.stroke,f:n.fill,ds:n.dash,dp:n.display,lt:n.linkType,ly:n.layer};
+  if(n.kind==='edge'){o.a=n.from?.node||null;o.b=n.to?.node||null;o.w=n.strokeWidth}else{o.x=round(n.x);o.y=round(n.y);o.w=round(n.w);o.h=round(n.h);o.r=n.rotation||0}
+  if(n.kind==='table')o.rows=n.rows;let h=2166136261;const s=JSON.stringify(o);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)}
+const tracked=n=>!MARKUP.has(n.type)&&n.kind!=='legend'&&!n.revTable&&n.pin!=='frame';
+function snapshot(doc){const out={};for(const p of doc.pages)for(const n of p.items)if(tracked(n))out[n.id]=fingerprint(n);return out}
+function changes(doc){const base=doc.revBaseline?.items;if(!base)return{added:[],modified:[],removed:[],count:0,known:false};const seen=new Set(),added=[],modified=[];
+  for(const p of doc.pages)for(const n of p.items){if(!tracked(n))continue;seen.add(n.id);const f=base[n.id];if(f==null)added.push(n.id);else if(f!==fingerprint(n))modified.push(n.id)}
+  const removed=Object.keys(base).filter(id=>!seen.has(id));return{added,modified,removed,count:added.length+modified.length+removed.length,known:true}}
+function setBaseline(doc){doc.revBaseline={rev:doc.meta.revision,at:new Date().toISOString(),items:snapshot(doc)}}
+
+// Log and tables.
+function ensureLog(doc){if(!Array.isArray(doc.revisions)||!doc.revisions.length)doc.revisions=[{rev:doc.meta?.revision||'1.0',date:(doc.meta?.created||new Date().toISOString()).slice(0,10),description:'Initial issue',by:doc.meta?.author||''}];return doc.revisions}
+const HEAD=['Rev','Date','Description','By'];
+function tableRows(doc,n){const log=ensureLog(doc).map(r=>[r.rev,r.date,r.description,r.by]);const rows=n.newestFirst?log.slice().reverse():log;return[HEAD,...rows.slice(n.newestFirst?0:Math.max(0,rows.length-(n.maxRows||99)),n.newestFirst?(n.maxRows||99):undefined)]}
+function syncTables(doc){let n=0;for(const p of doc.pages)for(const t of p.items)if(t.revTable){t.rows=tableRows(doc,t);if(typeof tableLayout==='function')tableLayout(t);else{t.w=t.cols.reduce((a,b)=>a+b,0);t.h=t.rows.length*t.rowH}n++}return n}
+function newTable(doc,x,y,layer){ensureLog(doc);const t={id:C.uid(),kind:'table',revTable:true,x,y,cols:[46,82,200,86],rowH:20,size:10.5,header:true,rows:[],labels:[],stroke:'#94a3b8',headerFill:'#eef2f7',layer};t.rows=tableRows(doc,t);t.w=t.cols.reduce((a,b)=>a+b,0);t.h=t.rows.length*t.rowH;return t}
+
+// Markup items.
+function markupLayer(doc){let l=doc.layers.find(x=>x.name.toLowerCase()==='revisions');if(!l){l={id:C.uid(),name:'Revisions',visible:true,locked:false,print:true};doc.layers.push(l)}return l.id}
+function cloud(x,y,w,h,rev,layer){const n=C.node('revcloud',x,y,'',w,h);Object.assign(n,{display:'shape',fill:'none',stroke:'#dc2626',strokeWidth:1.6,dash:'',ports:[],layer});n.labels=[];n.data={rev};return n}
+function delta(x,y,rev,layer){const w=30,h=26,n=C.node('revdelta',x,y,String(rev),w,h);Object.assign(n,{display:'shape',fill:'#ffffff',stroke:'#dc2626',strokeWidth:1.6,dash:'',ports:[],layer});const l=n.labels[0];l.x=x+w/2;l.y=y+h*.72+3.5;l.size=10.5;l.bold=true;l.color='#dc2626';l.wrapWidth=0;n.data={rev:String(rev)};return n}
+// Group changed items that sit close together, so each area of change gets one cloud.
+function clusters(boxes,gap=48){const groups=[];for(const b of boxes){let g=groups.find(g=>b.x<g.x+g.w+gap&&b.x+b.w>g.x-gap&&b.y<g.y+g.h+gap&&b.y+b.h>g.y-gap);if(!g){groups.push({...b});continue}const x0=Math.min(g.x,b.x),y0=Math.min(g.y,b.y);g.w=Math.max(g.x+g.w,b.x+b.w)-x0;g.h=Math.max(g.y+g.h,b.y+b.h)-y0;g.x=x0;g.y=y0}
+  // merging can make clusters overlap; repeat until stable
+  for(let again=true;again;){again=false;for(let i=0;i<groups.length;i++)for(let j=i+1;j<groups.length;j++){const a=groups[i],b=groups[j];if(b.x<a.x+a.w+gap&&b.x+b.w>a.x-gap&&b.y<a.y+a.h+gap&&b.y+b.h>a.y-gap){const x0=Math.min(a.x,b.x),y0=Math.min(a.y,b.y);a.w=Math.max(a.x+a.w,b.x+b.w)-x0;a.h=Math.max(a.y+a.h,b.y+b.h)-y0;a.x=x0;a.y=y0;groups.splice(j,1);again=true;j--}}}return groups}
+function cloudChanges(doc,ch,rev){const ids=new Set([...ch.added,...ch.modified]),layer=markupLayer(doc);let made=0;
+  for(const p of doc.pages){const boxes=p.items.filter(n=>ids.has(n.id)&&n.kind!=='zone'&&n.kind!=='edge').map(n=>C.bounds([n],true));
+    // a changed zone or link with no changed device near it still deserves a cloud
+    for(const n of p.items)if(ids.has(n.id)&&(n.kind==='edge'||n.kind==='zone')){const b=n.kind==='zone'?{x:n.x,y:n.y,w:Math.min(n.w,160),h:Math.min(n.h,60)}:C.bounds([n]);if(!boxes.some(x=>b.x<x.x+x.w+48&&b.x+b.w>x.x-48&&b.y<x.y+x.h+48&&b.y+b.h>x.y-48))boxes.push(b)}
+    // areas already clouded by hand for this revision keep their cloud
+    const own=p.items.filter(n=>n.type==='revcloud'&&String(n.data?.rev)===String(rev)),covered=b=>own.some(c=>b.x+b.w/2>=c.x&&b.x+b.w/2<=c.x+c.w&&b.y+b.h/2>=c.y&&b.y+b.h/2<=c.y+c.h);
+    for(const g of clusters(boxes.filter(b=>!covered(b)))){const pad=14,c=cloud(g.x-pad,g.y-pad,g.w+2*pad,g.h+2*pad,rev,layer);p.items.push(c,delta(c.x+c.w-6,c.y-30,rev,layer));made++}}return made}
+
+// Issue a revision: log it, update the document revision, tables and (optionally) clouds, and reset the baseline.
+function issue(doc,{rev,date=today(),description='',by='',clouds=false,clearClouds=false}={}){const ch=changes(doc);ensureLog(doc);
+  if(clearClouds)for(const p of doc.pages)p.items=p.items.filter(n=>n.type!=='revcloud');
+  let made=0;if(clouds&&ch.known)made=cloudChanges(doc,ch,rev);
+  doc.revisions.push({rev,date,description,by});doc.meta.revision=rev;syncTables(doc);setBaseline(doc);return{changes:ch,clouds:made}}
+
+return{nextRev,fingerprint,snapshot,changes,setBaseline,ensureLog,syncTables,newTable,tableRows,cloud,delta,markupLayer,clusters,cloudChanges,issue,MARKUP,today};
+})();
+if(typeof module!=='undefined')module.exports=Revisions;
 
 </script>
 <script>
@@ -3682,13 +3872,29 @@ function resolveLabel(owner,l,ctx=RCTX){
     return owner.data?.[k]??''})}
 Core.setResolver((owner,l)=>resolveLabel(owner,l,RCTX));
 // data lines shown under device names count as part of the label when routing around it
-Conn.setLabelExtra(n=>{const d=(RCTX?.doc||S.doc)?.display;if(!d?.fields?.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type])return 0;const k=d.fields.filter(f=>n.data?.[f]!==undefined&&String(n.data[f]).trim()!=='').length;return k?k*(n.labels[0].size*.84*1.22)+2:0});
+Conn.setLabelExtra(n=>{const d=(RCTX?.doc||S.doc)?.display,keys=shownFields(n,d);if(!keys.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type])return 0;const k=keys.filter(f=>n.data?.[f]!==undefined&&String(n.data[f]).trim()!=='').length;return k?k*(n.labels[0].size*.84*1.22)+2:0});
+
+// ---------- icon outlines: where connectors meet the drawing ----------
+// Symbol icons are fitted ("meet") into the device box and often have padding, so a connector ending on the box edge
+// looks like it stops short. Measure each icon's drawn outline once (per type and line width) and expose it to
+// Core.portPoint, so connection points sit on the icon itself.
+const glyphCache=new Map();let glyphHost=null;
+function glyphFrac(type,sw){const key=type+'|'+sw;if(glyphCache.has(key))return glyphCache.get(key);let out=null;
+  try{const s=Stencils?.shapes?.[type],tpl=s&&iconTemplate(type);if(tpl&&typeof document!=='undefined'){
+    if(!glyphHost){glyphHost=document.createElementNS('http://www.w3.org/2000/svg','svg');glyphHost.setAttribute('style','position:absolute;left:-9999px;top:0;width:10px;height:10px;visibility:hidden;pointer-events:none');document.body.append(glyphHost)}
+    const g=tpl.cloneNode(true);g.setAttribute('stroke-width',sw);glyphHost.replaceChildren(g);const bb=g.getBBox(),[vx,vy,vw,vh]=s.vb.split(/[\s,]+/).map(Number),pad=sw/2;
+    if(bb.width>0&&bb.height>0)out={vb:[vx,vy,vw,vh],x:bb.x-pad,y:bb.y-pad,w:bb.width+2*pad,h:bb.height+2*pad}}}catch{}
+  glyphCache.set(key,out);return out}
+Core.setGlyph(n=>{if((n.display||'symbol')!=='symbol'||n.image||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||n.type==='rack')return null;const f=glyphFrac(n.type,n.strokeWidth??2);if(!f)return null;
+  const[vx,vy,vw,vh]=f.vb,k=Math.min(n.w/vw,n.h/vh),ox=(n.w-vw*k)/2,oy=(n.h-vh*k)/2,x=Math.max(0,ox+(f.x-vx)*k),y=Math.max(0,oy+(f.y-vy)*k);
+  return{x,y,w:Math.min(n.w-x,f.w*k),h:Math.min(n.h-y,f.h*k)}});
 
 // ---------- colour by data ("data graphics") ----------
 function colorMap(doc,page){const key=doc.display?.colorBy;if(!key)return null;const map=new Map();
   if(key==='_category'){for(const[k,v]of Object.entries(Shapes.CATEGORY))map.set(k,v);return{key,map}}
   if(key==='vlan')for(const v of doc.vlans||[])if(v.color)map.set(String(v.id),v.color);
   if(key==='status')for(const[k,v]of Object.entries(Shapes.STATUS))map.set(k,v);
+  for(const[k,v]of Object.entries(doc.display?.colorMap?.[key]||{}))map.set(k,v);
   const values=[...new Set(doc.pages.flatMap(p=>p.items).filter(n=>n.kind==='node').map(n=>String(n.data?.[key]??'')).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   let i=0;for(const v of values)if(!map.has(v))map.set(v,Shapes.PALETTE[i++%Shapes.PALETTE.length]);return{key,map}}
 function colorFor(n,ctx){const c=ctx.colors;if(!c||!Shapes.isDevice(n))return null;if(c.key==='_category')return c.map.get(Stencils?.shapes?.[n.type]?.cat)||null;const v=String(n.data?.[c.key]??'');return v?c.map.get(v)||null:'#cbd5e1'}
@@ -3742,9 +3948,11 @@ function drawNode(n,g,ctx){
 }
 function rackOf(n,page){if(!Shapes.rackItems[n.type])return null;const b=Core.box(n),c=[b.x+b.w/2,b.y+b.h/2];return page.items.find(r=>r.kind==='node'&&r.type==='rack'&&Core.inside({x:c[0],y:c[1],w:0,h:0},Shapes.rackInner(r)))||null}
 
+// Fields shown under a device label: the document-wide ones plus the device's own (Show on drawing).
+function shownFields(n,display){const g=display?.fields||[],own=n.showFields;return own?.length?[...new Set([...g,...own])]:g}
 function drawDataLines(n,g,ctx){
-  const keys=ctx.doc.display?.fields;if(!keys?.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||!n.labels?.length)return;
-  const vals=keys.map(k=>n.data?.[k]).filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='');if(!vals.length)return;
+  const keys=shownFields(n,ctx.doc.display);if(!keys.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type]||!n.labels?.length)return;
+  const named=ctx.doc.display?.prefixFields,vals=keys.filter(k=>n.data?.[k]!==undefined&&n.data[k]!==null&&String(n.data[k]).trim()!=='').map(k=>named?`${ctx.doc.fields?.find(f=>f.key===k)?.label||k}: ${n.data[k]}`:n.data[k]);if(!vals.length)return;
   const l=n.labels[0],m=Core.labelMetrics(l,resolveLabel(n,l,ctx)),size=Math.max(7,l.size*.84),lh=size*1.22,y=l.y+m.top+m.h+size*.95;
   const hb=ctx.bgAt?ctx.bgAt(l.x,y):ctx.bg,dw=Math.max(...vals.map(v=>Core.textWidth(String(v),size))),dl=l.align==='start'?l.x:l.align==='end'?l.x-dw:l.x-dw/2;el('rect',{x:dl-2,y:y-size,width:dw+4,height:(vals.length-1)*lh+size*1.25,rx:2,fill:hb,'pointer-events':'none'},g);const t=el('text',{x:l.x,y,'text-anchor':l.align||'middle','font-family':Core.FONT,'font-size':size,fill:l.color||'#34465e','fill-opacity':.75,'pointer-events':'none'},g);
   vals.forEach((v,i)=>{const s=el('tspan',{x:l.x,dy:i?lh:0},t);s.textContent=String(v)})}
@@ -3771,15 +3979,22 @@ function drawTable(n,g,ctx){
     let x=n.x;n.cols.forEach((cw,c)=>{if(c)el('line',{x1:x,y1:n.y,x2:x,y2:n.y+n.h,stroke:s,'stroke-width':.7},g);const v=resolveLabel(null,{text:String(row[c]??'')},ctx),t=el('text',{x:x+6,y:y+n.rowH/2+size*.36,'font-family':Core.FONT,'font-size':size,'font-weight':head||(n.boldFirstCol&&c===0)?650:400,fill:n.color||'#1e293b','pointer-events':'none'},g);t.textContent=fitText(v,size,cw-10,head);x+=cw})});
   if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}}
 
+// Rough colour names for legend rows that need telling apart.
+const COLOUR_NAMES=[['black','#111827'],['grey','#64748b'],['silver','#cbd5e1'],['white','#ffffff'],['red','#dc2626'],['orange','#ea580c'],['amber','#d97706'],['yellow','#eab308'],['lime','#65a30d'],['green','#16a34a'],['teal','#0d9488'],['cyan','#0891b2'],['blue','#2563eb'],['navy','#1e3a8a'],['indigo','#4f46e5'],['purple','#7c3aed'],['pink','#db2777'],['brown','#92400e']];
+function colourName(c){const m=/^#?([0-9a-f]{6})$/i.exec(String(c||'').trim());if(!m)return String(c||'');const v=parseInt(m[1],16),rgb=[v>>16,v>>8&255,v&255];let best='',bd=1e9;for(const[n,h]of COLOUR_NAMES){const w=parseInt(h.slice(1),16),d=(rgb[0]-(w>>16))**2+(rgb[1]-(w>>8&255))**2+(rgb[2]-(w&255))**2;if(d<bd){bd=d;best=n}}return best}
 function legendRows(n,page,ctx){
   const rows=[],count=new Map(),sample=new Map(),links=new Map(),src=n.scope==='doc'?ctx.doc.pages.filter(p=>!p.isBackground).flatMap(p=>p.items):page.items,items=src.filter(i=>itemVisible(i,ctx));
   if(n.devices!==false)for(const i of items)if(i.kind==='node'&&Shapes.isDevice(i)&&i.type!=='image'){const k=i.type;count.set(k,(count.get(k)||0)+1);if(!sample.has(k))sample.set(k,i)}
-  if(n.links!==false)for(const i of items)if(i.kind==='edge'){const k=Shapes.linkTypes[i.linkType]?i.linkType:'_'+i.stroke+'|'+(i.dash||'')+'|'+(i.double?1:0);const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
-  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',type:k,text:Shapes.nameOf(k),count:c,sample:sample.get(k)});
-  for(const[k,v]of links)rows.push({kind:'link',edge:v.e,text:Shapes.linkTypes[k]?.short||Shapes.linkTypes[k]?.name||'Connector',count:v.n});
-  if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
-  if(n.status!==false&&ctx.doc.display?.statusMarks!==false){const st=new Set(items.filter(i=>i.kind==='node').map(i=>i.data?.status));if(st.has('Planned'))rows.push({kind:'mark',mark:'planned',text:'Planned'});if(st.has('To remove'))rows.push({kind:'mark',mark:'remove',text:'To be removed'})}
-  if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
+  if(n.links!==false)for(const i of items)if(i.kind==='edge'){const look=i.stroke+'|'+(i.dash||'')+'|'+(i.strokeWidth||2)+'|'+(i.double?1:0),k=(Shapes.linkTypes[i.linkType]?i.linkType:'_')+'#'+look;const e=links.get(k)||{n:0,e:i};e.n++;links.set(k,e)}
+  for(const[k,c]of[...count].sort((a,b)=>Shapes.nameOf(a[0]).localeCompare(Shapes.nameOf(b[0]))))rows.push({kind:'device',key:'device:'+k,type:k,text:ctx.doc.typeStyles?.[k]?.label||Shapes.nameOf(k),count:c,sample:sample.get(k)});
+  // one row per look: if links of one type are styled differently, each look gets its own row (the legend never lies)
+  const byType=new Map();for(const[k,v]of links){const t=k.split('#')[0];if(!byType.has(t))byType.set(t,[]);byType.get(t).push([k,v])}
+  for(const[t,list]of byType){list.sort((a,b)=>b[1].n-a[1].n);const lt=Shapes.linkTypes[t],base=ctx.doc.linkStyles?.[t]?.label||lt?.short||lt?.name||'Connector';
+    list.forEach(([k,v],i)=>{const e=v.e,others=list.filter((_,j)=>j!==i).map(([,o])=>o.e),cn=colourName(e.stroke),sameName=others.some(o=>colourName(o.stroke)===cn&&o.stroke!==e.stroke),sameLook=others.some(o=>o.stroke===e.stroke&&(o.dash||'')===(e.dash||''));
+      const extra=i===0?'':' ('+[sameName?e.stroke:cn,e.dash?'dashed':'',sameLook?(e.strokeWidth||2)+' px':'',e.double?'double':''].filter(Boolean).join(', ')+')';rows.push({kind:'link',key:'link:'+k,edge:e,text:base+extra,count:v.n})})}
+  if(n.zones)for(const z of items.filter(i=>i.kind==='zone'&&i.fill&&i.fill!=='none'&&!i.pin))rows.push({kind:'zone',key:'zone:'+z.id,zone:z,text:(resolveLabel(z,z.labels?.[0]||{text:''},ctx)||'Zone').replace(/\n/g,' ')+(z.data?.vlan?' · VLAN '+z.data.vlan:'')});
+  if(n.status!==false&&ctx.doc.display?.statusMarks!==false){const st=new Set(items.filter(i=>i.kind==='node').map(i=>i.data?.status));if(st.has('Planned'))rows.push({kind:'mark',key:'mark:planned',mark:'planned',text:'Planned'});if(st.has('To remove'))rows.push({kind:'mark',key:'mark:remove',mark:'remove',text:'To be removed'})}
+  if(n.colors!==false&&ctx.colors&&ctx.colors.key!=='_category'){const used=new Set(ctx.doc.pages.flatMap(p=>p.items).map(i=>String(i.data?.[ctx.colors.key]??'')));for(const[k,v]of ctx.colors.map)if(used.has(k))rows.push({kind:'swatch',key:'swatch:'+ctx.colors.key+'='+k,color:v,text:(ctx.doc.fields.find(f=>f.key===ctx.colors.key)?.label||ctx.colors.key)+': '+k})}
   return rows}
 // Legend layout: rows flow into columns of maxRows; each column is as wide as its longest entry.
 function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,rh=22,counts=n.counts!==false;
@@ -3788,7 +4003,7 @@ function legendMeasure(n,page,ctx){const rows=legendRows(n,page,ctx),size=11.5,r
   let per=Math.max(3,n.maxRows||8),L=layout(per);const avail=typeof Constraints!=='undefined'&&n.pin?Constraints.availableWidth(page,ctx.doc,n):Infinity;while(L.w>avail&&per<rows.length){per++;L=layout(per)}
   const titleW=Core.textWidth(n.title||'LEGEND',13,true)+30;n.w=Math.max(n.minW||0,titleW,L.w);n.h=40+L.inCol*rh+6;return{rows,size,rh,counts,inCol:L.inCol,colX:L.colX,colW:L.colW}}
 function drawLegend(n,g,ctx,page){
-  const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx);
+  const{rows,size,rh,counts,inCol,colX,colW}=legendMeasure(n,page,ctx),hits=[];
   el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.fill||ctx.bg,stroke:n.stroke||'#a2b2c6','stroke-width':1},g);
   const title=el('text',{x:n.x+14,y:n.y+24,'font-family':Core.FONT,'font-size':13,'font-weight':700,fill:n.color||'#34465e','letter-spacing':.6},g);title.textContent=n.title||'LEGEND';
   rows.forEach((r,i)=>{const col=Math.floor(i/inCol),x0=n.x+6+colX[col],cw=colW[col],y=n.y+36+(i%inCol)*rh,cy=y+rh/2;
@@ -3799,8 +4014,11 @@ function drawLegend(n,g,ctx,page){
     else if(r.kind==='link'){const e=r.edge,d=`M${x0+8} ${cy}H${x0+40}`;if(e.double){el('path',{d,stroke:e.stroke,'stroke-width':(e.strokeWidth||2)*2.6},g);el('path',{d,stroke:ctx.bg,'stroke-width':(e.strokeWidth||2)*1.05},g)}else el('path',{d,stroke:e.stroke,'stroke-width':e.strokeWidth||2,'stroke-dasharray':e.dash||null},g)}
     else el('rect',{x:x0+12,y:cy-6,width:22,height:12,rx:3,fill:r.color},g);
     const t=el('text',{x:x0+50,y:cy+4,'font-family':Core.FONT,'font-size':size,fill:n.color||'#34465e'},g);t.textContent=r.text;
-    if(counts&&r.count){const c=el('text',{x:x0+cw-10,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size-1,fill:n.color||'#34465e','fill-opacity':.55},g);c.textContent='×'+r.count}});
-  if(ctx.interactive)el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g)}
+    if(counts&&r.count){const c=el('text',{x:x0+cw-10,y:cy+4,'text-anchor':'end','font-family':Core.FONT,'font-size':size-1,fill:n.color||'#34465e','fill-opacity':.55},g);c.textContent='×'+r.count}
+    if(ctx.interactive&&r.key&&r.kind!=='mark')hits.push({x:x0+2,y,w:cw-4,key:r.key,tip:`Double-click to restyle ${r.kind==='link'?'every link like this':r.kind==='device'?'every '+r.text:r.kind==='zone'?'this zone':'this colour'}`})});
+  if(ctx.interactive){el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'transparent','data-id':n.id,'data-role':'object'},g);
+    // rows on top: still select / drag the legend, and double-click restyles the row
+    for(const h of hits)el('title',{},el('rect',{x:h.x,y:h.y,width:h.w,height:rh,rx:4,class:'lgRow','data-id':n.id,'data-role':'object','data-legend-row':h.key},g)).textContent=h.tip}}
 
 function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return null;const id=`${ctx.prefix}-m-${e.id}-${side}`,m=el('marker',{id,viewBox:'-8 -6 12 12',refX:0,refY:0,markerWidth:7,markerHeight:7,markerUnits:'strokeWidth',orient:'auto-start-reverse',overflow:'visible'},defs);
   if(type==='dot')el('circle',{cx:-2,cy:0,r:3.2,fill:color},m);else if(type==='circle')el('circle',{cx:-3,cy:0,r:3,fill:ctx.bg,stroke:color,'stroke-width':1.3},m);else if(type==='diamond')el('path',{d:'M0 0L-4 -3L-8 0L-4 3Z',fill:color},m);else if(type==='openArrow')el('path',{d:'M-7 -4L0 0L-7 4',fill:'none',stroke:color,'stroke-width':1.4},m);else if(type==='bar')el('path',{d:'M-1 -4.5V4.5',stroke:color,'stroke-width':1.6},m);else el('path',{d:'M1 0L-7 -4L-7 4Z',fill:color},m);return`url(#${id})`}
@@ -4048,8 +4266,8 @@ const safeName=s=>(s||'drawing').replace(/[^a-z0-9 _.-]/gi,'_').trim()||'drawing
 function download(name,data,type){const url=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000)}
 const docJSON=()=>JSON.stringify(Packs.embedUsed(S.doc),null,1);
 
-async function save(){if(S.fileHandle){try{const w=await S.fileHandle.createWritable();await w.write(docJSON());await w.close();S.dirty=false;setSaveState('Saved to '+S.fileHandle.name);return}catch(err){if(err.name==='AbortError')return;notify('Could not write the file ('+err.message+'). Downloading instead.')}}if(FS_OK)return saveAs();download(safeName(S.doc.name)+'.json',docJSON(),'application/json');S.dirty=false;setSaveState('Drawing downloaded')}
-async function saveAs(){if(FS_OK){try{const h=await showSaveFilePicker({suggestedName:safeName(S.doc.name)+'.json',types:[{description:'Port network drawing',accept:{'application/json':['.json']}}]});S.fileHandle=h;return save()}catch(err){if(err.name==='AbortError')return}}download(safeName(S.doc.name)+'.json',docJSON(),'application/json');S.dirty=false;setSaveState('Drawing downloaded')}
+async function save(skipRev){if(!skipRev&&!(await Quick.beforeSave()))return;if(S.fileHandle){try{const w=await S.fileHandle.createWritable();await w.write(docJSON());await w.close();S.dirty=false;setSaveState('Saved to '+S.fileHandle.name);return}catch(err){if(err.name==='AbortError')return;notify('Could not write the file ('+err.message+'). Downloading instead.')}}if(FS_OK)return saveAs(true);download(safeName(S.doc.name)+'.json',docJSON(),'application/json');S.dirty=false;setSaveState('Drawing downloaded')}
+async function saveAs(skipRev){if(!skipRev&&!(await Quick.beforeSave()))return;if(FS_OK){try{const h=await showSaveFilePicker({suggestedName:safeName(S.doc.name)+'.json',types:[{description:'Port network drawing',accept:{'application/json':['.json']}}]});S.fileHandle=h;return save(true)}catch(err){if(err.name==='AbortError')return}}download(safeName(S.doc.name)+'.json',docJSON(),'application/json');S.dirty=false;setSaveState('Drawing downloaded')}
 async function openFile(){if(FS_OK&&'showOpenFilePicker' in window){try{const[h]=await showOpenFilePicker({types:[{description:'Drawings, CSV, images',accept:{'application/json':['.json'],'text/csv':['.csv'],'text/plain':['.txt'],'image/*':['.png','.jpg','.jpeg','.svg','.webp']}}]});const f=await h.getFile();return handleFile(f,h)}catch(err){if(err.name==='AbortError')return}}$('fileInput').click()}
 async function handleFile(file,handle=null,at=null){
   const name=file.name.toLowerCase();
@@ -4065,7 +4283,7 @@ async function handleFile(file,handle=null,at=null){
     const doc=C.migrate(data);if(S.dirty&&!confirm('Open “'+file.name+'”? Unsaved changes stay recoverable with Undo.'))return;
     loadDocument(doc,{handle:name.endsWith('.json')?handle:null,name:file.name});notify(data.version===3?'Drawing opened.':'Port v'+(data.version||1)+' drawing imported and upgraded to v3.')
   }catch(err){notify(err.message||'Unable to read file.')}}
-function loadDocument(doc,{handle=null,name='',id=null}={}){S.fromTemplate=null;if(S.doc&&S.dirty)Workspace.saveCurrent(true);remember();Packs.installDoc(doc);Constraints.upgrade(doc);S.doc=doc;S.docId=id||Workspace.newId();S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.fileHandle=handle;S.activeLayer=doc.layers[0].id;clearTransient();S.analysis=null;Conn.reset();S.dirty=false;setSaveState(name?'Opened '+name:'Ready');changed();S.dirty=false;fit();render()}
+function loadDocument(doc,{handle=null,name='',id=null}={}){S.fromTemplate=null;if(S.doc&&S.dirty)Workspace.saveCurrent(true);remember();Packs.installDoc(doc);Constraints.upgrade(doc);Quick.prepare(doc);S.doc=doc;S.docId=id||Workspace.newId();S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.fileHandle=handle;S.activeLayer=doc.layers[0].id;clearTransient();S.analysis=null;Conn.reset();S.dirty=false;setSaveState(name?'Opened '+name:'Ready');changed();S.dirty=false;fit();render()}
 function importImage(file,at){if(file.size>8*1024*1024)return notify('Use an image smaller than 8 MB.');const r=new FileReader();r.onload=()=>{const data=r.result,img=new Image();img.onload=()=>{const ratio=img.naturalHeight/img.naturalWidth||1;mutate(()=>{const c=at||[S.view.x+$('canvas').clientWidth/2/S.view.zoom,S.view.y+$('canvas').clientHeight/2/S.view.zoom],n=C.node('image',0,0,file.name.replace(/\.[^.]+$/,''),160,Math.max(16,160*ratio));C.move(n,grid(c[0]-80),grid(c[1]-n.h/2));n.image=data;n.layer=S.activeLayer;items().push(n);select([n.id])});notify('Image imported. Save it to your library to reuse it as a symbol.')};img.onerror=()=>notify('The image could not be decoded.');img.src=data};r.readAsDataURL(file)}
 function importLibraryData(d){const list=(d.library||[]).map(e=>{const p=C.page();p.items=e.items;C.validate({version:3,pages:[p]});return{id:C.uid(),name:String(e.name||'Imported symbol'),items:e.items}});S.library.push(...list);saveLibrary();notify(list.length+' library item(s) imported.')}
 function saveLibrary(){Store.kvSet('library',S.library).catch(()=>{});try{localStorage.setItem('port-v3-library',JSON.stringify(S.library))}catch{}renderPalette()}
@@ -4274,15 +4492,28 @@ const Packs=(()=>{
   const API='https://api.iconify.design';let collections=null;
   const SETS={network:'carbon,tabler,mdi,material-symbols,fluent,ph,lucide,clarity,eos-icons,icon-park-outline,streamline',brands:'logos,simple-icons,devicon,skill-icons,vscode-icons',all:''};
   async function getCollections(){if(collections)return collections;const r=await fetch(API+'/collections');collections=await r.json();return collections}
-  async function search(query,set='network',limit=96){const pre=SETS[set]??set;const r=await fetch(`${API}/search?query=${encodeURIComponent(query)}&limit=${limit}${pre?'&prefixes='+pre:''}`);if(!r.ok)throw Error('Icon search failed ('+r.status+')');return r.json()}
-  async function fetchIcon(full){const[prefix,name]=full.split(':');const r=await fetch(`${API}/${prefix}.json?icons=${encodeURIComponent(name)}`);const j=await r.json(),ic=j.icons?.[name];if(!ic)throw Error('Icon not found: '+full);const w=ic.width||j.width||24,h=ic.height||j.height||24,vb=`${ic.left||j.left||0} ${ic.top||j.top||0} ${w} ${h}`;
+  // Iconify rate-limits per-icon SVG URLs (HTTP 429) when a results grid asks for 100+ at once, so icon data is fetched
+  // in batches — one JSON request per icon set — sanitised once, cached, and drawn inline.
+  const searches=new Map(),iconData=new Map();
+  const limitedError=()=>Object.assign(Error('Iconify is limiting requests from this network right now — try again in a few minutes. Bundled and imported shapes still work.'),{limited:true});
+  async function search(query,set='network',limit=96){const pre=SETS[set]??set,key=query+'|'+pre+'|'+limit;if(searches.has(key))return searches.get(key);
+    const r=await fetch(`${API}/search?query=${encodeURIComponent(query)}&limit=${limit}${pre?'&prefixes='+pre:''}`);if(r.status===429)throw limitedError();if(!r.ok)throw Error('Icon search failed ('+r.status+')');const j=await r.json();searches.set(key,j);return j}
+  function iconFromSet(j,name,full){let ic=j.icons?.[name],al=null;if(!ic&&j.aliases?.[name]){al=j.aliases[name];ic=j.icons?.[al.parent]}if(!ic)return null;ic={...ic,...(al||{})};
+    const w=ic.width||j.width||24,h=ic.height||j.height||24,vb=`${ic.left||j.left||0} ${ic.top||j.top||0} ${w} ${h}`;
     let body=ic.body;if(ic.hFlip||ic.vFlip||ic.rotate)body=`<g transform="${ic.rotate?`rotate(${ic.rotate*90} ${w/2} ${h/2})`:''}${ic.hFlip?` translate(${w} 0) scale(-1 1)`:''}${ic.vFlip?` translate(0 ${h}) scale(1 -1)`:''}">${body}</g>`;
-    const s=sanitizeSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`,'i-'+hash(full));const col=(await getCollections().catch(()=>({})))[prefix];
+    return sanitizeSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`,'i-'+hash(full))}
+  // Load many icons with a handful of requests; returns {limited} when Iconify said "too many requests".
+  async function loadIcons(fulls){const by=new Map();for(const f of fulls){if(iconData.has(f))continue;const[p,n]=f.split(':');if(!by.has(p))by.set(p,[]);by.get(p).push(n)}
+    const jobs=[];for(const[p,names]of by)for(let i=0;i<names.length;i+=60)jobs.push([p,names.slice(i,i+60)]);let limited=false,failed=false;
+    const run=async([p,names])=>{try{const r=await fetch(`${API}/${p}.json?icons=${names.map(encodeURIComponent).join(',')}`);if(r.status===429){limited=true;return}if(!r.ok){failed=true;return}const j=await r.json();for(const n of names){try{const d=iconFromSet(j,n,p+':'+n);if(d)iconData.set(p+':'+n,d)}catch{}}}catch{failed=true}};
+    for(let i=0;i<jobs.length&&!limited;i+=3)await Promise.all(jobs.slice(i,i+3).map(run));return{limited,failed}}
+  const iconPreview=full=>iconData.get(full)||null;
+  async function fetchIcon(full){const[prefix,name]=full.split(':');if(!iconData.has(full)){const r=await loadIcons([full]);if(r.limited)throw limitedError()}const s=iconData.get(full);if(!s)throw Error('Icon not found or not downloadable: '+full);const col=(await getCollections().catch(()=>({})))[prefix];
     return stencilFrom(name.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),s.vb,s.svg,{tags:prefix+' '+name,source:full,license:col?.license?.spdx||'',recolor:/currentColor/.test(s.svg)})}
   async function addOnline(full){let pack=packs.get('online');if(!pack){pack={id:'online',name:'Online picks',source:'iconify',categories:[{id:'pack:online',name:'Online picks'}],shapes:{}}}const id='i-'+slug(full.replace(':','-'));if(!pack.shapes[id]){const st=await fetchIcon(full);st.cat='pack:online';pack.shapes[id]=st;await save(pack)}else install(pack);return id}
   const thumbUrl=(full,color='#2f5ea8')=>{const[p,n]=full.split(':');return`${API}/${p}/${n}.svg?color=${encodeURIComponent(color)}`};
 
-  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,save,remove,loadAll,exportPack,search,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
+  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,save,remove,loadAll,exportPack,search,loadIcons,iconPreview,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
 })();
 
 </script>
@@ -4554,7 +4785,7 @@ const C=Core;
 let autosaveTimer=null;
 function snapshot(){return JSON.stringify({doc:S.doc,pageIndex:S.pageIndex})}
 function remember(){S.history.push(snapshot());if(S.history.length>150)S.history.shift();S.future=[]}
-function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
+function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();Quick.revInfo();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
 function mutate(fn){remember();const r=fn();changed();render();return r}
 let checkTimer=null;
 // Design-rule check runs quietly after edits; the status bar shows the count and opens the full list.
@@ -4691,7 +4922,11 @@ function doResize(d,p,e){
   const b=d.box;let left=b.x,top=b.y,right=b.x+b.w,bottom=b.y+b.h;const dx=p[0]-d.start[0],dy=p[1]-d.start[1];
   if(d.hx===0)left=Math.min(grid(b.x+dx,e),right-8);if(d.hx===1)right=Math.max(grid(right+dx,e),left+8);if(d.hy===0)top=Math.min(grid(b.y+dy,e),bottom-8);if(d.hy===1)bottom=Math.max(grid(bottom+dy,e),top+8);
   let sx=(right-left)/b.w,sy=(bottom-top)/b.h;const corner=d.hx!==.5&&d.hy!==.5,single=d.original.length===1&&d.original[0].kind==='node'&&Shapes.kindOf(d.original[0].type)==='device';
-  if(corner&&(single!==e.shiftKey)||!corner&&e.shiftKey){const s=d.hx===.5?sy:d.hy===.5?sx:Math.max(sx,sy);sx=sy=s;if(d.hx===0)left=right-b.w*s;else right=left+b.w*s;if(d.hy===0)top=bottom-b.h*s;else bottom=top+b.h*s}
+  const lock=corner?((single||d.original.length>1)!==e.shiftKey):e.shiftKey;
+  if(lock){const s=d.hx===.5?sy:d.hy===.5?sx:Math.max(sx,sy);sx=sy=s;if(d.hx===0)left=right-b.w*s;else right=left+b.w*s;if(d.hy===0)top=bottom-b.h*s;else bottom=top+b.h*s}
+  // proportional resize of several items: restore, then scale about the opposite corner with the scale engine
+  if(lock&&d.original.length>1){const live=d.original.map(o=>{const t=find(o.id);if(t)Object.assign(t,C.copy(o));return t}).filter(Boolean);const ox=d.hx===0?b.x+b.w:d.hx===1?b.x:b.x+b.w/2,oy=d.hy===0?b.y+b.h:d.hy===1?b.y:b.y+b.h/2;
+    const r=Scale.apply(live,items(),sx,{origin:[ox,oy]});for(const id of r.reroute)Conn.markDirty(id);return}
   for(const old of d.original){const t=find(old.id);if(!t)continue;Object.assign(t,C.copy(old));
     if(t.kind==='node'||t.kind==='zone'||t.kind==='text'){const ob={x:old.x,y:old.y,w:old.w,h:old.h};const nx=left+(old.x-b.x)*sx,ny=top+(old.y-b.y)*sy;t.x=nx;t.y=ny;t.w=old.w*sx;t.h=old.h*sy;
       for(const l of t.labels||[]){const o2=old.labels.find(x=>x.id===l.id);if(t.kind==='zone'||t.kind==='text'){l.x=nx+(o2.x-ob.x)*(t.kind==='text'?1:Math.min(1,sx));l.y=ny+(o2.y-ob.y);if(t.kind==='text')l.wrapWidth=Math.max(30,t.w-20)}else if(o2.y>ob.y+ob.h){l.x=nx+t.w/2+(o2.x-ob.x-ob.w/2)*sx;l.y=ny+t.h+(o2.y-ob.y-ob.h)}else if(o2.y<ob.y){l.x=nx+t.w/2+(o2.x-ob.x-ob.w/2)*sx;l.y=ny+(o2.y-ob.y)}else{l.x=nx+(o2.x-ob.x)*sx;l.y=ny+(o2.y-ob.y)*sy;if(l.wrapWidth)l.wrapWidth*=sx}}}
@@ -4721,7 +4956,7 @@ function finishConnect(d,e,p){
   const edge=createEdge(d.from,target.ref,d.fromP,target.p);changed();select([edge.id]);render()}
 function createEdge(from,to,a,b,mid=[]){
   const e=C.edge([a,...mid,b],from?{...from}:null,to?{...to}:null),st=S.routeStyle;e.routing=st==='curved'?'free':st;if(st==='curved'){e.curve='smooth';const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;e.points=[a,[(a[0]+b[0])/2-dy/l*40,(a[1]+b[1])/2+dx/l*40],b]}
-  Shapes.applyLinkType(e,S.linkType);e.layer=S.activeLayer;e.jumps=true;
+  Shapes.applyLinkType(e,S.linkType,S.doc);e.layer=S.activeLayer;e.jumps=true;
   for(const[k,f]of[['from','fromIf'],['to','toIf']]){const r=e[k],n=r&&find(r.node),port=r?.port&&n?.ports.find(q=>q.id===r.port);if(port&&!genericPort(port.name))e[f]=port.name}
   if(['hv','vh'].includes(e.routing))Conn.orthogonalize(e);items().push(e);Conn.markDirty(e.id);return e}
 function finishTrace(){const tr=S.trace;if(!tr||tr.points.length<2)return notify('Place at least two points.');mutate(()=>{const pts=C.copy(tr.points);const e=createEdge(tr.from,tr.to,pts[0],pts.at(-1),pts.slice(1,-1));e.routing=S.routeStyle;Conn.orthogonalize(e);select([e.id])});S.trace=null;S.hover=null;setMode('select')}
@@ -4742,6 +4977,7 @@ function quickAddMenu(e,p,d){
     const n=Shapes.make(type,0,0);C.move(n,grid(p[0]-n.w/2)-n.x,grid(p[1]-n.h/2)-n.y);n.display=S.prefs.newDisplay==='symbol'?n.display:S.prefs.newDisplay;n.layer=S.activeLayer;items().push(n);createEdge(d.from,{node:n.id,port:null},d.fromP,C.center(n));changed();select([n.id]);render()}}
 
 function onDoubleClick(e,p,t,n){
+  const lr=e.target?.closest?.('[data-legend-row]');if(lr&&n?.kind==='legend'){openLegendRow(n,lr.dataset.legendRow);return}
   const role=t?.dataset.role;if(n&&isLocked(n))return;
   if(role==='label'){editLabel(n.id,t.dataset.label);return}
   if(n?.kind==='edge'){if(['auto','straight'].includes(n.routing)||role==='edge'&&!S.selected.has(n.id)||e.altKey){editEdgeLabel(n);return}
@@ -4772,7 +5008,9 @@ function addNode(type,x,y,opts={}){
     const target=opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
     items().push(n);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
     select([n.id]);return n});if(S.mode!=='select')setMode('select');return n}
-function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(!t||S.doc.theme==='port')return;if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
+function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(t&&S.doc.theme!=='port'){if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
+  // a style set for this type from the legend applies to new ones too
+  const ts=S.doc.typeStyles?.[n.type];if(ts){if(ts.stroke)n.stroke=ts.stroke;if(ts.display&&Shapes.kindOf(n.type)==='device')n.display=ts.display}}
 function insertAnnotation(kind,x,y){
   if(kind==='zone'){const z=mutate(()=>{const z=C.zone('Network zone',grid(x-160),grid(y-100),320,200);z.layer=S.activeLayer;items().unshift(z);select([z.id]);return z});return z}
   if(kind==='text'){const t=mutate(()=>{const t=C.text('Text',grid(x-120),grid(y-20),240,50,14);t.layer=S.activeLayer;items().push(t);select([t.id]);return t});editLabel(t.id,t.labels[0].id,true);return t}
@@ -4833,6 +5071,9 @@ function onKey(e){
   if(k==='?'){actions.shortcuts();return}
   if(k==='l'&&!e.shiftKey){actions.layoutHier();return}
   if(k==='f'&&!e.shiftKey){fit(S.selected.size>0);return}}
+
+// Double-click on a legend row: restyle every link / device of that type.
+function openLegendRow(n,key){Quick.openLegendStyle(n.id,key)}
 
 </script>
 <script>
@@ -4905,7 +5146,11 @@ function zonePanel(z){const c=C.cidr(z.data?.subnet);return labelsList(z)+sectio
 function subnetInfo(z,c){const plan=Analysis.ipPlan(S.doc).find(r=>r.zone===z);return`<table class="kv"><tr><td>Network</td><td>${c.text}</td></tr><tr><td>Mask</td><td>${c.maskText}</td></tr><tr><td>Usable</td><td>${C.int2ip(c.first)} – ${C.int2ip(c.last)}</td></tr><tr><td>Broadcast</td><td>${C.int2ip(c.broadcast)}</td></tr><tr><td>Hosts</td><td>${c.hosts.toLocaleString()}</td></tr>${plan?`<tr><td>In use</td><td>${plan.used} (${(plan.used/Math.max(1,c.hosts)*100).toFixed(1)}%)</td></tr><tr><td>Next free</td><td>${plan.next||'—'}</td></tr>`:''}</table>`}
 function textPanel(t){const devs=items().filter(n=>n.kind==='node'&&Shapes.isDevice(n));return labelsList(t)+section('Box',`${row(field('Fill',color('fill',t.fill||'')),field('Border',color('stroke',t.stroke||'')))}${row(field('Wrap width',inp('labels.0.wrapWidth',t.labels?.[0]?.wrapWidth||0,'number','min="0"')),field('Corner',inp('rx',t.rx??6,'number','min="0"')))}${field('Callout points to',sel('target',[['','(nothing)'],...devs.map(d=>[d.id,Analysis.nameOf(d)])],t.target||''))}`,'box')+geometry(t,false)+common(t)}
 function tablePanel(t){return section('Table',`${row(field('Rows',inp('_rows',t.rows.length,'number','min="1" max="500"')),field('Columns',inp('_cols',t.cols.length,'number','min="1" max="30"')))}${row(field('Text size',inp('size',t.size||11,'number','min="6" max="40"')),field('Row height',inp('rowH',t.rowH,'number','min="12" max="120"')))}${field('Column widths',inp('_widths',t.cols.map(Math.round).join(', ')))}${chk('header',t.header!==false,'Header row')}${chk('boldFirstCol',!!t.boldFirstCol,'Bold first column')}${row(field('Lines',color('stroke',t.stroke)),field('Header',color('headerFill',t.headerFill)))}${field('Contents (CSV — edit and click Apply)',`<textarea id="tableCsv" rows="6" spellcheck="false">${h(t.rows.map(r=>r.map(v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v).join(',')).join('\n'))}</textarea>`)}${row(btn('tableApplyCsv','Apply CSV'),btn('tableCopy','Copy for Excel'))}<p class="muted">Double-click a cell to edit; Tab moves to the next cell. {{doc.name}}, {{page.number}}, {{date}} fields work in cells.</p>`,'table')+common(t)}
-function legendPanel(l){return section('Legend',`${field('Title',inp('title',l.title||'LEGEND'))}${chk('devices',l.devices!==false,'Device types')}${chk('links',l.links!==false,'Link types')}${chk('zones',!!l.zones,'Zones')}${chk('colors',l.colors!==false,'Colour-by values')}${chk('counts',l.counts!==false,'Show counts')}${field('Rows per column',inp('maxRows',l.maxRows||8,'number','min="3" max="40"'))}${row(field('Background',color('fill',l.fill||'#ffffff')),field('Border',color('stroke',l.stroke||'#a2b2c6')))}<p class="muted">The legend updates automatically from what is on the page.</p>${field('Covers',sel('scope',[['page','This page'],['doc','Whole drawing']],l.scope||'page'))}${chk('status',l.status!==false,'Planned / to-remove marks')}${btn('legendGen','Open legend generator…','class="wide"')}`,'legend')+common(l)}
+// Each legend row as a button: restyle every link / device of that type (same as double-clicking the row).
+function legendRowList(l){const page=S.doc.pages.find(p=>p.items.includes(l))||pg();let rows=[];try{rows=legendRows(l,page,makeCtx(page,{doc:S.doc})).filter(r=>r.key&&r.kind!=='mark')}catch{}if(!rows.length)return'';
+  const sw=r=>r.kind==='link'?`<span class="lgSw line" style="border-top:${Math.min(4,r.edge.strokeWidth||2)}px ${r.edge.dash?'dashed':'solid'} ${r.edge.stroke}"></span>`:r.kind==='device'?`<span class="lgSw" style="background:${r.sample?.stroke||'#2f5ea8'}"></span>`:r.kind==='zone'?`<span class="lgSw" style="background:${r.zone.fill};outline:1px solid ${r.zone.stroke}"></span>`:`<span class="lgSw" style="background:${r.color}"></span>`;
+  return`<div class="fld"><span>Restyle from the legend — click a row (or double-click it on the page)</span><div class="lgList">${rows.map(r=>`<button data-legend-style="${l.id}|${h(r.key)}" title="Change every ${h(r.text)}">${sw(r)}<span>${h(r.text)}</span><em>${r.count?'×'+r.count:''}</em></button>`).join('')}</div></div>`}
+function legendPanel(l){return section('Legend',`${field('Title',inp('title',l.title||'LEGEND'))}${chk('devices',l.devices!==false,'Device types')}${chk('links',l.links!==false,'Link types')}${chk('zones',!!l.zones,'Zones')}${chk('colors',l.colors!==false,'Colour-by values')}${chk('counts',l.counts!==false,'Show counts')}${field('Rows per column',inp('maxRows',l.maxRows||8,'number','min="3" max="40"'))}${row(field('Background',color('fill',l.fill||'#ffffff')),field('Border',color('stroke',l.stroke||'#a2b2c6')))}<p class="muted">The legend updates automatically from what is on the page.</p>${legendRowList(l)}${field('Covers',sel('scope',[['page','This page'],['doc','Whole drawing']],l.scope||'page'))}${chk('status',l.status!==false,'Planned / to-remove marks')}${btn('legendGen','Open legend generator…','class="wide"')}`,'legend')+common(l)}
 function propsFor(n){return n.kind==='node'?nodePanel(n):n.kind==='edge'?edgePanel(n):n.kind==='zone'?zonePanel(n):n.kind==='text'?textPanel(n):n.kind==='table'?tablePanel(n):n.kind==='legend'?legendPanel(n):common(n)}
 
 function labelPanel(owner,l){return section('Label',`${field('Text',area('L.text',l.text,4,'data-live="1"'))}${row(field('Size',inp('L.size',l.size,'number','min="5" max="144"')),field('Rotation °',inp('L.rotation',l.rotation||0,'number')))}${row(field('Colour',color('L.color',l.color)),field('Align',sel('L.align',[['start','Left'],['middle','Centre'],['end','Right']],l.align||'middle')))}${row(field('Font',sel('L.font',[['','Sans (default)'],[C.MONO,'Monospace'],['Georgia, serif','Serif']],l.font||'')),field('Wrap width',inp('L.wrapWidth',l.wrapWidth||0,'number','min="0"')))}${chk('L.bold',l.bold,'Bold')}${chk('L.italic',l.italic,'Italic')}${chk('L.underline',l.underline,'Underline')}${chk('L.background',l.background,'Background halo')}${l.anchor?field('Position along connector',`<input type="range" min="0" max="1" step="0.01" data-bind="L.anchor.t" value="${l.anchor.t}">`):''}${row(btn('editLabel','Edit on canvas'),btn('deleteLabel','Delete label'))}`,'label')}
@@ -4952,7 +5197,7 @@ function apply(bind,v){
   if(v===null)return;
   mutate(()=>{for(const n of targets){
     if(bind==='type'){const old=n.type;n.type=v;const st=Stencils.shapes[v];if(st&&Shapes.kindOf(old)==='device'){const b=C.box(n),cx=b.x+b.w/2,by=b.y+b.h;const k=Math.sqrt((n.w*n.h)/(st.w*st.h));n.w=Math.round(st.w*k);n.h=Math.round(st.h*k);n.x=cx-n.w/2;const dy=by-(n.y+n.h);n.y+=dy}if(n.labels?.[0]&&n.labels[0].text===Shapes.nameOf(old))n.labels[0].text=Shapes.nameOf(v);continue}
-    if(bind==='linkType'){if(n.kind==='edge'&&v)Shapes.applyLinkType(n,v);continue}
+    if(bind==='linkType'){if(n.kind==='edge'&&v)Shapes.applyLinkType(n,v,S.doc);continue}
     if(bind==='routing'){if(n.kind!=='edge'||!v)continue;n.routing=v;n.curve=v==='free'&&n.curve==='smooth'?'smooth':'straight';if(['hv','vh'].includes(v))Conn.orthogonalize(n);Conn.markDirty(n.id);continue}
     if(bind==='curve'){if(n.kind!=='edge')continue;n.curve=v;if(v==='smooth'){if(n.routing==='auto'||n.routing==='straight'||n.routing==='hv'||n.routing==='vh')n.routing='free';if(n.points.length===2){const[a,b]=n.points,dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;n.points.splice(1,0,[(a[0]+b[0])/2-dy/l*35,(a[1]+b[1])/2+dx/l*35])}}else Conn.orthogonalize(n);continue}
     if(bind==='units'){const s=Shapes.rackSize(+v),dy=n.h-s.h;n.units=+v;n.h=s.h;n.y+=dy;(n.labels||[]).forEach(l=>l.y+=dy);continue}
@@ -5031,7 +5276,7 @@ function assignIps(){const z=picked()[0];if(!z||z.kind!=='zone')return;const c=C
 function traceInteractive(fromId){const from=fromId||picked().find(n=>n.kind==='node')?.id;if(!from)return notify('Select the start device, then choose Trace path.');S.traceFrom=from;notify('Now click the destination device…',6000);S.pickHandler=id=>{const p=Analysis.path(pg(),from,id);if(!p){notify('No path between these devices.');S.analysis=null}else{const G=Analysis.graph(pg()),alt=Analysis.allPaths(G,from,id,3);S.analysis={kind:'path',nodes:new Set(p.nodes),edges:new Set(p.edges),color:'#16a34a'};notify(`Path: ${p.nodes.map(i=>Analysis.nameOf(find(i))).join(' → ')} (${p.edges.length} hop${p.edges.length===1?'':'s'})${alt.length>1?` · ${alt.length} alternative routes`:' · no alternative route'}`,9000)}render()}}
 const actions={
   // file
-  new:()=>openTemplates(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
+  new:()=>openTemplates(),newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
   exportSvg:()=>exportSvg(),exportPng:()=>exportPng(2),exportPng4:()=>exportPng(4),exportPngT:()=>exportPng(2,true),copyPng:()=>copyPng(),exportDrawio:()=>exportDrawio(),exportVsdx:()=>exportVsdx(),exportCsv:()=>showReport(Analysis.inventory(S.doc)),
   print:()=>previewPrint(),printAll:()=>previewPrint(true),closePrint:()=>$('printPreview').hidden=true,printNow:()=>window.print(),share:()=>shareLink(),docProps:()=>{S.selected.clear();S.tab='doc';Ins.invalidate();render()},
   // edit
@@ -5049,7 +5294,7 @@ const actions={
   fitPageQuick:()=>{S.quietResize=true;mutate(()=>Constraints.fitPage(pg(),S.doc,{}));S.quietResize=false;fit()},fitPageToDrawing:()=>openFitPage(),orientation:()=>{mutate(()=>pg().orientation=pg().orientation==='landscape'?'portrait':'landscape');fit()},
   // data & analysis
   importDialog:()=>openImportDialog({}),importText:()=>openImportDialog({tab:'text'}),importNeighbors:()=>openImportDialog({tab:'cdp'}),linkData:()=>openImportDialog({update:true}),vlans:()=>openVlans(),fields:()=>actions.docProps(),
-  repInventory:()=>showReport(Analysis.inventory(S.doc)),repCables:()=>showReport(Analysis.cables(S.doc)),repBom:()=>showReport(Analysis.bom(S.doc)),repIp:()=>showReport(Analysis.ipReport(S.doc)),repRack:()=>showReport(Analysis.rackReport(S.doc)),repPoe:()=>showReport(Analysis.poeReport(S.doc)),repCctv:()=>showReport(Analysis.cctvReport(S.doc)),repVlan:()=>showReport(Analysis.vlanReport(S.doc)),
+  repInventory:()=>Inventory.open(),showFields:()=>Inventory.openShow(),repCables:()=>showReport(Analysis.cables(S.doc)),repBom:()=>showReport(Analysis.bom(S.doc)),repIp:()=>showReport(Analysis.ipReport(S.doc)),repRack:()=>showReport(Analysis.rackReport(S.doc)),repPoe:()=>showReport(Analysis.poeReport(S.doc)),repCctv:()=>showReport(Analysis.cctvReport(S.doc)),repVlan:()=>showReport(Analysis.vlanReport(S.doc)),
   check:()=>openCheck(),spof:()=>{const r=Analysis.spof(pg());S.analysis={kind:'spof',nodes:new Set(r.nodes.map(a=>a.id)),edges:new Set(r.bridges.map(b=>b.edge.id)),color:'#dc2626'};render();notify(r.nodes.length||r.bridges.length?`${r.nodes.length} single point(s) of failure and ${r.bridges.length} non-redundant infrastructure link(s) highlighted in red. Esc clears.`:'No single points of failure found in the infrastructure on this page. ✓',8000)},
   trace:()=>traceInteractive(),traceFrom:()=>traceInteractive(picked()[0]?.id),
   traffic:()=>{const t=Analysis.traffic(pg());if(!t.flows.length)return notify('No streams found. Cameras send to the nearest NVR/recorder; set “Stream bitrate” on devices or a default in Document ▸ Data graphics.',7000);S.analysis={kind:'traffic',loads:t.loads};render();const hot=[...t.loads.values()].filter(l=>l.pct>=80).length;notify(`${t.flows.length} stream(s) routed to ${t.recorders.length} recorder(s). ${hot?hot+' link(s) above 80% — shown in red.':'All links below 80%.'} Esc clears.`,8000)},
@@ -5119,7 +5364,8 @@ const RIBBON=[
   {id:'insert',name:'Insert',groups:[
     {name:'Pages',items:[B('insertTemplate','Template','template','Add a template, a saved drawing, a page or a zone block to this drawing',true),B('saveTemplate','Save as template','save','Save this page, the selection or the whole drawing as a reusable template (Templates ▸ My templates)'),B('addPage','New page','page','',true),B('newBackground','Background page','bgpage','Border + title block shared by pages')]},
     {name:'Containers',items:[B('zone','Zone','zone','Network zone / container',true),B('wrapZone','Wrap in zone','wrap','Create a zone around the selection'),B('rack','Rack','rack','42U rack elevation')]},
-    {name:'Annotation',items:[B('legendGen','Legend','legend','Legend generator — devices, links, zones, colours; auto-updating',true),B('textAnn','Text','text'),B('callout','Callout','callout','Callout pointing at the selected device'),B('table','Table','table'),B('titleBlock','Title block','title'),B('revision','Revision table','revision')]},
+    {name:'Annotation',items:[B('legendGen','Legend','legend','Legend generator — devices, links, zones, colours; auto-updating',true),B('textAnn','Text','text'),B('callout','Callout','callout','Callout pointing at the selected device'),B('table','Table','table'),B('titleBlock','Title block','title')]},
+    {name:'Revisions',items:[B('newRevision','New revision','delta','Issue a new revision: bump the number, log it, cloud the changes',true),B('revCloud','Revision cloud','cloud','Cloud around the selection (or at the centre) with a delta'),B('revDelta','Revision delta','delta','Triangle tag carrying the revision'),B('revision','Revision table','revision','Fills itself from the revision history')]},
     {name:'Media',items:[B('image','Image / logo','image','PNG, JPG, SVG — or paste a screenshot with Ctrl+V'),B('saveSymbol','Save to library','plus','Save the selection as a reusable symbol')]}]},
   {id:'design',name:'Design',groups:[
     {name:'Themes',items:[X(()=>`<div class="themeRow">${Object.entries(Shapes.themes).map(([k,t])=>`<button class="themeSw ${S.doc.theme===k?'active':''}" data-theme-apply="${k}" title="${t.name}"><span style="background:${t.page}"><i style="background:${t.device.stroke==='category'?'#ea580c':t.device.stroke}"></i><i style="background:${t.zones[0][1]}"></i></span><em>${t.name}</em></button>`).join('')}</div>`)]},
@@ -5129,7 +5375,7 @@ const RIBBON=[
   {id:'data',name:'Data',groups:[
     {name:'Import',items:[B('importDialog','CSV / NetBox','import','Build a diagram from device & cable spreadsheets',true),B('importText','Text','text2','Diagram-as-text'),B('importNeighbors','CDP / LLDP','terminal','Paste “show cdp/lldp neighbors” output'),B('linkData','Link data','data','Update shape data of existing devices from a spreadsheet')]},
     {name:'Legend',items:[B('legendGen','Legend generator','legend','Create or update the legend',true)]},
-    {name:'Data graphics',items:[X(()=>{const opts=[['','Colour by…'],['status','Status'],['vlan','VLAN'],['_category','Category'],...S.doc.fields.filter(f=>!['status','vlan','notes'].includes(f.key)).map(f=>[f.key,f.label])];return`<label class="rsel" title="Colour devices by a data field"><select id="colorBySel">${opts.map(([v,t])=>`<option value="${v}" ${S.doc.display.colorBy===v?'selected':''}>${t}</option>`).join('')}</select></label>`}),X(()=>`<label class="rsel" title="Show data under device names"><select id="showFieldSel"><option value="">Show field…</option>${S.doc.fields.filter(f=>!f.multiline).map(f=>`<option value="${f.key}">${S.doc.display.fields?.includes(f.key)?'✓ ':''}${f.label}</option>`).join('')}</select></label>`),B('fields','Fields','fields','Manage shape data fields')]},
+    {name:'Data graphics',items:[X(()=>{const opts=[['','Colour by…'],['status','Status'],['vlan','VLAN'],['_category','Category'],...S.doc.fields.filter(f=>!['status','vlan','notes'].includes(f.key)).map(f=>[f.key,f.label])];return`<label class="rsel" title="Colour devices by a data field"><select id="colorBySel">${opts.map(([v,t])=>`<option value="${v}" ${S.doc.display.colorBy===v?'selected':''}>${t}</option>`).join('')}</select></label>`}),X(()=>`<label class="rsel" title="Show data under device names"><select id="showFieldSel"><option value="">Show field…</option>${S.doc.fields.filter(f=>!f.multiline).map(f=>`<option value="${f.key}">${S.doc.display.fields?.includes(f.key)?'✓ ':''}${f.label}</option>`).join('')}</select></label>`),B('fields','Fields','fields','Manage shape data fields'),B('showFields','Show on drawing','fields','Show chosen fields (OS, IP, model…) under the selected devices — or all devices')]},
     {name:'Registries',items:[B('vlans','VLANs','vlan','VLAN registry'),B('repIp','IP plan','ip')]},
     {name:'Reports',items:[B('repInventory','Inventory','report',''),B('repCables','Cable schedule','connect'),B('repBom','BOM','fields','Bill of materials with optional prices'),B('repRack','Racks','rack'),B('repVlan','VLAN table','vlan')]}]},
   {id:'analyze',name:'Analyze',groups:[
@@ -5143,6 +5389,7 @@ const RIBBON=[
     {name:'Order',items:[B('front','To front','front','Ctrl+Shift+]'),B('back','To back','back','Ctrl+Shift+['),B('forward','Forward','forward','Ctrl+]'),B('backward','Backward','backward','Ctrl+[')]},
     {name:'Group & lock',items:[B('group','Group','group','Ctrl+G'),B('ungroup','Ungroup','ungroup','Ctrl+Shift+G'),B('lock','Lock','lock','Ctrl+L'),B('unlock','Unlock','unlock')]},
     {name:'Rotate',items:[B('rotate90','Rotate 90°','rotate'),B('flipX','Flip H','flipH'),B('flipY','Flip V','flipH')]},
+    {name:'Scale',items:[B('scaleSel','Scale…','scale','Scale the selection (or the whole page) by a percentage — labels, connectors, zones and racks stay intact',true)]},
     {name:'Zones',items:[B('wrapZone','Wrap','wrap'),B('fitZone','Fit to contents','fitpage'),B('selectMembers','Select members','select')]}]},
   {id:'view',name:'View',groups:[
     {name:'Show',items:[T('grid','Grid','gridOn'),T('rulers','Rulers','ruler'),T('guides','Guides','guide'),T('showPorts','Points','ports'),T('minimap','Overview','map'),T('autoConnect','Quick-connect arrows','arrows')]},
@@ -5158,7 +5405,7 @@ function renderRibbon(){const tab=RIBBON.find(r=>r.id===(S.ribbonTab||'home'))||
   $('ribbonTabs').innerHTML=`<button class="fileBtn" data-file-menu>File</button>`+RIBBON.map(r=>`<button data-rtab="${r.id}" class="${r===tab&&(!collapsed||peekOn)?'active':''}" title="${collapsed?'Click to show · double-click to pin the ribbon':'Double-click to collapse the ribbon (Ctrl+F1)'}">${r.name}</button>`).join('')+
     `<span class="spacer"></span>${S.prefs.showHeader===false?`<span class="tabDoc" title="${html(S.doc.name)}">${html(S.doc.name)}</span>`:''}<span class="chromeBtns">${[['toggleLeft','sideL','Shapes panel (Ctrl+Alt+←)',narrowScreen()?document.body.classList.contains('showLeft'):S.prefs.leftOpen],['toggleRight','sideR','Inspector (Ctrl+Alt+→)',narrowScreen()?document.body.classList.contains('showRight'):S.prefs.rightOpen],['toggleRibbon',collapsed?'ribbonDown':'ribbonUp',collapsed?'Pin the ribbon open (Ctrl+F1)':'Collapse the ribbon (Ctrl+F1)',!collapsed],['toggleHeader','titleBar','Title bar',S.prefs.showHeader!==false],['toggleStatus','statusBar','Status bar & page tabs',S.prefs.showStatus!==false],['focusMode','focus','Focus mode — canvas only (Ctrl+.)',document.body.classList.contains('focus')]].map(([a,ic,t,on])=>`<button data-action="${a}" class="${on?'on':''}" title="${t}">${icon(ic,15)}</button>`).join('')}</span>`;
   $('ribbon').innerHTML=tab.groups.map(g=>`<div class="rgroup"><div class="ritems">${g.items.map(i=>{if(i.t==='html')return i.fn();const big=i.big?' big':'';if(i.t==='mode')return`<button data-mode="${i.mode}" class="rbtn${big} ${S.mode===i.mode?'active':''}" title="${i.label} (${i.key})">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`;if(i.t==='toggle')return`<button data-action="toggle_${i.pref}" class="rbtn ${S.prefs[i.pref]?'active':''}" title="${i.label}">${icon(i.icon,16)}<span>${i.label}</span></button>`;return`<button data-action="${i.action}" class="rbtn${big}" title="${html(i.title||i.label)}">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`}).join('')}</div><div class="rname">${g.name}</div></div>`).join('')}
-const FILE_MENU=[['new','New from template…','template','Ctrl+N'],['newBlank','New blank drawing','file'],['insertTemplate','Add template to this drawing…','template'],['saveTemplate','Save as template…','save'],['myDrawings','My drawings (this browser)…','open'],['open','Open file…','open','Ctrl+O'],['save','Save','save','Ctrl+S'],['saveAs','Save as…','save','Ctrl+Shift+S'],'-',['exportVsdx','Export to Visio (.vsdx)','visio'],['exportDrawio','Export to draw.io','drawio'],['exportSvg','Export page as SVG','export'],['exportPng','Export page as PNG (2×)','image','Ctrl+E'],['exportPng4','Export page as PNG (4×, print)','image'],['exportPngT','Export PNG with transparent background','image'],['copyPng','Copy page as image','copy'],'-',['print','Print / PDF…','print','Ctrl+P'],['printAll','Print all pages…','print'],['share','Copy share link','share'],['downloadOffline','Download offline edition (one HTML file)','export'],'-',['docProps','Document properties','fields'],['importShapes','Import shapes / icon pack…','import'],['managePacks','Shape packs…','layers'],['importLibrary','Import symbol library…','import'],['exportLibrary','Export symbol library','export']];
+const FILE_MENU=[['new','New from template…','template','Ctrl+N'],['newBlank','New blank drawing','file'],['insertTemplate','Add template to this drawing…','template'],['saveTemplate','Save as template…','save'],['newRevision','New revision…','delta'],['myDrawings','My drawings (this browser)…','open'],['open','Open file…','open','Ctrl+O'],['save','Save','save','Ctrl+S'],['saveAs','Save as…','save','Ctrl+Shift+S'],'-',['exportVsdx','Export to Visio (.vsdx)','visio'],['exportDrawio','Export to draw.io','drawio'],['exportSvg','Export page as SVG','export'],['exportPng','Export page as PNG (2×)','image','Ctrl+E'],['exportPng4','Export page as PNG (4×, print)','image'],['exportPngT','Export PNG with transparent background','image'],['copyPng','Copy page as image','copy'],'-',['print','Print / PDF…','print','Ctrl+P'],['printAll','Print all pages…','print'],['share','Copy share link','share'],['downloadOffline','Download offline edition (one HTML file)','export'],'-',['docProps','Document properties','fields'],['importShapes','Import shapes / icon pack…','import'],['managePacks','Shape packs…','layers'],['importLibrary','Import symbol library…','import'],['exportLibrary','Export symbol library','export']];
 function openFileMenu(btn){const m=$('fileMenu');m.innerHTML=FILE_MENU.map(i=>i==='-'?'<hr>':`<button data-action="${i[0]}">${icon(i[2],16)}<span>${i[1]}</span>${i[3]?`<kbd>${i[3]}</kbd>`:''}</button>`).join('');const r=btn.getBoundingClientRect();showMenu(m,r.left,r.bottom+4)}
 
 // ---------- left panel ----------
@@ -5318,19 +5565,19 @@ function bumpRecent(type){const r=(S.prefs.recent||[]).filter(t=>t!==type);r.uns
 function canvasMenu(e){
   e.preventDefault();const t=e.target.closest('[data-id]'),id=t?.dataset.id,n=id&&find(id);if(n&&!S.selected.has(id))selection(id);if(!n){S.selected.clear()}render('overlay');render('panel');S.menuPoint=point(e);
   const sel=picked(),one=sel.length===1?sel[0]:null,B2=(a,l,k='')=>`<button data-action="${a}">${l}${k?`<kbd>${k}</kbd>`:''}</button>`,sep='<hr>';let h='';
-  if(!sel.length)h=B2('paste','Paste','Ctrl+V')+B2('selectAll','Select all','Ctrl+A')+sep+`<button data-ctx="zoneHere">Add zone here</button><button data-ctx="textHere">Add text here</button><button data-ctx="rackHere">Add rack here</button>`+sep+B2('layoutHier','Auto-layout page','L')+B2('rerouteAll','Re-route all connectors')+B2('check','Check diagram')+sep+B2('insertTemplate','Add template…')+B2('saveTemplate','Save page as template…')+sep+B2('fit','Fit page','Shift+1')+B2('docProps','Document properties');
+  if(!sel.length)h=B2('paste','Paste','Ctrl+V')+B2('selectAll','Select all','Ctrl+A')+sep+`<button data-ctx="zoneHere">Add zone here</button><button data-ctx="textHere">Add text here</button><button data-ctx="rackHere">Add rack here</button>`+sep+B2('layoutHier','Auto-layout page','L')+B2('rerouteAll','Re-route all connectors')+B2('check','Check diagram')+sep+B2('insertTemplate','Add template…')+B2('saveTemplate','Save page as template…')+B2('scaleSel','Scale the page…')+B2('newRevision','New revision…')+sep+B2('fit','Fit page','Shift+1')+B2('docProps','Document properties');
   else{
-    if(one&&one.kind!=='edge')h+=`<button data-ctx="edit">Edit text<kbd>F2</kbd></button>`;if(one?.kind==='edge')h+=`<button data-ctx="edit">Edit label<kbd>F2</kbd></button><div class="sub"><button>Link type ▸</button><div class="submenu">${Object.entries(Shapes.linkTypes).map(([k,v])=>`<button data-ctx="lt:${k}"><span class="sw" style="background:${v.stroke}"></span>${v.name}</button>`).join('')}</div></div><div class="sub"><button>Routing ▸</button><div class="submenu">${[['auto','Auto-route'],['hv','Right angle · H'],['vh','Right angle · V'],['straight','Straight'],['free','Free']].map(([k,v])=>`<button data-ctx="rt:${k}">${v}</button>`).join('')}</div></div>${B2('reverse','Reverse direction')}`;
-    h+=B2('cut','Cut','Ctrl+X')+B2('copy','Copy','Ctrl+C')+B2('duplicate','Duplicate','Ctrl+D')+B2('delete','Delete','Del')+sep;
-    if(sel.some(x=>x.kind==='node'&&Shapes.isDevice(x)))h+=`<div class="sub"><button>Display ▸</button><div class="submenu">${['symbol','card','tile','circle'].map(v=>`<button data-ctx="disp:${v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div></div><div class="sub"><button>Status ▸</button><div class="submenu">${['Existing','New','Planned','To remove','Spare',''].map(v=>`<button data-ctx="st:${v}"><span class="sw" style="background:${Shapes.STATUS[v]||'#fff'}"></span>${v||'(clear)'}</button>`).join('')}</div></div>`;
+    if(one&&one.kind!=='edge')h+=`<button data-ctx="edit">Edit text<kbd>F2</kbd></button>`;if(one?.kind==='edge')h+=`<button data-ctx="edit">Edit label<kbd>F2</kbd></button>${B2('reverse','Reverse direction')}`;
+    h+=Quick.menu(sel)+sep+B2('cut','Cut','Ctrl+X')+B2('copy','Copy','Ctrl+C')+B2('duplicate','Duplicate','Ctrl+D')+B2('delete','Delete','Del')+sep;
     if(one?.kind==='node'&&Shapes.isDevice(one))h+=`<button data-ctx="connected">Select connected</button>${B2('traceFrom','Trace path from here…')}<button data-ctx="callout">Add callout</button>`+(one.url?`<button data-ctx="link">Open hyperlink</button>`:'');
     h+=`<div class="sub"><button>Layer ▸</button><div class="submenu">${S.doc.layers.map(l=>`<button data-ctx="ly:${l.id}">${html(l.name)}</button>`).join('')}</div></div>`;
-    h+=sep+(sel.length>1?B2('group','Group','Ctrl+G')+B2('wrapZone','Wrap in zone'):'')+(sel.some(x=>x.group)?B2('ungroup','Ungroup','Ctrl+Shift+G'):'')+B2('front','Bring to front')+B2('back','Send to back')+(sel.some(x=>x.locked)?B2('unlock','Unlock'):B2('lock','Lock'))+(one?.kind==='zone'?B2('fitZone','Fit zone to contents')+B2('selectMembers','Select members'):'')+sep+B2('copyFormat','Copy format')+B2('pasteFormat','Paste format')+B2('saveSymbol','Save to library')+B2('saveTemplate','Save as template…')}
+    h+=sep+(sel.length>1?B2('group','Group','Ctrl+G')+B2('wrapZone','Wrap in zone'):'')+(sel.some(x=>x.group)?B2('ungroup','Ungroup','Ctrl+Shift+G'):'')+B2('front','Bring to front')+B2('back','Send to back')+(sel.some(x=>x.locked)?B2('unlock','Unlock'):B2('lock','Lock'))+(one?.kind==='zone'?B2('fitZone','Fit zone to contents')+B2('selectMembers','Select members'):'')+sep+B2('copyFormat','Copy format')+B2('pasteFormat','Paste format')+B2('saveSymbol','Save to library')+B2('saveTemplate','Save as template…')+B2('revCloud','Revision cloud around these')}
   const m=$('contextMenu');m.innerHTML=h;showMenu(m,e.clientX,e.clientY);
   m.onclick=ev=>{const c=ev.target.closest('[data-ctx]')?.dataset.ctx;if(!c)return;hideMenus();const p=S.menuPoint;
     if(c==='edit'){const o=picked()[0];if(o.kind==='edge')editEdgeLabel(o);else onDoubleClick(ev,C.center(o),null,o)}
     else if(c==='zoneHere')insertAnnotation('zone',...p);else if(c==='textHere')insertAnnotation('text',...p);else if(c==='rackHere')addNode('rack',...p);
-    else if(c.startsWith('lt:')){if(ensureEditable())mutate(()=>editable().filter(x=>x.kind==='edge').forEach(x=>Shapes.applyLinkType(x,c.slice(3))))}
+    else if(c.startsWith('q:'))Quick.apply(c);
+    else if(c.startsWith('lt:')){if(ensureEditable())mutate(()=>editable().filter(x=>x.kind==='edge').forEach(x=>Shapes.applyLinkType(x,c.slice(3),S.doc)))}
     else if(c.startsWith('rt:')){if(ensureEditable())mutate(()=>editable().filter(x=>x.kind==='edge').forEach(x=>{x.routing=c.slice(3);x.curve='straight';Conn.orthogonalize(x);Conn.markDirty(x.id)}))}
     else if(c.startsWith('disp:')){if(ensureEditable())mutate(()=>editable().filter(x=>x.kind==='node'&&Shapes.isDevice(x)).forEach(x=>x.display=c.slice(5)))}
     else if(c.startsWith('st:')){if(ensureEditable())mutate(()=>editable().filter(x=>x.kind==='node').forEach(x=>{x.data??={};if(c.slice(3))x.data.status=c.slice(3);else delete x.data.status}))}
@@ -5450,8 +5697,12 @@ const Workspace=(()=>{
   let lastQuery='';
   async function searchIcons(){const q=$('iconSearch').value.trim(),set=$('iconSet').value,box=$('iconResults');if(!q){box.innerHTML=iconsIntro();return}lastQuery=q+'|'+set;box.innerHTML='<p class="muted pad">Searching…</p>';
     try{const r=await Packs.search(q,set,120);if(lastQuery!==q+'|'+set)return;const cols=r.collections||{};
-      box.innerHTML=r.icons?.length?`<p class="muted">${r.total>r.icons.length?`${r.icons.length} of ${r.total}`:r.icons.length} results · click or drag onto the page</p><div class="palette iconGridOnline">${r.icons.map(full=>{const p=full.split(':')[0],c=cols[p];return`<button class="stencil online" draggable="true" data-iconify="${html(full)}" title="${html(full)} — ${html(c?.name||p)} (${html(c?.license?.spdx||'')})"><img loading="lazy" alt="" src="${Packs.thumbUrl(full,document.documentElement.dataset.theme==='dark'?'#8fb3ff':'#2f5ea8')}"><span>${html(full.split(':')[1].replace(/-/g,' '))}</span></button>`}).join('')}</div>`:'<p class="muted pad">No icons found. Try a simpler word, or “All sets”.</p>'}
-    catch(err){box.innerHTML=`<p class="muted pad">Online search is unavailable (${html(err.message)}). You are probably offline — bundled and imported shapes still work.</p>`}}
+      if(!r.icons?.length){box.innerHTML='<p class="muted pad">No icons found. Try a simpler word, or “All sets”.</p>';return}
+      box.innerHTML=`<p class="muted" id="iconStatus">${r.total>r.icons.length?`${r.icons.length} of ${r.total}`:r.icons.length} results · loading previews…</p><div class="palette iconGridOnline">${r.icons.map(full=>{const p=full.split(':')[0],c=cols[p];return`<button class="stencil online" draggable="true" data-iconify="${html(full)}" title="${html(full)} — ${html(c?.name||p)} (${html(c?.license?.spdx||'')})"><i class="ipv" data-ipv="${html(full)}"></i><span>${html(full.split(':')[1].replace(/-/g,' '))}</span></button>`}).join('')}</div>`;
+      const fill=()=>{for(const el of box.querySelectorAll('[data-ipv]:not(.ok)')){const d=Packs.iconPreview(el.dataset.ipv);if(d){el.innerHTML=`<svg viewBox="${d.vb}" width="34" height="34" aria-hidden="true">${d.svg}</svg>`;el.classList.add('ok')}}};fill();
+      const st=await Packs.loadIcons(r.icons);if(lastQuery!==q+'|'+set)return;fill();const miss=box.querySelectorAll('[data-ipv]:not(.ok)').length,status=$('iconStatus');
+      if(status)status.innerHTML=`${r.total>r.icons.length?`${r.icons.length} of ${r.total}`:r.icons.length} results · click or drag onto the page`+(miss?` · <span class="warnTxt">${miss} preview${miss>1?'s':''} unavailable${st.limited?' — Iconify is limiting requests right now; try again in a few minutes':''}</span>`:'')}
+    catch(err){box.innerHTML=`<p class="muted pad">${err.limited?html(err.message):`Online search is unavailable (${html(err.message)}). You may be offline or behind a firewall that blocks api.iconify.design — bundled and imported shapes still work.`}</p>`}}
   const iconsIntro=()=>`<div class="muted pad"><p><b>200,000+ open-source icons</b> from ${['Carbon','Material Design','Tabler','Fluent','Phosphor','Lucide','SVG Logos','Simple Icons'].join(', ')} and more, via the Iconify project.</p><p>Search, then click or drag an icon onto the page. Picked icons are saved to the “Online picks” pack in this browser and embedded in drawings that use them, so they keep working offline.</p><p>Try: <a href="#" data-try="router">router</a>, <a href="#" data-try="cctv">cctv</a>, <a href="#" data-try="firewall">firewall</a>, <a href="#" data-try="kubernetes">kubernetes</a>, <a href="#" data-try="aws">aws</a>, <a href="#" data-try="fortinet">fortinet</a>, <a href="#" data-try="solar">solar</a>.</p><p class="tiny">Search terms are sent to api.iconify.design. Logos are trademarks of their owners.</p></div>`;
   async function pickOnline(full,at){try{notify('Adding icon…',1200);const id=await Packs.addOnline(full);addNode(id,...(at||centerOfView()),{split:!!at});bumpRecent(id)}catch(err){notify('Could not add icon: '+err.message)}}
   function wireIcons(){const inp=$('iconSearch');let t=null;inp.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(searchIcons,350)});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(t);searchIcons()}});$('iconSet').addEventListener('change',searchIcons);
@@ -5643,6 +5894,250 @@ return{init,render,invalidate,openAdd,openSave,openDetails,add,drop,dragOver,dra
 
 </script>
 <script>
+// Quick configuration and revisions UI:
+//  • right-click styling of whole selections (link type, line colour/width/style, arrows, device colour, size, zone colour, text size…)
+//  • restyle from the legend: double-click a legend row → every link / device of that type changes (and new ones follow)
+//  • Scale… a selection or the whole page (Scale engine in scale.js)
+//  • revisions: New revision dialog, clouds and deltas, prompt / auto-bump on save, status-bar indicator
+const Quick=(()=>{
+const COLORS=['#2f5ea8','#0e7490','#0891b2','#16a34a','#65a30d','#ca8a04','#ea580c','#dc2626','#db2777','#7c3aed','#475569','#111827'];
+const FILLS=['#ffffff','#eef4fc','#eef6f4','#fff4e9','#fdf2f8','#f2f3fb','#fef9c3','#f1f5f9','none'];
+const DASH=[['','Solid'],['8 5','Dashed'],['2 4','Dotted'],['10 4 2 4','Dash-dot'],['14 6','Long dash']];
+const WIDTHS=[1,1.5,2,3,4,6],SIZES=[9,10.5,12,14,18,24];
+const sub=(label,body)=>`<div class="sub"><button>${label} ▸</button><div class="submenu">${body}</div></div>`;
+const swGrid=(prefix,list)=>`<div class="swGrid">${list.map(c=>`<button data-ctx="${prefix}${c}" title="${c==='none'?'No fill':c}" class="${c==='none'?'none':''}" style="--c:${c==='none'?'transparent':c}"></button>`).join('')}<label class="swPick" title="Custom colour…"><input type="color" data-ctx-color="${prefix}"></label></div>`;
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const isMarkup=n=>Revisions.MARKUP.has(n.type);
+
+// ---------- right-click quick configure ----------
+function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x=>x.kind==='node'&&!isMarkup(x)&&x.type!=='rack'&&!Shapes.rackItems[x.type]),devs=nodes.filter(x=>Shapes.isDevice(x)),zones=sel.filter(x=>x.kind==='zone'),texty=sel.filter(x=>x.labels?.length||x.kind==='table');let h='';
+  if(sel.length>1){const parts=[[devs.length,'device'],[nodes.length-devs.length,'shape'],[edges.length,'connector'],[zones.length,'zone'],[sel.length-nodes.length-edges.length-zones.length,'other']].filter(([n])=>n>0).map(([n,w])=>plural(n,w));h+=`<div class="ctxHead">${parts.join(' · ')}</div>`}
+  if(edges.length){const cur=new Set(edges.map(e=>e.linkType));
+    h+=sub('Link type',Object.entries(Shapes.linkTypes).map(([k,v])=>`<button data-ctx="lt:${k}"><span class="sw" style="background:${S.doc.linkStyles?.[k]?.stroke||v.stroke}"></span>${v.name}${cur.size===1&&cur.has(k)?' ✓':''}</button>`).join(''))
+      +sub('Routing',[['auto','Auto-route'],['hv','Right angle · H'],['vh','Right angle · V'],['straight','Straight'],['free','Free']].map(([k,v])=>`<button data-ctx="rt:${k}">${v}</button>`).join(''))
+      +sub('Line colour',swGrid('q:lc:',COLORS))+sub('Line width',WIDTHS.map(w=>`<button data-ctx="q:lw:${w}"><span class="lnw" style="height:${w}px"></span>${w} px</button>`).join(''))
+      +sub('Line style',DASH.map(([d,n])=>`<button data-ctx="q:ld:${d}"><span class="lns" style="border-top-style:${d===''?'solid':d==='2 4'?'dotted':'dashed'}"></span>${n}</button>`).join(''))
+      +sub('Arrows',[['none','None'],['end','At the end'],['start','At the start'],['both','Both ends']].map(([k,v])=>`<button data-ctx="q:ar:${k}">${v}</button>`).join(''))}
+  if(devs.length)h+=sub('Display',['symbol','card','tile','circle'].map(v=>`<button data-ctx="disp:${v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join(''))+sub('Status',['Existing','New','Planned','To remove','Spare',''].map(v=>`<button data-ctx="st:${v}"><span class="sw" style="background:${Shapes.STATUS[v]||'#fff'}"></span>${v||'(clear)'}</button>`).join(''));
+  if(devs.length){const keys=[...S.doc.fields.filter(f=>f.key!=='notes').map(f=>[f.key,f.label]),...[...new Set(devs.flatMap(n=>Object.keys(n.data||{})))].filter(k=>!S.doc.fields.some(f=>f.key===k)).map(k=>[k,k])],on=k=>devs.every(n=>Inventory.shown(n).includes(k));
+    h+=sub('Show on drawing',keys.map(([k,l])=>`<button data-ctx="q:sf:${html(k)}">${on(k)?'✓ ':'<span class="ck"></span>'}${html(l)} <em>${devs.filter(n=>String(n.data?.[k]??'').trim()).length}/${devs.length}</em></button>`).join('')+`<hr><button data-ctx="q:sf:_names">${S.doc.display?.prefixFields?'✓ ':''}Show field names</button><button data-ctx="q:sf:_none">Hide all fields on these</button><button data-action="repInventory">Inventory…</button>`)}
+  if(nodes.length)h+=sub(devs.length?'Device colour':'Line colour',swGrid('q:nc:',COLORS))+sub('Fill',swGrid('q:nf:',FILLS))+sub('Size',[['0.8','Smaller (−20%)'],['0.9','Smaller (−10%)'],['1.1','Larger (+10%)'],['1.25','Larger (+25%)'],['reset','Default size']].map(([k,v])=>`<button data-ctx="q:sz:${k}">${v}</button>`).join(''));
+  if(zones.length){const T=Shapes.themes[S.doc.theme]||Shapes.themes.port;h+=sub('Zone colour',`<div class="swGrid">${[...T.zones,...Shapes.themes.port.zones,['#fef2f2','#fca5a5'],['#f0fdf4','#86efac'],['#fefce8','#fde047'],['#f8fafc','#94a3b8']].map(([f,s])=>`<button data-ctx="q:zc:${f},${s}" style="--c:${f};box-shadow:inset 0 0 0 2px ${s}" title="${f}"></button>`).join('')}</div>`)+sub('Zone style',[['plain','Plain'],['header','Header band'],['tab','Tab'],['outline','Outline only']].map(([k,v])=>`<button data-ctx="q:zs:${k}">${v}</button>`).join(''))}
+  if(texty.length)h+=sub('Text size',`<button data-ctx="q:ts:-">Smaller</button><button data-ctx="q:ts:+">Larger</button><hr>`+SIZES.map(s=>`<button data-ctx="q:ts:${s}">${s} pt</button>`).join(''));
+  const one=sel[0],sim=[];if(one.kind==='edge')sim.push(['lt','Same link type']);if(one.kind==='node')sim.push(['type','Same type ('+html(Shapes.nameOf(one.type))+')']);sim.push(['style','Same colour and style'],['layer','Same layer']);
+  h+=sub('Select similar',sim.map(([k,v])=>`<button data-ctx="q:sim:${k}">${v}</button>`).join(''))+`<button data-ctx="q:scale">Scale…</button>`;
+  return h}
+function setColor(prefix,v){apply(prefix+v)}
+function apply(c){const[,op,...rest]=c.split(':'),v=rest.join(':');
+  if(op==='scale'){openScale();return true}if(op==='sim'){selectSimilar(v);return true}
+  if(op==='sf'){const devs=picked().filter(n=>n.kind==='node'&&Shapes.isDevice(n));if(v==='_names'){mutate(()=>{S.doc.display.prefixFields=!S.doc.display.prefixFields});return true}if(v==='_none'){mutate(()=>devs.forEach(n=>delete n.showFields));return true}
+    const on=!devs.every(n=>Inventory.shown(n).includes(v));Inventory.showOn([v],on,devs);const miss=devs.filter(n=>!String(n.data?.[v]??'').trim()).length;notify(`${S.doc.fields.find(f=>f.key===v)?.label||v} ${on?'shown':'hidden'} for ${plural(devs.length,'device')}${on&&miss?` — ${miss} have no value yet (fill them in Data ▸ Inventory)`:''}.`,3500);return true}
+  if(!ensureEditable())return true;const ed=editable();let reroute=[];
+  mutate(()=>{for(const n of ed){
+    if(n.kind==='edge'){if(op==='lc')n.stroke=v;else if(op==='lw')n.strokeWidth=+v;else if(op==='ld')n.dash=v;else if(op==='ar'){n.startMarker=v==='start'||v==='both'?'arrow':'none';n.endMarker=v==='end'||v==='both'?'arrow':'none'}}
+    if(n.kind==='node'&&!isMarkup(n)){if(op==='nc')n.stroke=v;else if(op==='nf')n.fill=v;else if(op==='sz'&&n.type!=='rack'&&!Shapes.rackItems[n.type]){const k=v==='reset'?(Shapes.make(n.type,0,0).w/n.w):+v;if(k>0&&Math.abs(k-1)>.001)reroute.push(...Scale.apply([n],items(),k,{origin:C.center(n)}).reroute)}}
+    if(n.kind==='zone'){if(op==='zc'){const[f,s]=v.split(',');n.fill=f;n.stroke=s}else if(op==='zs')n.style=v}
+    if(op==='ts'){const fit=s=>Math.max(5,Math.min(72,v==='+'?s*1.15:v==='-'?s/1.15:+v));for(const l of n.labels||[])l.size=+fit(l.size).toFixed(1);if(n.kind==='table'){n.size=+fit(n.size).toFixed(1);tableLayout(n)}}}
+    for(const id of reroute)Conn.markDirty(id)});return true}
+function selectSimilar(v){const one=picked()[0];if(!one)return;const same=n=>v==='lt'?n.kind==='edge'&&n.linkType===one.linkType:v==='type'?n.kind==='node'&&n.type===one.type:v==='layer'?(n.layer||'')===(one.layer||''):n.kind===one.kind&&n.stroke===one.stroke&&(n.dash||'')===(one.dash||'')&&(n.kind!=='node'||n.type===one.type||!Shapes.isDevice(n));
+  const ids=items().filter(n=>same(n)&&!isLocked(n)).map(n=>n.id);select(ids);notify(`Selected ${ids.length} similar item${ids.length===1?'':'s'} — right-click to change them all.`,2600)}
+
+// ---------- legend rows: restyle a whole type ----------
+function rowOf(legendId,key){const lg=items().find(n=>n.id===legendId)||S.doc.pages.flatMap(p=>p.items).find(n=>n.id===legendId);if(!lg)return null;const page=S.doc.pages.find(p=>p.items.includes(lg))||pg();
+  return legendRows(lg,page,makeCtx(page,{doc:S.doc})).find(r=>r.key===key)||null}
+function openLegendStyle(legendId,key){const r=rowOf(legendId,key);if(!r)return;const[kind]=key.split(':');
+  if(kind==='mark')return notify('Planned / to-remove marks come from each device’s Status — right-click devices ▸ Status.');
+  const opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?'selected':''}>${t}</option>`;let body='',title='',scopeNote='';
+  const colorRow=(cur)=>`<div class="fld"><span>Colour</span><div class="swGrid big">${COLORS.map(c=>`<button data-ls-color="${c}" class="${c===cur?'on':''}" style="--c:${c}" title="${c}"></button>`).join('')}<label class="swPick" title="Custom colour…"><input type="color" id="lsColor" value="${/^#[0-9a-f]{6}$/i.test(cur)?cur:'#2f5ea8'}"></label></div></div>`;
+  if(kind==='link'){const e=r.edge,type=e.linkType&&Shapes.linkTypes[e.linkType]?e.linkType:null,all=S.doc.pages.flatMap(p=>p.items.filter(x=>x.kind==='edge'&&(type?x.linkType===type:x.stroke===e.stroke&&(x.dash||'')===(e.dash||''))));
+    title=`Legend · ${html(r.text)}`;scopeNote=`${plural(all.length,'link')} of this type in the drawing`;
+    body=`<label class="fld"><span>Legend text</span><input id="lsText" value="${html(r.text)}"></label>${colorRow(e.stroke)}
+    <div class="row"><label class="fld"><span>Width</span><select id="lsWidth">${[...new Set([...WIDTHS,e.strokeWidth||2])].sort((a,b)=>a-b).map(w=>opt(w,w+' px',e.strokeWidth||2)).join('')}</select></label><label class="fld"><span>Line style</span><select id="lsDash">${(DASH.some(([d])=>d===(e.dash||''))?DASH:[...DASH,[e.dash,'Current ('+e.dash+')']]).map(([d,n])=>opt(d,n,e.dash||'')).join('')}</select></label></div>
+    <label class="check"><input type="checkbox" id="lsDouble" ${e.double?'checked':''}>Double line (trunk / bundle)</label>`}
+  else if(kind==='device'){const s=r.sample,all=S.doc.pages.flatMap(p=>p.items.filter(x=>x.kind==='node'&&x.type===r.type));title=`Legend · ${html(r.text)}`;scopeNote=`${plural(all.length,'device')} of this type in the drawing`;
+    body=`<label class="fld"><span>Legend text</span><input id="lsText" value="${html(r.text)}"></label>${colorRow(s?.stroke||'#2f5ea8')}<label class="fld"><span>Display</span><select id="lsDisplay">${['symbol','card','tile','circle'].map(v=>opt(v,v[0].toUpperCase()+v.slice(1),s?.display||'symbol')).join('')}</select></label>`}
+  else if(kind==='zone'){const z=r.zone;title=`Legend · ${html(r.text)}`;scopeNote='this zone';const T=Shapes.themes[S.doc.theme]||Shapes.themes.port;
+    body=`<label class="fld"><span>Zone name</span><input id="lsText" value="${html(z.labels?.[0]?.text||'')}"></label><div class="fld"><span>Colour</span><div class="swGrid big">${[...T.zones,['#fef2f2','#fca5a5'],['#f0fdf4','#86efac'],['#fefce8','#fde047']].map(([f,s])=>`<button data-ls-zone="${f},${s}" style="--c:${f};box-shadow:inset 0 0 0 2px ${s}" class="${f===z.fill?'on':''}"></button>`).join('')}</div></div>`}
+  else if(kind==='swatch'){const[ck,...vv]=key.slice(7).split('='),val=vv.join('=');title=`Legend · ${html(r.text)}`;scopeNote=ck==='vlan'?`VLAN ${html(val)} in the VLAN registry`:`devices where ${html(ck)} = ${html(val)}`;body=colorRow(r.color)}
+  const scoped=kind==='link'||kind==='device';
+  const d=openDialog(title,`<p class="muted">Changes apply to <b>${scopeNote}</b>${scoped?' — and to new ones you add':''}. The legend follows.</p>${body}${scoped?`<div class="fld"><span>Apply to</span><select id="lsScope">${opt('doc','Every page')}${opt('page','This page only')}</select></div>`:''}
+    <footer>${scoped?'<button data-ls-select>Select them</button>':''}<span class="spacer"></span><button data-close>Cancel</button><button class="primary" data-ls-go>Apply</button></footer>`);
+  let color=kind==='link'?r.edge.stroke:kind==='device'?(r.sample?.stroke||'#2f5ea8'):kind==='swatch'?r.color:null,zone=kind==='zone'?[r.zone.fill,r.zone.stroke]:null;
+  d.oninput=e=>{if(e.target.id==='lsColor'){color=e.target.value;d.querySelectorAll('[data-ls-color]').forEach(b=>b.classList.remove('on'))}};
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const c=e.target.closest('[data-ls-color]');if(c){color=c.dataset.lsColor;d.querySelectorAll('[data-ls-color]').forEach(b=>b.classList.toggle('on',b===c));return}
+    const z=e.target.closest('[data-ls-zone]');if(z){zone=z.dataset.lsZone.split(',');d.querySelectorAll('[data-ls-zone]').forEach(b=>b.classList.toggle('on',b===z));return}
+    const scopeItems=()=>{const pages=$('lsScope')?.value==='page'?[pg()]:S.doc.pages;return pages.flatMap(p=>p.items)};
+    const match=kind==='link'?(()=>{const e0=r.edge,type=e0.linkType&&Shapes.linkTypes[e0.linkType]?e0.linkType:null;return x=>x.kind==='edge'&&(type?x.linkType===type:x.stroke===e0.stroke&&(x.dash||'')===(e0.dash||''))})():kind==='device'?(x=>x.kind==='node'&&x.type===r.type):null;
+    if(e.target.closest('[data-ls-select]')){closeDialog();select(items().filter(match).map(x=>x.id));notify(`Selected ${S.selected.size} on this page.`);return}
+    if(!e.target.closest('[data-ls-go]'))return;
+    mutate(()=>{if(kind==='link'){const w=+$('lsWidth').value,dash=$('lsDash').value,dbl=$('lsDouble').checked,txt=$('lsText').value.trim(),type=r.edge.linkType&&Shapes.linkTypes[r.edge.linkType]?r.edge.linkType:null;
+        for(const x of scopeItems().filter(match)){x.stroke=color;x.strokeWidth=w;x.dash=dash;x.double=dbl}
+        if(type){const base=Shapes.linkTypes[type];S.doc.linkStyles??={};const st=S.doc.linkStyles[type]=S.doc.linkStyles[type]||{};if($('lsScope').value==='doc'){st.stroke=color;st.width=w;st.dash=dash;st.double=dbl}if(txt&&txt!==(base.short||base.name))st.label=txt;else delete st.label}}
+      else if(kind==='device'){const disp=$('lsDisplay').value,txt=$('lsText').value.trim();for(const x of scopeItems().filter(match)){x.stroke=color;if(Shapes.isDevice(x))x.display=disp}
+        S.doc.typeStyles??={};const st=S.doc.typeStyles[r.type]=S.doc.typeStyles[r.type]||{};if($('lsScope').value==='doc'){st.stroke=color;st.display=disp}if(txt&&txt!==Shapes.nameOf(r.type))st.label=txt;else delete st.label}
+      else if(kind==='zone'){const z=r.zone;[z.fill,z.stroke]=zone;const txt=$('lsText').value;if(z.labels?.[0])z.labels[0].text=txt}
+      else if(kind==='swatch'){const[ck,...vv]=key.slice(7).split('='),val=vv.join('=');if(ck==='vlan'){const v=(S.doc.vlans||[]).find(x=>String(x.id)===val);if(v)v.color=color}S.doc.display.colorMap??={};(S.doc.display.colorMap[ck]??={})[val]=color}});
+    closeDialog();notify('Legend style applied.',1800)}}
+
+// ---------- Scale… ----------
+function openScale(){const sel=editable().filter(n=>!n.pin),whole=!sel.length,list=whole?items().filter(n=>!n.pin&&!isLocked(n)):sel;if(!list.length)return notify('Nothing to scale.');
+  const o={pct:S.prefs.scalePct||90,anchor:S.prefs.scaleAnchor||'tl',text:S.prefs.scaleText!==false,lines:!!S.prefs.scaleLines},b=C.bounds(list.filter(n=>!n.pin),true),mm=v=>Math.round(v/C.PX);
+  const d=openDialog(whole?'Scale the drawing':'Scale selection',`<p class="muted">${whole?'Nothing is selected, so everything on this page is scaled (the legend, border and title block stay put).':`Scales the ${plural(list.length,'selected item')}.`} Devices keep their proportions and ports, labels stay aligned, zones resize, racks move as whole units and connector bends scale with the drawing.</p>
+    <div class="row"><label class="fld"><span>Scale to (%)</span><input id="scPct" type="number" min="5" max="1000" step="1" value="${o.pct}"></label><div class="fld"><span>Quick</span><div class="seg">${[50,75,90,110,125,150].map(p=>`<button data-sc-pct="${p}">${p}%</button>`).join('')}</div></div></div>
+    <div class="fld"><span>Anchor</span><div class="seg"><button data-sc-anchor="tl" class="${o.anchor==='tl'?'active':''}">Top-left corner stays put</button><button data-sc-anchor="center" class="${o.anchor==='center'?'active':''}">Centre stays put</button></div></div>
+    <label class="check"><input type="checkbox" id="scText" ${o.text?'checked':''}>Scale text sizes too</label><label class="check"><input type="checkbox" id="scLines" ${o.lines?'checked':''}>Scale line widths too</label>
+    <p class="fitResult" id="scResult"></p><footer><button data-close>Cancel</button><button class="primary" data-sc-go>Scale</button></footer>`);
+  let anchor=o.anchor;const pct=()=>Math.max(5,Math.min(1000,+$('scPct').value||100));
+  const show=()=>{const k=pct()/100;$('scResult').innerHTML=`${mm(b.w)} × ${mm(b.h)} mm → <b>${mm(b.w*k)} × ${mm(b.h*k)} mm</b>`};show();d.oninput=show;
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const q=e.target.closest('[data-sc-pct]');if(q){$('scPct').value=q.dataset.scPct;show();return}
+    const a=e.target.closest('[data-sc-anchor]');if(a){anchor=a.dataset.scAnchor;d.querySelectorAll('[data-sc-anchor]').forEach(x=>x.classList.toggle('active',x===a));return}
+    if(!e.target.closest('[data-sc-go]'))return;const k=pct()/100,text=$('scText').checked,lines=$('scLines').checked;Object.assign(S.prefs,{scalePct:pct(),scaleAnchor:anchor,scaleText:text,scaleLines:lines});savePrefs();closeDialog();
+    mutate(()=>{const r=Scale.apply(list,items(),k,{origin:Scale.origin(list,anchor),text,lines});for(const id of r.reroute)Conn.markDirty(id)});if(!whole)select(list.map(n=>n.id));notify(`Scaled ${plural(list.length,'item')} to ${pct()}%. Ctrl+Z undoes.`,2600)}}
+
+// ---------- revisions ----------
+const today=()=>Revisions.today();
+const pendingRev=()=>{const ch=Revisions.changes(S.doc);return ch.count?Revisions.nextRev(S.doc.meta.revision):S.doc.meta.revision||'1.0'};
+function describe(ch){const parts=[];const kinds=ids=>{const all=S.doc.pages.flatMap(p=>p.items),m={};for(const id of ids){const n=all.find(x=>x.id===id);const k=!n?'item':n.kind==='node'?(Shapes.isDevice(n)?'device':'shape'):n.kind==='edge'?'link':n.kind;m[k]=(m[k]||0)+1}return Object.entries(m).map(([k,v])=>plural(v,k)).join(', ')};
+  if(ch.added.length)parts.push('added '+kinds(ch.added));if(ch.modified.length)parts.push('updated '+kinds(ch.modified));if(ch.removed.length)parts.push('removed '+plural(ch.removed.length,'item'));const s=parts.join('; ');return s?s[0].toUpperCase()+s.slice(1):'Revised'}
+function markupAt(kind){const sel=picked().filter(n=>!n.pin&&!isMarkup(n)),rev=pendingRev(),layer=Revisions.markupLayer(S.doc);
+  const made=mutate(()=>{const out=[];if(kind==='cloud'){const b=sel.length?C.bounds(sel,true):(()=>{const[cx,cy]=centerOfView();return{x:cx-100,y:cy-60,w:200,h:120}})(),pad=sel.length?14:0,c=Revisions.cloud(b.x-pad,b.y-pad,b.w+2*pad,b.h+2*pad,rev,layer);c.data.pending=true;const dl=Revisions.delta(c.x+c.w-6,c.y-30,rev,layer);dl.data.pending=true;out.push(c,dl)}
+    else{const b=sel.length?C.bounds(sel,true):null,[cx,cy]=b?[b.x+b.w+4,b.y-30]:centerOfView(),dl=Revisions.delta(cx,cy,rev,layer);dl.data.pending=true;out.push(dl)}
+    items().push(...out);select(out.map(n=>n.id));return out});
+  notify(`Revision ${kind} added for revision ${rev}${Revisions.changes(S.doc).count?' (the next one — it is finalised when you issue it)':''}. Markup lives on the “Revisions” layer, so you can hide it for clean prints.`,5000);return made}
+// Revision table above the title block if there is one (pinned with it), otherwise at the page's top-right.
+function addTable(){const fg=pg(),bg=fg.background&&S.doc.pages.find(p=>p.id===fg.background),page=[bg,fg].find(p=>p&&p.items.some(n=>n.kind==='table'&&n.pin==='br'&&!n.revTable))||fg,tb=page.items.find(n=>n.kind==='table'&&n.pin==='br'&&!n.revTable);
+  const t=Revisions.newTable(S.doc,0,0,S.activeLayer);if(tb){const k=tb.w/t.w;t.cols=t.cols.map(c=>Math.round(c*k));t.w=t.cols.reduce((a,c)=>a+c,0);t.x=tb.x+tb.w-t.w;t.y=tb.y-t.h-6;t.pin='br'}else{const m=fg.margin*C.PX,ps=C.pageSize(fg);t.x=ps.w-m-t.w-10;t.y=m+10;t.pin='tr'}
+  page.items.push(t);return{t,page}}
+function openRevisions(onIssued){const doc=S.doc,ch=Revisions.changes(doc),cur=doc.meta.revision||'1.0',next=Revisions.nextRev(cur),major=Revisions.nextRev(cur,true),log=Revisions.ensureLog(doc).map(r=>({...r})),hasTable=doc.pages.some(p=>p.items.some(n=>n.revTable)),mode=doc.meta.revMode||'ask';
+  const changeTxt=ch.count?`<b>${plural(ch.count,'change')}</b> since revision ${html(cur)} (${[ch.added.length&&ch.added.length+' added',ch.modified.length&&ch.modified.length+' changed',ch.removed.length&&ch.removed.length+' removed'].filter(Boolean).join(', ')}) <a href="#" data-rv-show>show them</a>`:`No changes since revision ${html(cur)}.`;
+  const hist=()=>log.map((r,i)=>`<tr><td><input data-rv-i="${i}" data-rv-k="rev" value="${html(r.rev)}"></td><td><input data-rv-i="${i}" data-rv-k="date" value="${html(r.date)}"></td><td><input data-rv-i="${i}" data-rv-k="description" value="${html(r.description)}"></td><td><input data-rv-i="${i}" data-rv-k="by" value="${html(r.by||'')}"></td><td>${log.length>1?`<button data-rv-del="${i}" title="Remove this entry">×</button>`:''}</td></tr>`).join('');
+  const d=openDialog('Revisions',`<p class="muted">Current revision <b>${html(cur)}</b> · ${changeTxt}</p>
+    <h4 class="tplHead">Issue a new revision</h4>
+    <div class="row r3"><label class="fld"><span>New revision</span><input id="rvRev" value="${html(next)}"></label><div class="fld"><span>Quick</span><div class="seg"><button data-rv-q="${html(next)}" class="active">${html(next)}</button>${major!==next?`<button data-rv-q="${html(major)}">${html(major)}</button>`:''}</div></div><label class="fld"><span>Date</span><input id="rvDate" type="date" value="${today()}"></label></div>
+    <div class="row"><label class="fld"><span>Description</span><input id="rvDesc" value="${html(ch.count?describe(ch):'')}" placeholder="What changed"></label><label class="fld"><span>By</span><input id="rvBy" value="${html(doc.meta.author||'')}"></label></div>
+    <label class="check"><input type="checkbox" id="rvClouds" ${S.prefs.revClouds!==false&&ch.count?'checked':''} ${ch.count?'':'disabled'}>Mark the changes with revision clouds and deltas</label>
+    <label class="check"><input type="checkbox" id="rvClear" ${S.prefs.revClear!==false?'checked':''}>Remove clouds from earlier revisions (deltas stay)</label>
+    ${hasTable?'':'<label class="check"><input type="checkbox" id="rvTable" checked>Add a revision table (stacked above the title block)</label>'}
+    <div class="fld"><span>When I save a drawing that changed since its last revision</span><select id="rvMode"><option value="ask" ${mode==='ask'?'selected':''}>Ask whether to issue a new revision</option><option value="auto" ${mode==='auto'?'selected':''}>Issue the next revision automatically</option><option value="off" ${mode==='off'?'selected':''}>Don’t ask</option></select></div>
+    <h4 class="tplHead">History</h4><table class="report edit rvHist"><thead><tr><th>Rev</th><th>Date</th><th>Description</th><th>By</th><th></th></tr></thead><tbody id="rvBody">${hist()}</tbody></table>
+    <footer><button data-rv-save title="Save history edits and the save setting without issuing">Save changes</button><span class="spacer"></span><button data-close>Cancel</button><button class="primary" data-rv-go>Issue revision <span id="rvGoRev">${html(next)}</span></button></footer>`,{wide:true});
+  d.oninput=e=>{const i=e.target.dataset.rvI;if(i!=null)log[+i][e.target.dataset.rvK]=e.target.value;if(e.target.id==='rvRev')$('rvGoRev').textContent=e.target.value};
+  const keep=()=>{S.doc.revisions=log.filter(r=>String(r.rev).trim());S.doc.meta.revMode=$('rvMode').value};
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const q=e.target.closest('[data-rv-q]');if(q){$('rvRev').value=q.dataset.rvQ;$('rvGoRev').textContent=q.dataset.rvQ;d.querySelectorAll('[data-rv-q]').forEach(b=>b.classList.toggle('active',b===q));return}
+    if(e.target.closest('[data-rv-show]')){e.preventDefault();closeDialog();S.highlights=new Set([...ch.added,...ch.modified]);render('overlay');notify(`${plural(ch.added.length+ch.modified.length,'changed item')} highlighted${ch.removed.length?` · ${ch.removed.length} removed`:''}. Esc clears.`,4000);return}
+    const del=e.target.closest('[data-rv-del]');if(del){log.splice(+del.dataset.rvDel,1);$('rvBody').innerHTML=hist();return}
+    if(e.target.closest('[data-rv-save]')){mutate(()=>{keep();if(log.length)S.doc.meta.revision=log.at(-1).rev;Revisions.syncTables(S.doc)});closeDialog();notify('Revision history saved.');return}
+    if(!e.target.closest('[data-rv-go]'))return;const rev=$('rvRev').value.trim();if(!rev)return notify('Enter the new revision.');if(log.some(r=>String(r.rev)===rev)&&!confirm(`Revision ${rev} is already in the history. Issue it again?`))return;
+    const opts={rev,date:$('rvDate').value||today(),description:$('rvDesc').value.trim()||describe(ch),by:$('rvBy').value.trim(),clouds:!!$('rvClouds')?.checked,clearClouds:$('rvClear').checked};S.prefs.revClouds=opts.clouds||!ch.count?S.prefs.revClouds:false;S.prefs.revClear=opts.clearClouds;savePrefs();const addT=$('rvTable')?.checked;
+    const res=mutate(()=>{keep();const r=issueNow(opts);if(addT)addTable();return r});closeDialog();
+    notify(`Issued revision ${rev}${res.clouds?` · ${plural(res.clouds,'revision cloud')} added`:''}. Title blocks and revision tables now show ${rev}.`,5000);onIssued?.(res)}}
+// Finalise pending markup with the revision actually issued, then log it.
+function issueNow(opts){for(const p of S.doc.pages)for(const n of p.items)if(isMarkup(n)&&n.data?.pending){n.data.rev=opts.rev;delete n.data.pending;if(n.type==='revdelta'&&n.labels?.[0])n.labels[0].text=String(opts.rev)}
+  const keepPending=opts.clearClouds?new Set(S.doc.pages.flatMap(p=>p.items).filter(n=>n.type==='revcloud'&&n.data?.rev===opts.rev).map(n=>n.id)):null;
+  if(keepPending){for(const p of S.doc.pages)p.items=p.items.filter(n=>n.type!=='revcloud'||keepPending.has(n.id));opts={...opts,clearClouds:false}}
+  return Revisions.issue(S.doc,opts)}
+const asked=new Set();
+// Called before File ▸ Save / Save as. Resolves true to go ahead with the save.
+function beforeSave(){const doc=S.doc,mode=doc.meta.revMode||'ask',ch=Revisions.changes(doc);if(!ch.known||!ch.count||mode==='off')return Promise.resolve(true);
+  if(mode==='auto'){const rev=Revisions.nextRev(doc.meta.revision);mutate(()=>issueNow({rev,description:describe(ch),by:doc.meta.author||'',clouds:S.prefs.revClouds!==false,clearClouds:S.prefs.revClear!==false}));notify(`Issued revision ${rev} automatically (${describe(ch).toLowerCase()}). Change this in Insert ▸ New revision.`,5000);return Promise.resolve(true)}
+  const key=doc.revBaseline?.at;if(asked.has(key))return Promise.resolve(true);
+  return new Promise(res=>{const next=Revisions.nextRev(doc.meta.revision);const d=openDialog('Issue a new revision?',`<p>This drawing has <b>${plural(ch.count,'change')}</b> since revision <b>${html(doc.meta.revision)}</b>.</p><p class="muted">${html(describe(ch))}.</p>
+      <label class="check"><input type="checkbox" id="rvNever">Don’t ask again for this drawing</label>
+      <footer><button data-rp="keep">Save as revision ${html(doc.meta.revision)}</button><span class="spacer"></span><button class="primary" data-rp="issue">Issue revision ${html(next)}…</button></footer>`);
+    d.oncancel=()=>res(false);
+    d.onclick=e=>{if(e.target.closest('[data-close]')){closeDialog();return res(false)}const b=e.target.closest('[data-rp]');if(!b)return;asked.add(key);if($('rvNever').checked){doc.meta.revMode='off';S.dirty=true}
+      if(b.dataset.rp==='keep'){closeDialog();return res(true)}openRevisions(()=>res(true))}})}
+let revTimer=0;
+function revInfo(){clearTimeout(revTimer);revTimer=setTimeout(()=>{const b=$('revInfo');if(!b||!S.doc)return;const ch=Revisions.changes(S.doc),rev=S.doc.meta.revision||'—';b.textContent=`Rev ${rev}${ch.count?` · ${plural(ch.count,'change')}`:''}`;b.classList.toggle('pending',ch.count>0);b.title=ch.count?`${describe(ch)} since revision ${rev} — click to issue a new revision`:`Revision ${rev} — click for revisions`},500)}
+function prepare(doc){if(!doc.revBaseline)Revisions.setBaseline(doc);Revisions.ensureLog(doc)}
+
+function init(){const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
+  document.addEventListener('click',e=>{const b=e.target.closest?.('[data-legend-style]');if(b){const[id,...k]=b.dataset.legendStyle.split('|');openLegendStyle(id,k.join('|'))}})}
+return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow};
+})();
+
+</script>
+<script>
+// Inventory: pick and order the columns you need (any device field, custom fields, zone, subnet, rack/U, links…),
+// one row per device or counted like a BOM, edit values in place, export for Excel or place on a page.
+// Fields can also be switched on under the device labels from here (eye toggle) or from the right-click menu.
+const Inventory=(()=>{
+const DEFAULT=['name','type','f:hostname','f:ip','f:model','f:vendor','f:serial','f:os','f:location','zone','page'];
+const fieldLabel=k=>S.doc.fields.find(f=>f.key===k)?.label||k;
+const devicesIn=scope=>{const pages=scope==='page'?[pg()]:S.doc.pages.filter(p=>!p.isBackground),sel=scope==='selection'?new Set(S.selected):null,out=[];
+  for(const p of pages)for(const n of p.items)if(n.kind==='node'&&Shapes.isDevice(n)&&(!sel||sel.has(n.id)))out.push({p,n});return out};
+// Every column on offer: computed ones, the document's fields, then data keys found on devices that are not fields yet.
+function catalog(){const zone=(n,p)=>Analysis.zoneOf(n,p),cols=[
+  {id:'name',label:'Name',get:(n,p)=>Analysis.nameOf(n),edit:'name'},{id:'type',label:'Type',get:n=>Shapes.nameOf(n.type)},
+  {id:'category',label:'Category',get:n=>{const c=Stencils.shapes[n.type]?.cat;return Shapes.catalog().find(x=>x.id===c)?.name||c||''}},
+  {id:'zone',label:'Zone',get:(n,p)=>Analysis.zoneName(zone(n,p))},{id:'subnet',label:'Zone subnet',get:(n,p)=>zone(n,p)?.data?.subnet||''},
+  {id:'page',label:'Page',get:(n,p)=>p.name},{id:'layer',label:'Layer',get:n=>S.doc.layers.find(l=>l.id===n.layer)?.name||''},
+  {id:'rack',label:'Rack / U',get:(n,p)=>{const r=p.items.find(x=>x.type==='rack'&&C.inside({x:n.x+1,y:n.y+1,w:0,h:0},Shapes.rackInner(x)));return r?Analysis.nameOf(r)+' / U'+Shapes.rackU(r,n):''}},
+  {id:'links',label:'Links',get:(n,p)=>p.items.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)).length},
+  {id:'peers',label:'Connected to',get:(n,p)=>p.items.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)).map(e=>{const o=p.items.find(x=>x.id===(e.from?.node===n.id?e.to?.node:e.from?.node));return o?Analysis.nameOf(o):''}).filter(Boolean).join(', ')}];
+  for(const f of S.doc.fields)if(f.key!=='notes'||true)cols.push({id:'f:'+f.key,label:f.label,get:n=>n.data?.[f.key]??'',edit:f.key,field:f});
+  const known=new Set(S.doc.fields.map(f=>f.key));for(const p of S.doc.pages)for(const n of p.items)if(n.kind==='node')for(const k of Object.keys(n.data||{}))if(!known.has(k)){known.add(k);cols.push({id:'f:'+k,label:k+' (custom)',get:x=>x.data?.[k]??'',edit:k,custom:true})}
+  return cols}
+// Columns that are unique per device make no sense when counting identical rows.
+const UNIQUE=new Set(['name','f:hostname','f:ip','f:mgmtIp','f:serial','f:mac','peers','links','rack','f:notes']);
+function build(cfg){const cat=catalog();let cols=cfg.cols.map(id=>cat.find(c=>c.id===id)).filter(Boolean);if(cfg.group==='bom'){cols=cols.filter(c=>!UNIQUE.has(c.id));if(!cols.length)cols=[cat.find(c=>c.id==='type')]}const rows=devicesIn(cfg.scope).map(({p,n})=>({n,p,vals:cols.map(c=>String(c.get(n,p)??''))}));
+  const q=(cfg.filter||'').toLowerCase().trim(),flt=q?rows.filter(r=>r.vals.some(v=>v.toLowerCase().includes(q))):rows,si=cols.findIndex(c=>c.id===cfg.sort);
+  if(si>=0)flt.sort((a,b)=>a.vals[si].localeCompare(b.vals[si],undefined,{numeric:true}));
+  if(cfg.group==='bom'){const m=new Map();for(const r of flt){const k=r.vals.join('\u0001');if(!m.has(k))m.set(k,{vals:r.vals,qty:0});m.get(k).qty++}
+    return{cols,columns:[...cols.map(c=>c.label),'Qty'],rows:[...m.values()].map(g=>[...g.vals,g.qty]),items:null}}
+  return{cols,columns:cols.map(c=>c.label),rows:flt.map(r=>r.vals),items:flt}}
+const report=(cfg,b=build(cfg))=>({title:cfg.group==='bom'?'Inventory (counted)':'Inventory',columns:b.columns,rows:b.rows});
+
+// Which fields show under a device's label: the document-wide ones plus the device's own.
+const shown=n=>[...new Set([...(S.doc.display?.fields||[]),...(n.showFields||[])])];
+function showOn(keys,on,targets){mutate(()=>{for(const n of targets){const s=new Set(n.showFields||[]);for(const k of keys)on?s.add(k):s.delete(k);if(s.size)n.showFields=[...s];else delete n.showFields}})}
+
+function open(){const saved=S.doc.inventory||{},cfg={cols:saved.cols?.length?[...saved.cols]:[...DEFAULT],scope:S.selected.size?'selection':saved.scope||'doc',group:saved.group||'device',sort:saved.sort||'name',filter:''},edits=new Map();
+  const d=openDialog('Inventory',`<div class="invGrid"><aside class="invCols"><div class="fld"><span>Columns — tick, then order with ↑ ↓; 👁 shows a field on the drawing</span></div><div id="invColList"></div>
+      <div class="row"><input id="invNewField" placeholder="New field, e.g. Warranty"><button data-inv-addfield>＋ Add</button></div></aside>
+    <section><div class="row r3"><label class="fld"><span>Devices</span><select id="invScope"><option value="doc">Whole drawing</option><option value="page">This page</option><option value="selection">Selected devices</option></select></label>
+      <label class="fld"><span>Rows</span><select id="invGroup"><option value="device">One per device (editable)</option><option value="bom">Count identical rows (BOM)</option></select></label>
+      <label class="fld"><span>Sort by</span><select id="invSort"></select></label></div>
+      <input id="invFilter" placeholder="Filter rows…" autocomplete="off"><p class="muted" id="invInfo"></p><div class="tableWrap invWrap" id="invTable"></div></section></div>
+    <footer><button data-inv="apply" id="invApply" disabled>Apply edits</button><span class="spacer"></span><button data-inv="copy">Copy for Excel</button><button data-inv="csv">Download CSV</button><button data-inv="page">Insert on this page</button><button class="primary" data-inv="newpage">Insert on a new page</button></footer>`,{wide:true,cls:'inventory'});
+  $('invScope').value=cfg.scope;$('invGroup').value=cfg.group;
+  const drawCols=()=>{const cat=catalog(),order=[...cfg.cols.map(id=>cat.find(c=>c.id===id)).filter(Boolean),...cat.filter(c=>!cfg.cols.includes(c.id))],tgt=targets(),vis=k=>tgt.length&&tgt.every(n=>shown(n).includes(k));
+    $('invColList').innerHTML=order.map(c=>{const on=cfg.cols.includes(c.id),k=c.edit&&c.id.startsWith('f:')?c.edit:null;return`<div class="invCol ${on?'on':''}"><label><input type="checkbox" data-inv-col="${c.id}" ${on?'checked':''}>${html(c.label)}</label>${on?`<button data-inv-up="${c.id}" title="Move up">↑</button><button data-inv-down="${c.id}" title="Move down">↓</button>`:''}${k?`<button data-inv-eye="${html(k)}" class="eye ${vis(k)?'on':''}" title="Show ${html(c.label)} on the drawing for ${tgt.length===1?'this device':`these ${tgt.length} devices`}">👁</button>`:''}</div>`}).join('');
+    $('invSort').innerHTML=cfg.cols.map(id=>{const c=cat.find(x=>x.id===id);return c?`<option value="${id}" ${cfg.sort===id?'selected':''}>${html(c.label)}</option>`:''}).join('')};
+  const targets=()=>devicesIn(cfg.scope).map(x=>x.n);
+  const drawTable=()=>{const b=build(cfg),max=400,ed=cfg.group==='device';
+    $('invInfo').textContent=`${b.rows.length} row${b.rows.length===1?'':'s'}${ed?' · click a cell to edit; Apply edits writes them to the drawing':' · per-device columns (name, hostname, IP, serial…) are left out when counting'}`;
+    $('invTable').innerHTML=`<table class="report"><thead><tr>${b.columns.map(c=>`<th>${html(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.slice(0,max).map((r,i)=>`<tr>${r.map((v,j)=>{const col=b.cols[j],it=ed&&b.items?.[i];if(it&&col?.edit){const key=it.n.id+'|'+col.edit,val=edits.has(key)?edits.get(key):v;return`<td><input class="invCell ${edits.has(key)?'dirty':''}" data-inv-cell="${html(key)}" value="${html(val)}"></td>`}return`<td>${html(v)}</td>`}).join('')}</tr>`).join('')}</tbody></table>${b.rows.length>max?`<p class="muted">…and ${b.rows.length-max} more rows in the download.</p>`:''}`;
+    $('invApply').disabled=!edits.size;$('invApply').textContent=edits.size?`Apply ${edits.size} edit${edits.size>1?'s':''}`:'Apply edits'};
+  const remember=()=>{S.doc.inventory={cols:[...cfg.cols],scope:cfg.scope==='selection'?'doc':cfg.scope,group:cfg.group,sort:cfg.sort}};
+  const redraw=()=>{drawCols();drawTable()};redraw();
+  d.oninput=e=>{const t=e.target;if(t.id==='invFilter'){cfg.filter=t.value;drawTable();return}if(t.dataset.invCell){edits.set(t.dataset.invCell,t.value);t.classList.add('dirty');$('invApply').disabled=false;$('invApply').textContent=`Apply ${edits.size} edit${edits.size>1?'s':''}`}};
+  d.onchange=e=>{const t=e.target;if(t.dataset.invCol){const id=t.dataset.invCol;if(t.checked){if(!cfg.cols.includes(id))cfg.cols.push(id)}else cfg.cols=cfg.cols.filter(x=>x!==id);redraw();return}
+    if(t.id==='invScope'){cfg.scope=t.value;redraw()}else if(t.id==='invGroup'){cfg.group=t.value;drawTable()}else if(t.id==='invSort'){cfg.sort=t.value;drawTable()}};
+  d.onclick=e=>{const t=e.target;if(t.closest('[data-close]')){remember();return closeDialog()}
+    const up=t.closest('[data-inv-up]'),dn=t.closest('[data-inv-down]');if(up||dn){const id=(up||dn).dataset[up?'invUp':'invDown'],i=cfg.cols.indexOf(id),j=i+(up?-1:1);if(i>=0&&j>=0&&j<cfg.cols.length){[cfg.cols[i],cfg.cols[j]]=[cfg.cols[j],cfg.cols[i]];redraw()}return}
+    const eye=t.closest('[data-inv-eye]');if(eye){const k=eye.dataset.invEye,tg=targets();if(!tg.length)return notify('No devices in this scope.');const on=!tg.every(n=>shown(n).includes(k));showOn([k],on,tg);drawCols();notify(`${fieldLabel(k)} ${on?'shown':'hidden'} for ${tg.length} device${tg.length>1?'s':''}.`,2200);return}
+    if(t.closest('[data-inv-addfield]')){const v=$('invNewField').value.trim();if(!v)return;const key=v.toLowerCase().replace(/[^\w]+/g,'_').replace(/^_|_$/g,'');if(!key)return;if(!S.doc.fields.some(f=>f.key===key))mutate(()=>S.doc.fields.push({key,label:v}));if(!cfg.cols.includes('f:'+key))cfg.cols.push('f:'+key);$('invNewField').value='';redraw();return}
+    const a=t.closest('[data-inv]')?.dataset.inv;if(!a)return;
+    if(a==='apply'){const byId=new Map(S.doc.pages.flatMap(p=>p.items).map(n=>[n.id,n]));mutate(()=>{for(const[key,v]of edits){const[id,f]=key.split('|'),n=byId.get(id);if(!n)continue;if(f==='name'){if(n.labels?.[0])n.labels[0].text=v;continue}const def=S.doc.fields.find(x=>x.key===f);n.data??={};if(v===''){delete n.data[f];continue}n.data[f]=def?.type==='number'&&v.trim()!==''&&!isNaN(+v)?+v:v}});notify(`Applied ${edits.size} edit${edits.size>1?'s':''}.`);edits.clear();drawTable();return}
+    remember();const r=report(cfg);if(a==='csv')download(safeName(S.doc.name+' - inventory')+'.csv','﻿'+Analysis.toCSV(r),'text/csv');if(a==='copy')navigator.clipboard.writeText(Analysis.toTSV(r)).then(()=>notify('Copied — paste into Excel.'));if(a==='page'||a==='newpage'){closeDialog();insertReportTable(r,a==='newpage')}}}
+
+// Show / hide fields under selected devices (or every device when nothing is selected).
+function openShow(){const sel=picked().filter(n=>n.kind==='node'&&Shapes.isDevice(n)),tg=sel.length?sel:S.doc.pages.flatMap(p=>p.items).filter(n=>n.kind==='node'&&Shapes.isDevice(n));if(!tg.length)return notify('There are no devices to label.');
+  const keys=[...S.doc.fields.filter(f=>f.key!=='notes').map(f=>f.key),...new Set(tg.flatMap(n=>Object.keys(n.data||{})).filter(k=>!S.doc.fields.some(f=>f.key===k)))];
+  const d=openDialog('Show on drawing',`<p class="muted">Values appear under the label of <b>${sel.length?`the ${sel.length} selected device${sel.length>1?'s':''}`:'every device'}</b>${sel.length?'':' — select devices first to show a field only for them'}. Devices without a value show nothing.</p>
+    <div class="checks cols2">${keys.map(k=>{const all=tg.every(n=>shown(n).includes(k)),some=!all&&tg.some(n=>shown(n).includes(k)),filled=tg.filter(n=>String(n.data?.[k]??'').trim()).length;return`<label class="check"><input type="checkbox" data-show="${html(k)}" ${all?'checked':''} ${some?'data-some="1"':''}>${html(fieldLabel(k))} <em class="muted">${filled}/${tg.length}</em></label>`}).join('')}</div>
+    <label class="check"><input type="checkbox" id="showNames" ${S.doc.display?.prefixFields?'checked':''}>Show field names too (e.g. “OS / firmware: IOS-XE 17.9”)</label>
+    <footer><button data-close>Close</button></footer>`);
+  d.querySelectorAll('[data-some]').forEach(i=>i.indeterminate=true);
+  d.onchange=e=>{const t=e.target;if(t.dataset.show){showOn([t.dataset.show],t.checked,tg);return}if(t.id==='showNames')mutate(()=>{S.doc.display.prefixFields=t.checked})};
+  d.onclick=e=>{if(e.target.closest('[data-close]'))closeDialog()}}
+
+return{open,openShow,build,catalog,shown,showOn,report,DEFAULT};
+})();
+
+</script>
+<script>
 // Event wiring and start-up.
 function insertLibrary(id,x,y){const entry=S.library.find(e=>e.id===id);if(!entry)return;mutate(()=>{const a=C.duplicate(entry.items,0,0),b=C.bounds(a);a.forEach(n=>{n.locked=false;n.layer=S.activeLayer;C.move(n,grid(x-b.w/2)-b.x,grid(y-b.h/2)-b.y)});items().push(...a);a.forEach(e=>e.kind==='edge'&&Conn.markDirty(e.id));select(a.map(n=>n.id))})}
 function wire(){
@@ -5686,7 +6181,7 @@ function wire(){
   ins.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.target.blur();e.target.focus()}});
   // ribbon controls
   $('ribbon').addEventListener('change',e=>{const t=e.target,id=t.id,sel=editable();
-    if(id==='linkTypeSel'){S.linkType=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length)mutate(()=>es.forEach(x=>Shapes.applyLinkType(x,t.value)));renderRibbon();return}
+    if(id==='linkTypeSel'){S.linkType=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length)mutate(()=>es.forEach(x=>Shapes.applyLinkType(x,t.value,S.doc)));renderRibbon();return}
     if(id==='routeSel'){S.routeStyle=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length&&t.value!=='curved')mutate(()=>es.forEach(x=>{x.routing=t.value;x.curve='straight';Conn.orthogonalize(x);Conn.markDirty(x.id)}));return}
     if(id==='fontSizeSel'&&t.value){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.size=+t.value)));t.value='';return}
     if(id==='fontColor'){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.color=t.value)));return}
@@ -5763,17 +6258,17 @@ async function boot(){
   if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
-  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();
+  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();Quick.init();
   await Packs.loadAll();
   try{const lib=await Store.kvGet('library');if(Array.isArray(lib)&&!S.library.length)S.library=lib}catch{}
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();
   if(ws){doc=ws.doc;S.docId=ws.id;recovered=true}
   else try{const saved=localStorage.getItem('port-v3-recovery')||localStorage.getItem('port-v2-recovery');if(saved){doc=C.migrate(JSON.parse(saved));recovered=true}}catch(err){console.warn('recovery skipped',err)}
-  if(!doc)doc=Templates.build('campus');S.docId??=Workspace.newId();Packs.installDoc(doc);Constraints.upgrade(doc);
+  if(!doc)doc=Templates.build('campus');S.docId??=Workspace.newId();Packs.installDoc(doc);Constraints.upgrade(doc);Quick.prepare(doc);
   S.doc=doc;S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.activeLayer=doc.layers[0].id;
   renderRibbon();renderLeft();setMode('select');document.title=S.doc.name+' · Port Network Studio';
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
-  scheduleCheck();
+  scheduleCheck();Quick.revInfo();
   if(location.hash.startsWith('#doc='))await loadFromHash();
   else if(!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
   // make the router/layout modules optional: degrade gracefully when missing

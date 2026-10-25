@@ -101,13 +101,26 @@ const Packs=(()=>{
   const API='https://api.iconify.design';let collections=null;
   const SETS={network:'carbon,tabler,mdi,material-symbols,fluent,ph,lucide,clarity,eos-icons,icon-park-outline,streamline',brands:'logos,simple-icons,devicon,skill-icons,vscode-icons',all:''};
   async function getCollections(){if(collections)return collections;const r=await fetch(API+'/collections');collections=await r.json();return collections}
-  async function search(query,set='network',limit=96){const pre=SETS[set]??set;const r=await fetch(`${API}/search?query=${encodeURIComponent(query)}&limit=${limit}${pre?'&prefixes='+pre:''}`);if(!r.ok)throw Error('Icon search failed ('+r.status+')');return r.json()}
-  async function fetchIcon(full){const[prefix,name]=full.split(':');const r=await fetch(`${API}/${prefix}.json?icons=${encodeURIComponent(name)}`);const j=await r.json(),ic=j.icons?.[name];if(!ic)throw Error('Icon not found: '+full);const w=ic.width||j.width||24,h=ic.height||j.height||24,vb=`${ic.left||j.left||0} ${ic.top||j.top||0} ${w} ${h}`;
+  // Iconify rate-limits per-icon SVG URLs (HTTP 429) when a results grid asks for 100+ at once, so icon data is fetched
+  // in batches — one JSON request per icon set — sanitised once, cached, and drawn inline.
+  const searches=new Map(),iconData=new Map();
+  const limitedError=()=>Object.assign(Error('Iconify is limiting requests from this network right now — try again in a few minutes. Bundled and imported shapes still work.'),{limited:true});
+  async function search(query,set='network',limit=96){const pre=SETS[set]??set,key=query+'|'+pre+'|'+limit;if(searches.has(key))return searches.get(key);
+    const r=await fetch(`${API}/search?query=${encodeURIComponent(query)}&limit=${limit}${pre?'&prefixes='+pre:''}`);if(r.status===429)throw limitedError();if(!r.ok)throw Error('Icon search failed ('+r.status+')');const j=await r.json();searches.set(key,j);return j}
+  function iconFromSet(j,name,full){let ic=j.icons?.[name],al=null;if(!ic&&j.aliases?.[name]){al=j.aliases[name];ic=j.icons?.[al.parent]}if(!ic)return null;ic={...ic,...(al||{})};
+    const w=ic.width||j.width||24,h=ic.height||j.height||24,vb=`${ic.left||j.left||0} ${ic.top||j.top||0} ${w} ${h}`;
     let body=ic.body;if(ic.hFlip||ic.vFlip||ic.rotate)body=`<g transform="${ic.rotate?`rotate(${ic.rotate*90} ${w/2} ${h/2})`:''}${ic.hFlip?` translate(${w} 0) scale(-1 1)`:''}${ic.vFlip?` translate(0 ${h}) scale(1 -1)`:''}">${body}</g>`;
-    const s=sanitizeSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`,'i-'+hash(full));const col=(await getCollections().catch(()=>({})))[prefix];
+    return sanitizeSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${body}</svg>`,'i-'+hash(full))}
+  // Load many icons with a handful of requests; returns {limited} when Iconify said "too many requests".
+  async function loadIcons(fulls){const by=new Map();for(const f of fulls){if(iconData.has(f))continue;const[p,n]=f.split(':');if(!by.has(p))by.set(p,[]);by.get(p).push(n)}
+    const jobs=[];for(const[p,names]of by)for(let i=0;i<names.length;i+=60)jobs.push([p,names.slice(i,i+60)]);let limited=false,failed=false;
+    const run=async([p,names])=>{try{const r=await fetch(`${API}/${p}.json?icons=${names.map(encodeURIComponent).join(',')}`);if(r.status===429){limited=true;return}if(!r.ok){failed=true;return}const j=await r.json();for(const n of names){try{const d=iconFromSet(j,n,p+':'+n);if(d)iconData.set(p+':'+n,d)}catch{}}}catch{failed=true}};
+    for(let i=0;i<jobs.length&&!limited;i+=3)await Promise.all(jobs.slice(i,i+3).map(run));return{limited,failed}}
+  const iconPreview=full=>iconData.get(full)||null;
+  async function fetchIcon(full){const[prefix,name]=full.split(':');if(!iconData.has(full)){const r=await loadIcons([full]);if(r.limited)throw limitedError()}const s=iconData.get(full);if(!s)throw Error('Icon not found or not downloadable: '+full);const col=(await getCollections().catch(()=>({})))[prefix];
     return stencilFrom(name.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()),s.vb,s.svg,{tags:prefix+' '+name,source:full,license:col?.license?.spdx||'',recolor:/currentColor/.test(s.svg)})}
   async function addOnline(full){let pack=packs.get('online');if(!pack){pack={id:'online',name:'Online picks',source:'iconify',categories:[{id:'pack:online',name:'Online picks'}],shapes:{}}}const id='i-'+slug(full.replace(':','-'));if(!pack.shapes[id]){const st=await fetchIcon(full);st.cat='pack:online';pack.shapes[id]=st;await save(pack)}else install(pack);return id}
   const thumbUrl=(full,color='#2f5ea8')=>{const[p,n]=full.split(':');return`${API}/${p}/${n}.svg?color=${encodeURIComponent(color)}`};
 
-  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,save,remove,loadAll,exportPack,search,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
+  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,save,remove,loadAll,exportPack,search,loadIcons,iconPreview,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
 })();

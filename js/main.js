@@ -41,7 +41,7 @@ function wire(){
   ins.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.target.blur();e.target.focus()}});
   // ribbon controls
   $('ribbon').addEventListener('change',e=>{const t=e.target,id=t.id,sel=editable();
-    if(id==='linkTypeSel'){S.linkType=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length)mutate(()=>es.forEach(x=>Shapes.applyLinkType(x,t.value)));renderRibbon();return}
+    if(id==='linkTypeSel'){S.linkType=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length)mutate(()=>es.forEach(x=>Shapes.applyLinkType(x,t.value,S.doc)));renderRibbon();return}
     if(id==='routeSel'){S.routeStyle=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length&&t.value!=='curved')mutate(()=>es.forEach(x=>{x.routing=t.value;x.curve='straight';Conn.orthogonalize(x);Conn.markDirty(x.id)}));return}
     if(id==='fontSizeSel'&&t.value){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.size=+t.value)));t.value='';return}
     if(id==='fontColor'){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.color=t.value)));return}
@@ -118,17 +118,17 @@ async function boot(){
   if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
-  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();
+  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();Quick.init();
   await Packs.loadAll();
   try{const lib=await Store.kvGet('library');if(Array.isArray(lib)&&!S.library.length)S.library=lib}catch{}
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();
   if(ws){doc=ws.doc;S.docId=ws.id;recovered=true}
   else try{const saved=localStorage.getItem('port-v3-recovery')||localStorage.getItem('port-v2-recovery');if(saved){doc=C.migrate(JSON.parse(saved));recovered=true}}catch(err){console.warn('recovery skipped',err)}
-  if(!doc)doc=Templates.build('campus');S.docId??=Workspace.newId();Packs.installDoc(doc);Constraints.upgrade(doc);
+  if(!doc)doc=Templates.build('campus');S.docId??=Workspace.newId();Packs.installDoc(doc);Constraints.upgrade(doc);Quick.prepare(doc);
   S.doc=doc;S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.activeLayer=doc.layers[0].id;
   renderRibbon();renderLeft();setMode('select');document.title=S.doc.name+' · Port Network Studio';
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
-  scheduleCheck();
+  scheduleCheck();Quick.revInfo();
   if(location.hash.startsWith('#doc='))await loadFromHash();
   else if(!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
   // make the router/layout modules optional: degrade gracefully when missing
