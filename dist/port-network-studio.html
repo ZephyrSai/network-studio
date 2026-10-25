@@ -89,7 +89,7 @@ aside{background:var(--panel);overflow:auto;min-height:0;scrollbar-width:thin}
 aside.left{border-right:1px solid var(--border);display:flex;flex-direction:column;grid-column:1}
 aside.right{border-left:1px solid var(--border);grid-column:3}
 .ltabs{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:2}
-.ltabs button{flex:1;border:0;border-radius:0;background:none;border-bottom:2px solid transparent;padding:8px 4px;font-weight:550;color:var(--muted)}
+.ltabs button{flex:1 1 auto;min-width:0;border:0;border-radius:0;background:none;border-bottom:2px solid transparent;padding:8px 2px;font-weight:550;font-size:11.5px;letter-spacing:-.1px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ltabs button.active{color:var(--blue);border-bottom-color:var(--blue)}
 .pane{padding:8px 10px 20px;overflow:auto;flex:1}
 .searchRow{display:flex;gap:5px;position:sticky;top:0;background:var(--panel);padding:2px 0 8px;z-index:1}
@@ -224,7 +224,7 @@ table.keys td:first-child{width:52%}
 
 /* dialogs */
 dialog{border:1px solid var(--border);border-radius:14px;max-width:min(560px,94vw);width:560px;padding:0;box-shadow:var(--shadow);background:var(--panel);color:var(--text)}
-dialog.wide{width:min(1020px,96vw);max-width:96vw}
+dialog.wide{width:min(1020px,96vw);max-width:96vw;margin:auto}
 dialog::backdrop{background:#0c1a2e66}
 dialog.floating{position:fixed;inset:auto 316px auto auto;top:150px;margin:0;width:400px;max-height:calc(100vh - 220px);display:flex;flex-direction:column;z-index:50}
 dialog.floating .dlgBody{overflow:auto}
@@ -284,8 +284,8 @@ body.presenting .presentBar{display:flex;position:absolute;bottom:16px;left:50%;
 body.presenting .presentBar:hover{opacity:1}
 body.presenting .presentBar button{border-radius:20px}
 
-@media (max-width:1250px){.layout{grid-template-columns:210px minmax(200px,1fr) 270px}.tbtn span:not(.i){display:none}.doc input{width:220px}}
-@media (max-width:860px){body{--hh:48px;--rh:70px}header.top>.tbtn:nth-last-of-type(-n+5){display:none}.tabDoc{display:none}footer.status{gap:6px}#selectionCount,#zoomRange{display:none}body.noHeader{--hh:0px}body.ribbonCollapsed{--rh:0px}body.noStatus{--sh:0px}.layout{grid-template-columns:0 1fr 0}.workarea{grid-column:1/-1}aside.left,aside.right{position:fixed;top:calc(var(--hh) + var(--th) + var(--rh));bottom:var(--sh);width:280px;z-index:40;box-shadow:var(--shadow);display:none}aside.left{left:0}aside.right{right:0}body.showLeft aside.left,body.showRight aside.right{display:flex;flex-direction:column}.brand span,.doc .sub,#cursorPos,#pageInfo,.layerPick{display:none}.doc{min-width:0;padding-left:10px}.doc input{width:104px}#minimap{display:none}.two{grid-template-columns:1fr}}
+@media (max-width:1250px){.layout{grid-template-columns:232px minmax(200px,1fr) 262px}.ltabs button{font-size:11px;letter-spacing:-.2px}body.noLeft .layout{grid-template-columns:0 minmax(200px,1fr) 262px}body.noRight .layout{grid-template-columns:232px minmax(200px,1fr) 0}.tbtn span:not(.i){display:none}.doc input{width:220px}}
+@media (max-width:860px){body{--hh:48px;--rh:70px}body.noLeft .layout,body.noRight .layout{grid-template-columns:0 1fr 0}header.top>.tbtn:nth-last-of-type(-n+5){display:none}.tabDoc{display:none}footer.status{gap:6px}#selectionCount,#zoomRange{display:none}body.noHeader{--hh:0px}body.ribbonCollapsed{--rh:0px}body.noStatus{--sh:0px}.layout{grid-template-columns:0 1fr 0}.workarea{grid-column:1/-1}aside.left,aside.right{position:fixed;top:calc(var(--hh) + var(--th) + var(--rh));bottom:var(--sh);width:280px;z-index:40;box-shadow:var(--shadow);display:none}aside.left{left:0}aside.right{right:0}body.showLeft aside.left,body.showRight aside.right{display:flex;flex-direction:column}.brand span,.doc .sub,#cursorPos,#pageInfo,.layerPick{display:none}.doc{min-width:0;padding-left:10px}.doc input{width:104px}#minimap{display:none}.two{grid-template-columns:1fr}}
 @media print{body{overflow:visible;background:#fff;display:block}body>*{display:none!important}body>#printPreview{display:block!important;position:static;background:#fff;overflow:visible}#printPreview>.previewbar{display:none!important}#printPages{display:block;padding:0}.print-sheet{box-shadow:none;margin:0;break-after:page;page-break-after:always}.print-sheet:last-child{break-after:auto;page-break-after:auto}}
 
 /* packs, workspace, online icons */
@@ -331,6 +331,31 @@ body.focus .focusExit{display:block}
 .fitMode button{padding:7px 8px}
 .fitResult{margin:10px 0 0;padding:8px 10px;border-radius:6px;background:var(--panel2);font-size:12.5px}
 
+/* templates panel */
+#templatesPane #tplSearch{width:100%;margin-bottom:4px}
+.tplHead{display:flex;align-items:center;gap:6px;margin:14px 0 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tplHead em{font-style:normal;font-weight:500;opacity:.8}
+.tplBtns{display:flex;gap:5px;margin:0 0 8px}.tplBtns button{flex:1;font-size:11.5px;padding:4px 6px}
+.tcard{border:1px solid var(--border);border-radius:9px;padding:7px;margin:0 0 9px;background:var(--panel);cursor:grab;display:flex;flex-direction:column;gap:3px}
+.tcard:hover{border-color:var(--blue-line)}.tcard:active{cursor:grabbing}
+.tcard>b{font-size:12.5px;color:var(--strong)}.tmeta{font-size:11px;color:var(--muted);line-height:1.4}
+.tthumb{height:104px;border:1px solid var(--border);border-radius:6px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:3px;pointer-events:none}
+.tthumb svg,.tthumb img{width:100%;height:100%;object-fit:contain}
+.tthumb.big{height:220px;pointer-events:auto}
+.tact{display:flex;gap:4px;margin-top:3px}.tact button{font-size:11.5px;padding:3px 8px}.tact button:first-child{flex:1}
+.tparts summary{font-size:11.5px;color:var(--blue);cursor:pointer;margin-top:4px;list-style-position:inside}
+.tchips{display:flex;flex-direction:column;gap:3px;margin-top:5px}
+.tchip{display:flex;align-items:center;gap:6px;text-align:left;font-size:11.5px;padding:4px 7px;cursor:grab;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tchip em{margin-left:auto;font-style:normal;color:var(--muted);font-size:10.5px}
+.tchip.blk{margin-left:14px}.tchip.all{color:var(--blue)}
+.small{font-size:11px}.warnTxt{color:#c2410c}
+.tplMode{max-width:440px}
+.addGrid{display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;align-items:start}
+.addGrid .seg button{font-size:11.5px}
+label.check input.inline{flex:1;min-width:80px;padding:2px 6px;font-size:12px}
+label.check>input[type=checkbox]{flex:none}
+@media (max-width:860px){.addGrid{grid-template-columns:1fr}.addGrid .row{grid-template-columns:1fr}.tthumb.big{height:160px}}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -352,7 +377,7 @@ body.focus .focusExit{display:block}
 <div class="ribbon" id="ribbon" role="toolbar"></div>
 <div class="layout">
   <aside class="left" id="leftPanel">
-    <div class="ltabs"><button data-ltab="shapes" class="active">Shapes</button><button data-ltab="icons" title="Search 200,000+ open-source icons online">Icons</button><button data-ltab="layers">Layers</button><button data-ltab="explorer">Explorer</button></div>
+    <div class="ltabs"><button data-ltab="shapes" class="active">Shapes</button><button data-ltab="icons" title="Search 200,000+ open-source icons online">Icons</button><button data-ltab="templates" title="Drag templates, saved drawings, pages or zone blocks into this drawing">Templates</button><button data-ltab="layers">Layers</button><button data-ltab="explorer">Explorer</button></div>
     <div id="shapesPane" class="pane">
       <div class="searchRow"><input id="search" placeholder="Search shapes — fw, nvr, ap…" aria-label="Search shapes" autocomplete="off"><select id="paletteDisplay" title="Palette preview style"><option value="symbol">Symbol</option><option value="tile">Tile</option><option value="circle">Circle</option></select></div>
       <div class="row packBar"><button data-action="importShapes" title="SVG files, a folder, a ZIP of icons (e.g. vendor packs), a draw.io library or images">＋ Import shapes</button><button data-action="managePacks" title="Rename, export or remove shape packs">Packs…</button></div>
@@ -362,6 +387,7 @@ body.focus .focusExit{display:block}
       <div class="searchRow"><input id="iconSearch" placeholder="Search icons online — router, cctv, aws…" autocomplete="off"><select id="iconSet" title="Icon sets"><option value="network">IT &amp; general</option><option value="brands">Brands &amp; logos</option><option value="all">All sets</option></select></div>
       <div id="iconResults"></div>
     </div>
+    <div id="templatesPane" class="pane" hidden></div>
     <div id="layersPane" class="pane" hidden></div>
     <div id="explorerPane" class="pane" hidden><input id="explorerSearch" placeholder="Filter by name, IP, model…" autocomplete="off"><div id="explorerList"></div></div>
   </aside>
@@ -2323,6 +2349,140 @@ const Constraints=(()=>{
 
 </script>
 <script>
+// Add a template, a saved drawing, or part of one (a page or a zone "block") to the open drawing.
+// Everything is copied with fresh ids. Layers merge by name, VLANs by id, custom fields by key and embedded
+// shapes by type; subnets that clash with the drawing can move to free ones, with device IPs following.
+const Merge=(()=>{
+const C=Core;
+const nameOf=n=>String(n?.labels?.[0]?.text||'').trim();
+const drawingPages=doc=>doc.pages.filter(p=>!p.isBackground);
+const within=(b,z,s=1)=>b.x>=z.x-s&&b.y>=z.y-s&&b.x+b.w<=z.x+z.w+s&&b.y+b.h<=z.y+z.h+s;
+const centreIn=(b,z)=>{const cx=b.x+b.w/2,cy=b.y+b.h/2;return cx>=z.x&&cx<=z.x+z.w&&cy>=z.y&&cy<=z.y+z.h};
+const ptIn=(p,z)=>p[0]>=z.x&&p[0]<=z.x+z.w&&p[1]>=z.y&&p[1]<=z.y+z.h;
+
+// A zone plus everything drawn inside it, and the links whose both ends are inside.
+function blockItems(page,z){const set=new Set([z.id]);
+  for(const n of page.items){if(n===z||n.kind==='edge'||n.kind==='legend'||n.pin)continue;const b=C.box(n);if(n.kind==='zone'?within(b,z):centreIn(b,z))set.add(n.id)}
+  for(const e of page.items)if(e.kind==='edge'){const a=e.from?.node,b=e.to?.node;if(a||b?a&&b&&set.has(a)&&set.has(b):e.points.every(p=>ptIn(p,z)))set.add(e.id)}
+  return page.items.filter(n=>set.has(n.id))}
+// Top-level zones (not inside another zone) that hold at least one device.
+function blocks(page){const zs=page.items.filter(n=>n.kind==='zone'&&!n.pin);
+  return zs.filter(z=>!zs.some(o=>o!==z&&within(z,o,0)&&!within(o,z,0))).map(z=>{const its=blockItems(page,z);return{id:z.id,name:nameOf(z)||'Zone',devices:its.filter(n=>n.kind==='node').length,items:its.length}}).filter(b=>b.devices)}
+// What a source drawing offers: its drawing pages, and the blocks on each.
+function parts(doc){return drawingPages(doc).map(p=>({id:p.id,name:p.name,devices:p.items.filter(n=>n.kind==='node').length,items:p.items.filter(n=>!n.pin).length,blocks:blocks(p)}))}
+function pick(doc,{page=null,block=null}={}){const p=doc.pages.find(x=>x.id===page)||drawingPages(doc)[0];if(!p)return{page:null,items:[]};
+  const z=block&&p.items.find(n=>n.id===block&&n.kind==='zone');return{page:p,items:z?blockItems(p,z):p.items.filter(n=>n.pin!=='frame')}}
+// Unpinned content of a page (pinned legends, frames and title blocks follow the page instead).
+function contentBounds(page){const its=page.items.filter(n=>!n.pin);return its.length?C.bounds(its,true):null}
+// Size of what would be inserted, for the drop footprint.
+function footprint(doc,o={}){const{items}=pick(doc,o),its=items.filter(n=>!n.pin);return its.length?C.bounds(its,true):null}
+
+// VLAN ids the copied items refer to (zone VLAN, link VLAN lists like "10,20,30-32"); null means all of them.
+function vlanRefs(out){const ids=new Set();for(const n of out)for(const k of['vlan','vlans','nativeVlan','voiceVlan']){const v=n.data?.[k];if(v==null||v==='')continue;const s=String(v);if(/\ball\b/i.test(s))return null;for(const m of s.matchAll(/(\d+)\s*-\s*(\d+)|(\d+)/g)){if(m[3])ids.add(m[3]);else for(let i=+m[1];i<=Math.min(+m[2],+m[1]+4094);i++)ids.add(String(i))}}return ids}
+function mergeMeta(target,src,out,o,report){
+  const lmap=new Map(),has=id=>target.layers.some(l=>l.id===id),fallback=has(o.activeLayer)?o.activeLayer:target.layers[0].id;
+  for(const n of out){if(o.layers==='active'||!n.layer){n.layer=fallback;continue}if(lmap.has(n.layer)){n.layer=lmap.get(n.layer);continue}
+    const sl=(src.layers||[]).find(l=>l.id===n.layer);let tl=sl&&target.layers.find(l=>l.name.trim().toLowerCase()===sl.name.trim().toLowerCase());
+    if(!tl&&sl){tl={...C.copy(sl),id:C.uid()};target.layers.push(tl);report.layers.push(tl.name)}
+    const id=tl?.id||fallback;lmap.set(n.layer,id);n.layer=id}
+  for(const k of['fields','linkFields']){target[k]??=[];for(const f of src[k]||[])if(!target[k].some(x=>x.key===f.key)){target[k].push(C.copy(f));report.fields++}}
+  const vlans=[],refs=o.allVlans?null:vlanRefs(out);target.vlans??=[];for(const v of src.vlans||[])if((!refs||refs.has(String(v.id)))&&!target.vlans.some(x=>String(x.id)===String(v.id))){const c=C.copy(v);target.vlans.push(c);vlans.push(c);report.vlans.push(String(v.id))}
+  const used=new Set(out.filter(n=>n.kind==='node').map(n=>n.type));for(const[t,s]of Object.entries(src.stencils||{}))if(used.has(t)&&!target.stencils?.[t]){(target.stencils??={})[t]=C.copy(s)}
+  return vlans}
+
+// Keep a moved subnet inside the private block it came from (or its /8), so 192.168.x never turns public.
+function parentOf(c){for(const b of['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','100.64.0.0/10']){const p=C.cidr(b);if(c.net>=p.net&&c.broadcast<=p.broadcast&&c.bits>=p.bits)return p}return C.cidr(C.int2ip(c.net)+'/'+Math.min(8,c.bits))}
+const overlap=(a,b)=>a.net<=b.broadcast&&b.net<=a.broadcast;
+function usedSubnets(target,skip){const used=[];for(const p of target.pages)for(const n of p.items)if(n.kind==='zone'&&n.data?.subnet){const c=C.cidr(n.data.subnet);if(c)used.push(c)}
+  for(const v of target.vlans||[])if(!skip.includes(v)){const c=C.cidr(v.subnet);if(c)used.push(c)}return used}
+function renumber(target,out,vlans,report){
+  // largest subnets first: a subnet inside another one from the same template moves with it (keeps the hierarchy)
+  const existing=usedSubnets(target,vlans),taken=[],done=[],moves=[],inside=(c,p)=>c.net>=p.net&&c.broadcast<=p.broadcast;
+  // zone subnets plus the subnets of VLANs this insert brings along
+  const subs=[...new Map([...out.filter(z=>z.kind==='zone'&&z.data?.subnet).map(z=>z.data.subnet),...vlans.map(v=>v.subnet)].map(t=>C.cidr(t)).filter(Boolean).map(c=>[c.text,c])).values()].sort((a,b)=>a.bits-b.bits||a.net-b.net);
+  for(const c of subs){const parent=done.find(d=>inside(c,d.from));if(parent)continue;
+    // a new home must not land on the drawing, on what this insert already placed, or on this template's other subnets (no chain reactions)
+    const pending=subs.filter(p=>p!==c&&!inside(p,c)&&!done.some(d=>d.from===p)),free=x=>!existing.some(u=>overlap(u,x))&&!taken.some(u=>overlap(u,x))&&!pending.some(u=>overlap(u,x));
+    if(!existing.some(u=>overlap(u,c))&&!taken.some(u=>overlap(u,c))){taken.push(c);done.push({from:c,to:c});continue}
+    // next free subnet of the same size after this one, wrapping round inside the parent block
+    const par=parentOf(c),slots=Math.max(1,Math.floor(par.size/c.size)),start=(c.net-par.net)/c.size;let to=null;
+    for(let k=1;k<slots&&k<65536;k++){const net=par.net+((start+k)%slots)*c.size,cand=C.cidr(C.int2ip(net>>>0)+'/'+c.bits);if(free(cand)){to=cand;break}}
+    if(!to){taken.push(c);done.push({from:c,to:c});continue}taken.push(to);done.push({from:c,to});moves.push({from:c,to})}
+  const mapIp=ip=>{const v=C.ip2int(ip);if(v==null)return null;for(const m of moves)if(v>=m.from.net&&v<=m.from.broadcast)return C.int2ip((v-m.from.net+m.to.net)>>>0);return null};
+  const fix=s=>typeof s==='string'?s.replace(/\b(\d{1,3}(?:\.\d{1,3}){3})(\/\d{1,2})?\b/g,(all,ip,bits)=>{const r=mapIp(ip);return r?r+(bits||''):all}):s;
+  if(moves.length){for(const n of out){if(n.data)for(const k of Object.keys(n.data))n.data[k]=fix(n.data[k]);for(const l of n.labels||[])l.text=fix(l.text);if(n.kind==='table')n.rows=n.rows.map(r=>r.map(fix))}
+    for(const v of vlans){v.subnet=fix(v.subnet);v.gateway=fix(v.gateway)}}
+  report.subnets=moves.map(m=>[m.from.text,m.to.text])}
+// Devices whose address is already taken get the next free host address in the same subnet (zone or VLAN), skipping gateways.
+function readdress(target,out,vlans,report){const used=new Set(),subnets=[],ip=n=>C.ip2int(String(n.data?.ip??'').trim());
+  for(const p of target.pages)for(const n of p.items){if(n.kind==='node'&&n.data?.ip&&!out.includes(n)){const v=ip(n);if(v!=null)used.add(v)}if(n.kind==='zone'){const c=C.cidr(n.data?.subnet);if(c)subnets.push(c);const g=C.ip2int(n.data?.gateway);if(g!=null)used.add(g)}}
+  for(const v of target.vlans||[]){const c=C.cidr(v.subnet);if(c)subnets.push(c);const g=C.ip2int(v.gateway);if(g!=null&&!vlans.includes(v))used.add(g)}
+  for(const z of out)if(z.kind==='zone'){const c=C.cidr(z.data?.subnet);if(c)subnets.push(c)}
+  const clash=[];for(const n of out)if(n.kind==='node'&&n.data?.ip){const v=ip(n);if(v==null)continue;if(used.has(v))clash.push(n);else used.add(v)}
+  for(const n of clash){const v=ip(n),c=subnets.filter(s=>v>=s.first&&v<=s.last).sort((a,b)=>b.bits-a.bits)[0];if(!c)continue;const span=c.last-c.first+1;
+    for(let k=1;k<span;k++){const cand=c.first+((v-c.first+k)%span);if(!used.has(cand)){n.data.ip=C.int2ip(cand);used.add(cand);report.readdressed++;break}}}}
+// Device IPs already used in the drawing (left as they are; Check diagram lists them).
+function countClashes(target,out,report){const ips=new Set();for(const p of target.pages)for(const n of p.items)if(n.kind==='node'&&n.data?.ip)ips.add(String(n.data.ip).trim());
+  report.ipClashes=out.filter(n=>n.kind==='node'&&n.data?.ip&&ips.has(String(n.data.ip).trim())).length}
+
+function prefixNames(out,prefix,report){const names=new Map();
+  for(const n of out)if((n.kind==='node'||n.kind==='zone')&&n.labels?.[0]){const t=n.labels[0].text;if(t&&!t.includes('{{')&&!t.startsWith(prefix)){names.set(t,prefix+t);n.labels[0].text=prefix+t;report.renamed++}}
+  for(const n of out)if(n.data?.streamTo&&names.has(n.data.streamTo))n.data.streamTo=names.get(n.data.streamTo)}
+
+// Hostnames are identities too: a name prefix becomes a hostname prefix, and clashes get -2, -3…
+function uniqueHosts(target,out,o,report){const taken=new Set(),map=new Map(),slug=String(o.prefix||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  for(const p of target.pages)for(const n of p.items)if(n.kind==='node'&&n.data?.hostname&&!out.includes(n))taken.add(String(n.data.hostname).toLowerCase());
+  for(const n of out){const h=n.data?.hostname;if(n.kind!=='node'||!h)continue;let v=String(h);if(slug&&!v.toLowerCase().startsWith(slug+'-'))v=slug+'-'+v;
+    if(o.uniqueHosts!==false&&taken.has(v.toLowerCase())){let i=2;while(taken.has((v+'-'+i).toLowerCase()))i++;v=v+'-'+i}if(v!==h){map.set(h,v);n.data.hostname=v;report.hostnames++}taken.add(v.toLowerCase())}
+  if(map.size)for(const n of out)if(n.data?.streamTo&&map.has(n.data.streamTo))n.data.streamTo=map.get(n.data.streamTo)}
+function newReport(){return{layers:[],vlans:[],fields:0,subnets:[],ipClashes:0,readdressed:0,renamed:0,hostnames:0}}
+function prepare(target,src,out,o,report){const vlans=mergeMeta(target,src,out,o,report);if(o.avoidClash!==false){renumber(target,out,vlans,report);readdress(target,out,vlans,report)}countClashes(target,out,report);if(o.prefix)prefixNames(out,o.prefix,report);uniqueHosts(target,out,o,report)}
+
+// Copy a page or block of `src` onto `page` of `target`.
+// o: {page, block, place:'at'|'right'|'below', at:[x,y], anchor:'topleft'|'center' (for 'at'), legend:'auto'|'yes'|'no', layers:'keep'|'active', activeLayer,
+//     avoidClash, prefix, wrap:'' | zone name, group, gap, step (grid), theme zone colours [fill,stroke]}
+function insert(target,page,src,o={}){
+  const{items:raw}=pick(src,o);if(!raw.length)return null;
+  const hasLegend=page.items.some(n=>n.kind==='legend'),keepLegend=o.legend==='yes'||o.legend!=='no'&&!hasLegend;
+  const out=C.duplicate(raw.filter(n=>n.kind!=='legend'||keepLegend),0,0),report=newReport();
+  prepare(target,src,out,o,report);
+  for(const n of out)if(n.pin&&!(n.kind==='legend'&&!hasLegend))delete n.pin;
+  const free=out.filter(n=>!n.pin);if(!free.length)return null;
+  const b=C.bounds(free,true),gap=o.gap??60,step=o.step||1,snap=v=>Math.round(v/step)*step,content=contentBounds(page);let dx,dy;
+  if(o.place==='at'&&o.at){const c=o.anchor==='center';dx=o.at[0]-(c?b.x+b.w/2:b.x);dy=o.at[1]-(c?b.y+b.h/2:b.y)}
+  else if(!content){const m=(page.margin??10)*C.PX+20;dx=m-b.x;dy=m-b.y}
+  else if(o.place==='below'){dx=content.x-b.x;dy=content.y+content.h+gap-b.y}
+  else{dx=content.x+content.w+gap-b.x;dy=content.y-b.y}
+  dx=snap(dx);dy=snap(dy);for(const n of free)C.move(n,dx,dy);
+  if(o.wrap){const fb=C.bounds(free,true),pad=30,[f,s]=o.colors||['#f4f7fb','#9fb3cc'],z=C.zone(typeof o.wrap==='string'?o.wrap:'Zone',fb.x-pad,fb.y-pad-26,fb.w+2*pad,fb.h+2*pad+26,f,s);z.style='header';z.layer=free[0].layer;z.data={};out.unshift(z);free.unshift(z)}
+  if(o.group){const g=C.uid();for(const n of free)if(n.kind!=='edge')n.group=g}
+  let at=-1;page.items.forEach((n,i)=>{if(n.kind==='zone')at=i});
+  page.items.splice(at+1,0,...out.filter(n=>n.kind==='zone'));page.items.push(...out.filter(n=>n.kind!=='zone'));
+  return{items:out,report,bounds:C.bounds(free,true)}}
+
+const uniqueName=(target,name)=>{const names=new Set(target.pages.map(p=>p.name));if(!names.has(name))return name;let i=2;while(names.has(`${name} (${i})`))i++;return`${name} (${i})`};
+// Copy all drawing pages of `src` into `target` after page index `after`. Pages keep the drawing's background page if it has one.
+function insertPages(target,src,o={}){
+  const report=newReport(),bgT=target.pages.find(p=>p.isBackground),pmap=new Map(),bgs=[],pages=[];
+  const clone=sp=>({...C.copy({...sp,items:[]}),id:C.uid(),items:C.duplicate(sp.items,0,0)});
+  const list=o.page?src.pages.filter(p=>p.id===o.page&&!p.isBackground):drawingPages(src);
+  if(!bgT)for(const id of new Set(list.map(p=>p.background).filter(Boolean))){const sp=src.pages.find(p=>p.id===id);if(!sp)continue;const np=clone(sp);np.name=uniqueName(target,np.name);pmap.set(id,np.id);bgs.push(np)}
+  for(const sp of list){const np=clone(sp);np.name=uniqueName({pages:[...target.pages,...pages]},o.prefix&&!sp.name.startsWith(o.prefix)?o.prefix+sp.name:sp.name);np.background=sp.background?bgT?.id||pmap.get(sp.background)||null:null;pages.push(np)}
+  if(!pages.length)return null;
+  prepare(target,src,[...pages,...bgs].flatMap(p=>p.items),{...o,allVlans:!o.page},report);
+  const after=Math.min(o.after??target.pages.length-1,target.pages.length-1);target.pages.splice(after+1,0,...pages);target.pages.push(...bgs);
+  return{pages,backgrounds:bgs,report}}
+
+// A one-page document holding `items` (a selection) — used to save a selection as a template.
+function docFrom(doc,items,name){const d=C.newDoc(name);d.theme=doc.theme;d.layers=C.copy(doc.layers);d.fields=C.copy(doc.fields);d.linkFields=C.copy(doc.linkFields);d.vlans=C.copy(doc.vlans||[]);d.display=C.copy(doc.display);
+  const p=d.pages[0];p.name=name;const its=C.duplicate(items,0,0),b=C.bounds(its,true),m=p.margin*C.PX+20;for(const n of its){delete n.pin;C.move(n,m-b.x,m-b.y)}p.items=its;if(doc.stencils)d.stencils=C.copy(doc.stencils);return d}
+
+return{parts,blocks,blockItems,pick,footprint,contentBounds,insert,insertPages,docFrom,parentOf};
+})();
+if(typeof module!=='undefined')module.exports=Merge;
+
+</script>
+<script>
 /*
  * Port Network Studio v3 - Microsoft Visio (.vsdx) export writer.
  *
@@ -3711,6 +3871,7 @@ function renderOverlay(){
   if(A){for(const id of A.edges||[]){const e=find(id);if(e)el('path',{d:Conn.path(e),fill:'none',stroke:A.color||'#16a34a','stroke-width':(e.strokeWidth||2)+8/z,'stroke-opacity':.35,'stroke-linecap':'round','pointer-events':'none'},o)}
     for(const id of A.nodes||[]){const n=find(id);if(n){const b=Core.box(n);el('rect',{x:b.x-6/z,y:b.y-6/z,width:b.w+12/z,height:b.h+12/z,rx:8/z,fill:A.color||'#16a34a','fill-opacity':.12,stroke:A.color||'#16a34a','stroke-width':2/z,'pointer-events':'none'},o)}}
     if(A.loads)for(const[id,L]of A.loads){const e=find(id);if(!e)continue;const q=Conn.pointAt(e,.5),txt=L.text,w=Core.textWidth(txt,10.5)/1+12;const g=el('g',{transform:`translate(${q[0]} ${q[1]}) scale(${1/z})`,'pointer-events':'none'},o);el('rect',{x:-w/2,y:-9,width:w,height:18,rx:9,fill:L.color},g);const t=el('text',{x:0,y:4,'text-anchor':'middle','font-size':10.5,'font-family':Core.FONT,fill:'#fff','font-weight':650},g);t.textContent=txt}}
+  if(S.dropGhost){const g=S.dropGhost;el('rect',{x:g.x,y:g.y,width:g.w,height:g.h,rx:6/z,fill:blue,'fill-opacity':.07,stroke:blue,'stroke-width':1.5/z,'stroke-dasharray':`${6/z} ${4/z}`,'pointer-events':'none'},o);const t=el('text',{x:g.x+4/z,y:g.y-7/z,fill:blue,'font-size':12/z,'font-family':Core.FONT,'font-weight':600,'pointer-events':'none'},o);t.textContent=`${g.label} · ${Math.round(g.w/Core.PX)} × ${Math.round(g.h/Core.PX)} mm`}
   for(const id of S.highlights){const n=find(id);if(n){const b=Core.bounds([n],n.kind!=='edge');el('rect',{x:b.x-5/z,y:b.y-5/z,width:b.w+10/z,height:b.h+10/z,rx:4/z,fill:'#f59e0b','fill-opacity':.12,stroke:'#f59e0b','stroke-width':2/z,'pointer-events':'none'},o)}}
   // broken endpoints
   const byIdAll=new Map(items().map(n=>[n.id,n]));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&!Conn.resolveEnd(e,k,byIdAll)){const p=k==='from'?e.points[0]:e.points.at(-1);el('circle',{cx:p[0],cy:p[1],r:5/z,fill:'#fff4e6',stroke:'#e49a25','stroke-width':2/z,'pointer-events':'none'},o)}
@@ -3842,7 +4003,7 @@ function check(doc){
       const nm=nameOf(n),h=(n.data?.hostname||'').trim();
       if(h){const k=h.toLowerCase();if(hostnames.has(k))add('error',page,[n.id,hostnames.get(k).id],`Duplicate hostname “${h}”.`,'duphost');else hostnames.set(k,n);if(/\s/.test(h))add('info',page,n.id,`Hostname “${h}” contains spaces.`,'hostfmt')}
       for(const field of['ip','mgmtIp']){const raw=n.data?.[field];if(!raw)continue;const found=C.ipsIn(raw);if(!found.length)add('error',page,n.id,`“${nm}”: “${raw}” is not a valid IPv4 address.`,'ipfmt');for(const ip of found){if(ips.has(ip))add('error',page,[n.id,ips.get(ip).id],`Duplicate IP address ${ip} (${nm} and ${nameOf(ips.get(ip))}).`,'dupip');else ips.set(ip,n);
-        const z=zoneOf(n,page),c=z&&C.cidr(z.data?.subnet);if(c&&field==='ip'){const v=C.ip2int(ip);if(!C.inCidr(v,c))add('warning',page,n.id,`${nm}: ${ip} is outside zone “${zoneName(z)}” subnet ${c.text}.`,'subnet');else if(c.bits<31&&(v===c.net||v===c.broadcast))add('error',page,n.id,`${nm}: ${ip} is the ${v===c.net?'network':'broadcast'} address of ${c.text}.`,'netaddr');const gw=C.ip2int(z.data?.gateway);if(gw!=null&&gw===v&&!['router','firewall','l3switch','rk-router','rk-firewall'].includes(n.type))add('warning',page,n.id,`${nm} uses the zone gateway address ${ip}.`,'gw')}}}
+        const z=zoneOf(n,page),c=z&&C.cidr(z.data?.subnet);if(c&&field==='ip'){const v=C.ip2int(ip),dv=n.data?.vlan!=null&&n.data.vlan!==''&&(doc.vlans||[]).find(x=>String(x.id)===String(n.data.vlan)),dc=dv&&C.cidr(dv.subnet);if(!C.inCidr(v,c)){if(!(dc&&C.inCidr(v,dc)))add('warning',page,n.id,`${nm}: ${ip} is outside zone “${zoneName(z)}” subnet ${c.text}${dv?` and VLAN ${dv.id} subnet ${dv.subnet||'(none)'}`:''}.`,'subnet')}else if(c.bits<31&&(v===c.net||v===c.broadcast))add('error',page,n.id,`${nm}: ${ip} is the ${v===c.net?'network':'broadcast'} address of ${c.text}.`,'netaddr');const gw=C.ip2int(z.data?.gateway);if(gw!=null&&gw===v&&!['router','firewall','l3switch','rk-router','rk-firewall'].includes(n.type))add('warning',page,n.id,`${nm} uses the zone gateway address ${ip}.`,'gw')}}}
       if(!G.adj.get(n.id)?.length&&!Shapes.rackItems[n.type])add('info',page,n.id,`“${nm}” has no connections.`,'isolated');
       if(n.url?.startsWith('#page:')&&!doc.pages.some(p=>p.id===n.url.slice(6)))add('warning',page,n.id,`“${nm}” links to a page that no longer exists.`,'pagelink');
     }
@@ -3897,6 +4058,8 @@ async function handleFile(file,handle=null,at=null){
     if(/\.txt$/.test(name)){openImportDialog({text:await file.text(),tab:'text'});return}
     const data=JSON.parse(await file.text());
     if(data.portLibrary||data.library&&Array.isArray(data.library))return importLibraryData(data);
+    if(at&&await TplLib.fileDropped(data,file.name,at))return;
+    if(data.portTemplate){const t=await TplLib.importData(data,file.name);S.ltab='templates';renderLeft();notify(`Template “${t.name}” added to Templates ▸ My templates — drag it into any drawing.`,4500);return}
     const doc=C.migrate(data);if(S.dirty&&!confirm('Open “'+file.name+'”? Unsaved changes stay recoverable with Undo.'))return;
     loadDocument(doc,{handle:name.endsWith('.json')?handle:null,name:file.name});notify(data.version===3?'Drawing opened.':'Port v'+(data.version||1)+' drawing imported and upgraded to v3.')
   }catch(err){notify(err.message||'Unable to read file.')}}
@@ -4323,7 +4486,7 @@ cctv(){const d=C.newDoc('Video surveillance network');d.meta={...d.meta,descript
   d.vlans=[{id:30,name:'CCTV',subnet:'10.30.0.0/22',gateway:'10.30.0.1',color:'#ea580c'},{id:31,name:'Access control',subnet:'10.31.0.0/24',gateway:'10.31.0.1',color:'#7c3aed'},{id:40,name:'Control room',subnet:'10.40.0.0/24',gateway:'10.40.0.1',color:'#2563eb'}];
   k.zone('Main gate',40,40,470,300,{subnet:'10.30.1.0/24',vlan:30},{style:'header'});k.zone('Perimeter fence',540,40,540,300,{subnet:'10.30.2.0/24',vlan:30},{style:'header'});k.zone('Admin building',1110,40,430,300,{subnet:'10.30.3.0/24',vlan:30},{style:'header'});
   k.zone('Server room',300,430,640,300,{subnet:'10.30.0.0/24',vlan:30,gateway:'10.30.0.1'},{style:'header'});k.zone('Security control room',980,430,560,300,{subnet:'10.40.0.0/24',vlan:40},{style:'header'});
-  const gsw=k.dev('switch','GATE-POE-SW',275,130,{hostname:'GATE-POE-SW',ip:'10.30.1.2',model:'IES-3110-24P',poeBudget:370,power:420}),anpr1=k.dev('anpr','ANPR-IN',90,260,{ip:'10.30.1.11',bitrate:6,model:'ANPR Pro',poeDraw:12}),anpr2=k.dev('anpr','ANPR-OUT',190,260,{ip:'10.30.1.12',bitrate:6,poeDraw:12}),bar=k.dev('barrier','Boom barrier',290,260,{}),ic=k.dev('intercom','Intercom',380,260,{ip:'10.31.0.21',poeDraw:10}),acr=k.dev('accesscontrol','Card reader',465,260,{ip:'10.31.0.22',poeDraw:8});
+  const gsw=k.dev('switch','GATE-POE-SW',275,130,{hostname:'GATE-POE-SW',ip:'10.30.1.2',model:'IES-3110-24P',poeBudget:370,power:420}),anpr1=k.dev('anpr','ANPR-IN',90,260,{ip:'10.30.1.11',bitrate:6,model:'ANPR Pro',poeDraw:12}),anpr2=k.dev('anpr','ANPR-OUT',190,260,{ip:'10.30.1.12',bitrate:6,poeDraw:12}),bar=k.dev('barrier','Boom barrier',290,260,{}),ic=k.dev('intercom','Intercom',380,260,{ip:'10.31.0.21',vlan:31,poeDraw:10}),acr=k.dev('accesscontrol','Card reader',465,260,{ip:'10.31.0.22',vlan:31,poeDraw:8});
   const psw=k.dev('industrialswitch','PERIM-POE-SW',810,130,{hostname:'PERIM-POE-SW',ip:'10.30.2.2',model:'Industrial 8-port PoE+',poeBudget:240}),t1=k.dev('thermal','THERMAL-N',600,260,{ip:'10.30.2.11',bitrate:3,poeDraw:12}),t2=k.dev('thermal','THERMAL-E',700,260,{ip:'10.30.2.12',bitrate:3,poeDraw:12}),ptz=k.dev('ptzcamera','PTZ-01',810,260,{ip:'10.30.2.20',bitrate:8,poeDraw:60,model:'Q6135-LE'}),b1=k.dev('camera','CAM-P1',920,260,{ip:'10.30.2.31',bitrate:4,poeDraw:7}),b2=k.dev('camera','CAM-P2',1020,260,{ip:'10.30.2.32',bitrate:4,poeDraw:7});
   const bsw=k.dev('switch','BLDG-POE-SW',1325,130,{hostname:'BLDG-POE-SW',ip:'10.30.3.2',model:'C9200L-24P',poeBudget:370}),domes=[1160,1270,1380,1490].map((x,i)=>k.dev('domecamera','DOME-0'+(i+1),x,260,{ip:'10.30.3.1'+(i+1),bitrate:4,poeDraw:7}));
   const core=k.dev('l3switch','CCTV-CORE',620,510,{hostname:'CCTV-CORE',ip:'10.30.0.1',model:'C9300-24S'}),nvr1=k.dev('nvr','NVR-01',400,660,{hostname:'NVR-01',ip:'10.30.0.11',retention:30,storageTB:48,model:'XProtect appliance',vendor:'Milestone',power:450}),nvr2=k.dev('nvr','NVR-02',530,660,{hostname:'NVR-02',ip:'10.30.0.12',retention:30,storageTB:48,vendor:'Milestone',power:450}),vms=k.dev('server','VMS management',710,660,{hostname:'VMS-MGMT',ip:'10.30.0.20'}),ntp=k.dev('dnsserver','NTP / AD',840,660,{ip:'10.30.0.5'});
@@ -4858,7 +5021,7 @@ function rotateBy(deg){if(!ensureEditable())return;mutate(()=>{const list=editab
 function autoNumber(){const list=editable().filter(n=>n.kind==='node');if(!list.length)return;const pat=$('numPattern')?.value||'SW-{n:02}',start=+($('numStart')?.value||1),orderBy=$('numOrder')?.value||'rows',host=$('numHost')?.checked!==false;S.numPattern=pat;
   const sorted=orderBy==='selection'?[...S.selected].map(find).filter(n=>list.includes(n)):[...list].sort((a,b)=>{const[ax,ay]=C.center(a),[bx,by]=C.center(b);return orderBy==='cols'?(Math.abs(ax-bx)>20?ax-bx:ay-by):(Math.abs(ay-by)>20?ay-by:ax-bx)});
   mutate(()=>sorted.forEach((n,i)=>{const num=start+i,name=pat.replace(/\{n(?::(\d+))?\}/g,(m,w)=>String(num).padStart(+w||0,'0')).replace(/\{type\}/g,Shapes.nameOf(n.type)).replace(/\{zone\}/g,Analysis.zoneName(Analysis.zoneOf(n,pg())));if(n.labels?.[0])n.labels[0].text=name;if(host){n.data??={};n.data.hostname=name.replace(/\s+/g,'-')}}));notify(sorted.length+' devices numbered.')}
-function genPorts(){const n=picked()[0];if(!n||n.kind!=='node'||!ensureEditable())return;const side=$('genSide').value,count=Math.max(1,Math.min(96,+$('genCount').value||1)),prefix=$('genPrefix').value,start=+$('genStart').value||1,replace=$('genReplace').checked;
+function genPorts(){const n=picked()[0];if(!n||n.kind!=='node'||!$('genSide')||!ensureEditable())return;const side=$('genSide').value,count=Math.max(1,Math.min(96,+$('genCount').value||1)),prefix=$('genPrefix').value,start=+$('genStart').value||1,replace=$('genReplace').checked;
   mutate(()=>{if(replace){const keep=new Set(items().filter(e=>e.kind==='edge').flatMap(e=>[e.from,e.to]).filter(r=>r?.node===n.id).map(r=>r.port));n.ports=n.ports.filter(p=>keep.has(p.id))}for(let i=0;i<count;i++){const t=(i+1)/(count+1),pos={bottom:[t,1],top:[t,0],left:[0,t],right:[1,t]}[side];n.ports.push({id:C.uid(),name:prefix+(start+i),x:pos[0],y:pos[1]})}});S.prefs.showPorts=true;render();notify(count+' connection points added. Drag them in Port mode to fine-tune.')}
 function assignIps(){const z=picked()[0];if(!z||z.kind!=='zone')return;const c=C.cidr(z.data?.subnet);if(!c)return notify('Set a valid subnet (CIDR) on the zone first.');const members=items().filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&Analysis.zoneOf(n,pg())===z&&!C.ipsIn(n.data?.ip).length);if(!members.length)return notify('Every device in this zone already has an IP.');
   const used=new Set(Analysis.ipPlan(S.doc).find(r=>r.zone===z)?.devices.flatMap(n=>C.ipsIn(n.data?.ip)).map(C.ip2int)||[]);const gw=C.ip2int(z.data?.gateway);if(gw!=null)used.add(gw);const sorted=members.sort((a,b)=>(Stencils.shapes[a.type]?.tier??5)-(Stencils.shapes[b.type]?.tier??5)||a.y-b.y||a.x-b.x);let v=c.first,k=0;
@@ -4866,7 +5029,7 @@ function assignIps(){const z=picked()[0];if(!z||z.kind!=='zone')return;const c=C
 function traceInteractive(fromId){const from=fromId||picked().find(n=>n.kind==='node')?.id;if(!from)return notify('Select the start device, then choose Trace path.');S.traceFrom=from;notify('Now click the destination device…',6000);S.pickHandler=id=>{const p=Analysis.path(pg(),from,id);if(!p){notify('No path between these devices.');S.analysis=null}else{const G=Analysis.graph(pg()),alt=Analysis.allPaths(G,from,id,3);S.analysis={kind:'path',nodes:new Set(p.nodes),edges:new Set(p.edges),color:'#16a34a'};notify(`Path: ${p.nodes.map(i=>Analysis.nameOf(find(i))).join(' → ')} (${p.edges.length} hop${p.edges.length===1?'':'s'})${alt.length>1?` · ${alt.length} alternative routes`:' · no alternative route'}`,9000)}render()}}
 const actions={
   // file
-  new:()=>openTemplates(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
+  new:()=>openTemplates(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
   exportSvg:()=>exportSvg(),exportPng:()=>exportPng(2),exportPng4:()=>exportPng(4),exportPngT:()=>exportPng(2,true),copyPng:()=>copyPng(),exportDrawio:()=>exportDrawio(),exportVsdx:()=>exportVsdx(),exportCsv:()=>showReport(Analysis.inventory(S.doc)),
   print:()=>previewPrint(),printAll:()=>previewPrint(true),closePrint:()=>$('printPreview').hidden=true,printNow:()=>window.print(),share:()=>shareLink(),docProps:()=>{S.selected.clear();S.tab='doc';Ins.invalidate();render()},
   // edit
@@ -4907,8 +5070,8 @@ const actions={
   reroute:()=>{if(ensureEditable())mutate(()=>editable().filter(n=>n.kind==='edge').forEach(e=>{if(e.routing!=='auto'&&e.routing!=='straight')e.routing='auto';Conn.markDirty(e.id)}))},toAuto:()=>actions.reroute(),
   // ports, data, tables
   genPorts,fillIp:()=>{const n=picked()[0],ip=n&&Analysis.nextFreeIp(n,pg());if(ip)mutate(()=>{n.data??={};n.data.ip=ip})},
-  addField:()=>{const k=$('newKey').value.trim(),v=$('newVal').value;if(!k)return notify('Enter a field name.');const key=k.replace(/[^\w]+/g,'_');mutate(()=>{for(const n of editable()){n.data??={};n.data[key]=v}if(!S.doc.fields.some(f=>f.key===key))S.doc.fields.push({key,label:k})})},
-  addDocField:()=>{const k=$('newFieldName').value.trim();if(!k)return;const key=k.toLowerCase().replace(/[^\w]+/g,'_');if(S.doc.fields.some(f=>f.key===key))return notify('That field already exists.');mutate(()=>S.doc.fields.push({key,label:k}))},
+  addField:()=>{const k=($('newKey')?.value||'').trim(),v=$('newVal')?.value??'';if(!k)return notify('Enter a field name.');const key=k.replace(/[^\w]+/g,'_');mutate(()=>{for(const n of editable()){n.data??={};n.data[key]=v}if(!S.doc.fields.some(f=>f.key===key))S.doc.fields.push({key,label:k})})},
+  addDocField:()=>{const k=($('newFieldName')?.value||'').trim();if(!k)return;const key=k.toLowerCase().replace(/[^\w]+/g,'_');if(S.doc.fields.some(f=>f.key===key))return notify('That field already exists.');mutate(()=>S.doc.fields.push({key,label:k}))},
   assignIps,vlanFromZone:()=>{const z=picked()[0];if(!z?.data?.vlan)return notify('Enter a VLAN ID on the zone first.');if((S.doc.vlans||[]).some(v=>String(v.id)===String(z.data.vlan)))return notify('VLAN '+z.data.vlan+' is already in the registry.');mutate(()=>{S.doc.vlans.push({id:z.data.vlan,name:Analysis.zoneName(z),subnet:z.data.subnet||'',gateway:z.data.gateway||'',color:Shapes.PALETTE[S.doc.vlans.length%Shapes.PALETTE.length]})});notify('VLAN '+z.data.vlan+' added to the registry.')},
   autoNumber,
   tableApplyCsv:()=>{const t=picked()[0];if(t?.kind!=='table')return;const{header,rows}=Builder.parseCSV($('tableCsv').value);const all=[header,...rows].filter(r=>r.length);if(!all.length)return;mutate(()=>{const cols=Math.max(...all.map(r=>r.length));t.rows=all.map(r=>{const x=[...r];while(x.length<cols)x.push('');return x});while(t.cols.length<cols)t.cols.push(100);t.cols.length=cols;tableLayout(t)})},
@@ -4923,7 +5086,7 @@ const actions={
   // view
   zoomIn:()=>zoomAt(1.2),zoomOut:()=>zoomAt(1/1.2),fit:()=>fit(),fitSelection:()=>fit(true),zoom100:()=>setZoom(1),
   present:()=>{const on=!document.body.classList.contains('presenting');document.body.classList.toggle('presenting',on);if(on){S.selected.clear();setMode('select');document.documentElement.requestFullscreen?.().catch(()=>{})}else if(document.fullscreenElement)document.exitFullscreen?.();setTimeout(fit,60)},
-  toggleLeft:()=>setChrome('leftOpen',!S.prefs.leftOpen),toggleRight:()=>setChrome('rightOpen',!S.prefs.rightOpen),
+  toggleLeft:()=>narrowScreen()?overlayPanel('left'):setChrome('leftOpen',!S.prefs.leftOpen),toggleRight:()=>narrowScreen()?overlayPanel('right'):setChrome('rightOpen',!S.prefs.rightOpen),
   resetLayout:()=>resetLayout(),
   toggleRibbon:()=>{document.body.classList.remove('ribbonPeek');setChrome('ribbonCollapsed',!S.prefs.ribbonCollapsed)},toggleHeader:()=>setChrome('showHeader',S.prefs.showHeader===false),toggleStatus:()=>setChrome('showStatus',S.prefs.showStatus===false),
   focusMode:()=>{const on=!document.body.classList.contains('focus');if(on){S.prefs.beforeFocus={leftOpen:S.prefs.leftOpen,rightOpen:S.prefs.rightOpen,showHeader:S.prefs.showHeader,ribbonCollapsed:S.prefs.ribbonCollapsed,showStatus:S.prefs.showStatus};Object.assign(S.prefs,{leftOpen:false,rightOpen:false,showHeader:false,ribbonCollapsed:true})}else Object.assign(S.prefs,S.prefs.beforeFocus||{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});document.body.classList.toggle('focus',on);savePrefs();applyLayoutPrefs();if(on)notify('Focus mode: ribbon tabs still open their tools · Ctrl+. or the button at top-right to exit.',3500)},
@@ -4952,7 +5115,7 @@ const RIBBON=[
     {name:'Shape',items:[X(()=>`<label class="rsel" title="Device display style"><select id="displaySel"><option value="">Display…</option><option value="symbol">Symbol</option><option value="card">Card</option><option value="tile">Tile</option><option value="circle">Circle</option></select></label>`),X(()=>`<label class="rcolor" title="Line / accent colour"><input type="color" id="strokeColor" value="#2f5ea8"><span>▬</span></label><label class="rcolor" title="Fill colour"><input type="color" id="fillColor" value="#ffffff"><span>◼</span></label>`)]},
     {name:'Editing',items:[B('find','Find & replace','find','Ctrl+F'),B('undo','Undo','undo','Ctrl+Z'),B('redo','Redo','redo','Ctrl+Y'),B('delete','Delete','trash','Delete')]}]},
   {id:'insert',name:'Insert',groups:[
-    {name:'Pages',items:[B('addPage','New page','page','',true),B('newBackground','Background page','bgpage','Border + title block shared by pages')]},
+    {name:'Pages',items:[B('insertTemplate','Template','template','Add a template, a saved drawing, a page or a zone block to this drawing',true),B('addPage','New page','page','',true),B('newBackground','Background page','bgpage','Border + title block shared by pages')]},
     {name:'Containers',items:[B('zone','Zone','zone','Network zone / container',true),B('wrapZone','Wrap in zone','wrap','Create a zone around the selection'),B('rack','Rack','rack','42U rack elevation')]},
     {name:'Annotation',items:[B('legendGen','Legend','legend','Legend generator — devices, links, zones, colours; auto-updating',true),B('textAnn','Text','text'),B('callout','Callout','callout','Callout pointing at the selected device'),B('table','Table','table'),B('titleBlock','Title block','title'),B('revision','Revision table','revision')]},
     {name:'Media',items:[B('image','Image / logo','image','PNG, JPG, SVG — or paste a screenshot with Ctrl+V'),B('saveSymbol','Save to library','plus','Save the selection as a reusable symbol')]}]},
@@ -4991,13 +5154,13 @@ const RIBBON=[
 function renderRibbon(){const tab=RIBBON.find(r=>r.id===(S.ribbonTab||'home'))||RIBBON[0];
   const cls=document.body.classList,peekOn=cls.contains('ribbonPeek'),collapsed=!!S.prefs.ribbonCollapsed;
   $('ribbonTabs').innerHTML=`<button class="fileBtn" data-file-menu>File</button>`+RIBBON.map(r=>`<button data-rtab="${r.id}" class="${r===tab&&(!collapsed||peekOn)?'active':''}" title="${collapsed?'Click to show · double-click to pin the ribbon':'Double-click to collapse the ribbon (Ctrl+F1)'}">${r.name}</button>`).join('')+
-    `<span class="spacer"></span>${S.prefs.showHeader===false?`<span class="tabDoc" title="${html(S.doc.name)}">${html(S.doc.name)}</span>`:''}<span class="chromeBtns">${[['toggleLeft','sideL','Shapes panel (Ctrl+Alt+←)',S.prefs.leftOpen],['toggleRight','sideR','Inspector (Ctrl+Alt+→)',S.prefs.rightOpen],['toggleRibbon',collapsed?'ribbonDown':'ribbonUp',collapsed?'Pin the ribbon open (Ctrl+F1)':'Collapse the ribbon (Ctrl+F1)',!collapsed],['toggleHeader','titleBar','Title bar',S.prefs.showHeader!==false],['toggleStatus','statusBar','Status bar & page tabs',S.prefs.showStatus!==false],['focusMode','focus','Focus mode — canvas only (Ctrl+.)',document.body.classList.contains('focus')]].map(([a,ic,t,on])=>`<button data-action="${a}" class="${on?'on':''}" title="${t}">${icon(ic,15)}</button>`).join('')}</span>`;
+    `<span class="spacer"></span>${S.prefs.showHeader===false?`<span class="tabDoc" title="${html(S.doc.name)}">${html(S.doc.name)}</span>`:''}<span class="chromeBtns">${[['toggleLeft','sideL','Shapes panel (Ctrl+Alt+←)',narrowScreen()?document.body.classList.contains('showLeft'):S.prefs.leftOpen],['toggleRight','sideR','Inspector (Ctrl+Alt+→)',narrowScreen()?document.body.classList.contains('showRight'):S.prefs.rightOpen],['toggleRibbon',collapsed?'ribbonDown':'ribbonUp',collapsed?'Pin the ribbon open (Ctrl+F1)':'Collapse the ribbon (Ctrl+F1)',!collapsed],['toggleHeader','titleBar','Title bar',S.prefs.showHeader!==false],['toggleStatus','statusBar','Status bar & page tabs',S.prefs.showStatus!==false],['focusMode','focus','Focus mode — canvas only (Ctrl+.)',document.body.classList.contains('focus')]].map(([a,ic,t,on])=>`<button data-action="${a}" class="${on?'on':''}" title="${t}">${icon(ic,15)}</button>`).join('')}</span>`;
   $('ribbon').innerHTML=tab.groups.map(g=>`<div class="rgroup"><div class="ritems">${g.items.map(i=>{if(i.t==='html')return i.fn();const big=i.big?' big':'';if(i.t==='mode')return`<button data-mode="${i.mode}" class="rbtn${big} ${S.mode===i.mode?'active':''}" title="${i.label} (${i.key})">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`;if(i.t==='toggle')return`<button data-action="toggle_${i.pref}" class="rbtn ${S.prefs[i.pref]?'active':''}" title="${i.label}">${icon(i.icon,16)}<span>${i.label}</span></button>`;return`<button data-action="${i.action}" class="rbtn${big}" title="${html(i.title||i.label)}">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`}).join('')}</div><div class="rname">${g.name}</div></div>`).join('')}
-const FILE_MENU=[['new','New from template…','template','Ctrl+N'],['newBlank','New blank drawing','file'],['myDrawings','My drawings (this browser)…','open'],['open','Open file…','open','Ctrl+O'],['save','Save','save','Ctrl+S'],['saveAs','Save as…','save','Ctrl+Shift+S'],'-',['exportVsdx','Export to Visio (.vsdx)','visio'],['exportDrawio','Export to draw.io','drawio'],['exportSvg','Export page as SVG','export'],['exportPng','Export page as PNG (2×)','image','Ctrl+E'],['exportPng4','Export page as PNG (4×, print)','image'],['exportPngT','Export PNG with transparent background','image'],['copyPng','Copy page as image','copy'],'-',['print','Print / PDF…','print','Ctrl+P'],['printAll','Print all pages…','print'],['share','Copy share link','share'],['downloadOffline','Download offline edition (one HTML file)','export'],'-',['docProps','Document properties','fields'],['importShapes','Import shapes / icon pack…','import'],['managePacks','Shape packs…','layers'],['importLibrary','Import symbol library…','import'],['exportLibrary','Export symbol library','export']];
+const FILE_MENU=[['new','New from template…','template','Ctrl+N'],['newBlank','New blank drawing','file'],['insertTemplate','Add template to this drawing…','template'],['saveTemplate','Save as template…','save'],['myDrawings','My drawings (this browser)…','open'],['open','Open file…','open','Ctrl+O'],['save','Save','save','Ctrl+S'],['saveAs','Save as…','save','Ctrl+Shift+S'],'-',['exportVsdx','Export to Visio (.vsdx)','visio'],['exportDrawio','Export to draw.io','drawio'],['exportSvg','Export page as SVG','export'],['exportPng','Export page as PNG (2×)','image','Ctrl+E'],['exportPng4','Export page as PNG (4×, print)','image'],['exportPngT','Export PNG with transparent background','image'],['copyPng','Copy page as image','copy'],'-',['print','Print / PDF…','print','Ctrl+P'],['printAll','Print all pages…','print'],['share','Copy share link','share'],['downloadOffline','Download offline edition (one HTML file)','export'],'-',['docProps','Document properties','fields'],['importShapes','Import shapes / icon pack…','import'],['managePacks','Shape packs…','layers'],['importLibrary','Import symbol library…','import'],['exportLibrary','Export symbol library','export']];
 function openFileMenu(btn){const m=$('fileMenu');m.innerHTML=FILE_MENU.map(i=>i==='-'?'<hr>':`<button data-action="${i[0]}">${icon(i[2],16)}<span>${i[1]}</span>${i[3]?`<kbd>${i[3]}</kbd>`:''}</button>`).join('');const r=btn.getBoundingClientRect();showMenu(m,r.left,r.bottom+4)}
 
 // ---------- left panel ----------
-function renderLeft(){const tab=S.ltab||'shapes';document.querySelectorAll('[data-ltab]').forEach(b=>b.classList.toggle('active',b.dataset.ltab===tab));$('shapesPane').hidden=tab!=='shapes';$('iconsPane').hidden=tab!=='icons';$('layersPane').hidden=tab!=='layers';$('explorerPane').hidden=tab!=='explorer';if(tab==='icons')setTimeout(()=>$('iconSearch')?.focus(),20);if(tab==='shapes')renderPalette();if(tab==='layers')renderLayers();if(tab==='explorer')renderExplorer()}
+function renderLeft(){const tab=S.ltab||'shapes';document.querySelectorAll('[data-ltab]').forEach(b=>b.classList.toggle('active',b.dataset.ltab===tab));$('shapesPane').hidden=tab!=='shapes';$('iconsPane').hidden=tab!=='icons';$('layersPane').hidden=tab!=='layers';$('templatesPane').hidden=tab!=='templates';$('explorerPane').hidden=tab!=='explorer';if(tab==='icons')setTimeout(()=>$('iconSearch')?.focus(),20);if(tab==='shapes')renderPalette();if(tab==='layers')renderLayers();if(tab==='templates'){TplLib.invalidate();TplLib.render()}if(tab==='explorer')renderExplorer()}
 function renderPalette(){
   const q=($('search')?.value||'').toLowerCase().trim(),display=S.prefs.paletteDisplay||'symbol',DEFAULT_OPEN=new Set(['_recent','_lib','network','security','compute','cloud','endpoints','surveillance','sites','rack']),isOpen=id=>S.prefs.catOpen?.[id]??(DEFAULT_OPEN.has(id)||id.startsWith('pack:')&&!id.startsWith('pack:online')),total=Object.keys(Stencils.shapes).length+Object.keys(Shapes.basic).length+Object.keys(Shapes.rackItems).length+3;$('search').placeholder=`Search ${total} shapes — fw, nvr, ap…`;
   const match=i=>!q||(i.name+' '+i.type+' '+i.tags).toLowerCase().includes(q);
@@ -5032,9 +5195,16 @@ function renderChrome(){
 // ---------- dialogs ----------
 function openDialog(title,body,{wide=false,modeless=false,cls=''}={}){const d=$('dlg');d.className=(wide?'wide ':'')+(modeless?'floating ':'')+cls;d.innerHTML=`<header><h2>${title}</h2><button class="x" data-close>×</button></header><div class="dlgBody">${body}</div>`;if(d.open)d.close();modeless?d.show():d.showModal();return d}
 function closeDialog(){const d=$('dlg');if(d.open)d.close()}
-function openTemplates(){const list=Templates.list();const d=openDialog('New drawing',`<p class="muted">Start from a template — every one is fully editable, with real shape data, zones and auto-routed links.</p><div class="tplGrid"><button class="tpl" data-tpl="_blank"><div class="thumb blank">＋</div><b>Blank drawing</b><span>A3 landscape, empty</span></button>${list.map(t=>`<button class="tpl" data-tpl="${t.id}"><div class="thumb" data-thumb="${t.id}"></div><b>${html(t.name)}</b><span>${html(t.description)}</span></button>`).join('')}</div>`,{wide:true});
-  requestAnimationFrame(()=>{for(const t of list){const host=d.querySelector(`[data-thumb="${t.id}"]`);try{const doc=Templates.build(t.id);host.append(thumbnail(doc,doc.pages.find(p=>!p.isBackground),260,165))}catch(err){console.warn(err)}}});
-  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const b=e.target.closest('[data-tpl]');if(!b)return;if(S.dirty&&!confirm('Replace the current drawing? Unsaved changes can be restored with Undo.'))return;closeDialog();loadDocument(b.dataset.tpl==='_blank'?C.newDoc():Templates.build(b.dataset.tpl),{name:'template'});if(b.dataset.tpl!=='_blank')notify('Template loaded. Try Analyze ▸ Check diagram, or Data ▸ Reports.',4500)}}
+function openTemplates(mode){mode??=S.prefs.tplMode==='add'&&items().length?'add':'new';const list=Templates.list(),mine=TplLib.list();
+  const cardsFor=add=>`${add?'':'<button class="tpl" data-tpl="_blank"><div class="thumb blank">＋</div><b>Blank drawing</b><span>A3 landscape, empty</span></button>'}${list.map(t=>`<button class="tpl" data-tpl="b:${t.id}"><div class="thumb" data-thumb="b:${t.id}"></div><b>${html(t.name)}</b><span>${html(t.description)}</span></button>`).join('')}${mine.map(t=>`<button class="tpl" data-tpl="u:${t.id}"><div class="thumb" data-thumb="u:${t.id}"></div><b>${html(t.name)}</b><span>My template${t.description?' · '+html(t.description):''}</span></button>`).join('')}`;
+  const d=openDialog('Templates',`<div class="seg tplMode"><button data-tpl-mode="new" class="${mode==='new'?'active':''}">Open as a new drawing</button><button data-tpl-mode="add" class="${mode==='add'?'active':''}">Add to this drawing</button></div><p class="muted" id="tplModeHint"></p><div class="tplGrid" id="tplGrid"></div>`,{wide:true});
+  const draw=()=>{$('tplModeHint').innerHTML=mode==='add'?'Pick a template to add to <b>'+html(S.doc.name)+'</b> — next you choose a page or zone, where it goes and how subnets, layers and the legend merge. You can also drag templates from the <b>Templates</b> tab in the left panel.':'Start a new drawing from a template — every one is fully editable, with real shape data, zones and auto-routed links. Your current drawing stays in File ▸ My drawings.';
+    $('tplGrid').innerHTML=cardsFor(mode==='add');requestAnimationFrame(async()=>{for(const host of d.querySelectorAll('[data-thumb]')){try{const doc=await TplLib.docOf(host.dataset.thumb);if(doc&&!host.firstChild){Packs.installDoc(doc);host.append(thumbnail(doc,doc.pages.find(p=>!p.isBackground)||doc.pages[0],260,165))}}catch(err){console.warn(err)}await new Promise(r=>setTimeout(r,0))}})};draw();
+  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const m=e.target.closest('[data-tpl-mode]');if(m){mode=m.dataset.tplMode;S.prefs.tplMode=mode;savePrefs();d.querySelectorAll('[data-tpl-mode]').forEach(b=>b.classList.toggle('active',b===m));draw();return}
+    const b=e.target.closest('[data-tpl]');if(!b)return;const key=b.dataset.tpl;
+    if(mode==='add'){closeDialog();TplLib.openAdd({src:key});return}
+    if(S.dirty&&!confirm('Replace the current drawing? Unsaved changes can be restored with Undo.'))return;closeDialog();
+    if(key==='_blank')return loadDocument(C.newDoc(),{name:'template'});const doc=await TplLib.docOf(key);if(!doc)return;loadDocument(C.copy(doc),{name:'template'});notify('Template loaded. Try Analyze ▸ Check diagram, or Data ▸ Reports.',4500)}}
 const SAMPLE_DEV=`name,type,site,ip,model,vendor,status
 INET,internet,,,,,
 EDGE-FW-01,firewall,Perimeter,10.0.0.2,FortiGate 200F,Fortinet,Existing
@@ -5171,6 +5341,9 @@ function renamePage(){const v=prompt('Page name',pg().name);if(v?.trim())mutate(
 
 // ---------- theme & layout prefs ----------
 function applyUiTheme(){const t=S.prefs.theme,dark=t==='dark'||t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=dark?'dark':'light';render()}
+// Phones: side panels are overlays opened from the tab-row buttons, not grid columns.
+const narrowScreen=()=>matchMedia('(max-width:860px)').matches;
+function overlayPanel(side){const c=document.body.classList,k=side==='left'?'showLeft':'showRight',on=!c.contains(k);c.remove('showLeft','showRight');c.toggle(k,on);if(on&&side==='left')renderLeft();renderRibbon()}
 function applyLayoutPrefs(){const c=document.body.classList;c.toggle('noLeft',!S.prefs.leftOpen);c.toggle('noRight',!S.prefs.rightOpen);c.toggle('noHeader',S.prefs.showHeader===false);c.toggle('ribbonCollapsed',!!S.prefs.ribbonCollapsed);if(!S.prefs.ribbonCollapsed)c.remove('ribbonPeek');c.toggle('noStatus',S.prefs.showStatus===false);if(S.doc)renderRibbon();setTimeout(()=>{render();checkLayout()},60)}
 function setChrome(k,v){S.prefs[k]=v;savePrefs();applyLayoutPrefs()}
 const CHROME_DEFAULTS={leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true};
@@ -5287,6 +5460,169 @@ const Workspace=(()=>{
 
 </script>
 <script>
+// Templates panel: drag a template, a drawing saved in this browser, one of their pages or a zone block onto the
+// page to add it to the open drawing. Also the "Add to this drawing" options dialog and "Save as template".
+const TplLib=(()=>{
+const KEY='userTemplates',built=new Map(),cache=new Map(),files=new Map();
+let user=[],drawings=[],dragging=null,loaded=false;
+const DEF={place:'right',legend:'auto',layers:'keep',avoidClash:true,uniqueHosts:true,wrap:false,group:false};
+const prefs=()=>({...DEF,...S.prefs.tplInsert});
+const kindOf=key=>key.slice(0,1),idOf=key=>key.slice(2);
+
+async function load(){try{user=(await Store.kvGet(KEY))||[]}catch{user=[]}
+  try{drawings=(await Store.all('drawings')).filter(r=>r.id!==S.docId).sort((a,b)=>String(b.modified).localeCompare(String(a.modified))).map(({doc,...r})=>r)}catch{drawings=[]}loaded=true}
+const saveUser=()=>Store.kvSet(KEY,user).catch(err=>notify('Could not save templates in this browser: '+err.message));
+
+function meta(key){const k=kindOf(key),id=idOf(key);
+  if(k==='b'){const t=Templates.list().find(x=>x.id===id);return t&&{name:t.name,description:t.description}}
+  if(k==='u'){const t=user.find(x=>x.id===id);return t&&{name:t.name,description:t.description||''}}
+  if(k==='f'){const f=files.get(id);return f&&{name:f.name,description:'Dropped file'}}
+  const r=drawings.find(x=>x.id===id);return r&&{name:r.name,description:`Saved ${new Date(r.modified).toLocaleDateString()}`}}
+// Source documents are only read, never changed: Merge copies what it inserts.
+function docNow(key){const k=kindOf(key),id=idOf(key);
+  if(k==='b'){if(!built.has(id))built.set(id,Templates.build(id));return built.get(id)}
+  if(k==='u'){if(!cache.has(key)){const t=user.find(x=>x.id===id);if(!t)return null;cache.set(key,C.migrate(C.copy(t.doc)))}return cache.get(key)}
+  if(k==='f')return files.get(id)?.doc||null;
+  return cache.get(key)||null}
+async function docOf(key){const d=docNow(key);if(d||kindOf(key)!=='d')return d;const r=await Store.get('drawings',idOf(key)).catch(()=>null);if(!r)return null;const doc=C.migrate(r.doc);cache.set(key,doc);return doc}
+const stat=doc=>{const ps=Merge.parts(doc),dev=ps.reduce((s,p)=>s+p.devices,0);return`${ps.length} page${ps.length===1?'':'s'} · ${dev} device${dev===1?'':'s'}`};
+
+// ---------- panel ----------
+function render(){const pane=$('templatesPane');if(!pane||pane.hidden)return;
+  if(!pane.firstChild)pane.innerHTML=`<input id="tplSearch" placeholder="Search templates and drawings…" autocomplete="off"><p class="hintTxt">Drag onto the page to add it to this drawing. Open a card's <b>Pages &amp; blocks</b> to drag just one page or zone.</p><div id="tplList"></div>`;
+  if(!loaded){load().then(render);return}
+  const q=($('tplSearch').value||'').toLowerCase().trim(),hit=m=>!q||(m.name+' '+m.description).toLowerCase().includes(q);
+  const b=Templates.list().filter(hit).map(t=>card('b:'+t.id,t));
+  const u=user.filter(t=>hit({name:t.name,description:t.description||''})).map(t=>card('u:'+t.id,{name:t.name,description:t.description||''},true));
+  const d=drawings.filter(r=>hit({name:r.name,description:''})).slice(0,30).map(r=>card('d:'+r.id,{name:r.name,description:`${r.pages||1} page${r.pages===1?'':'s'} · saved ${new Date(r.modified).toLocaleDateString()}`},false,r.thumb));
+  $('tplList').innerHTML=`<h4 class="tplHead">Built-in <em>${b.length}</em></h4>${b.join('')||'<p class="muted">No match.</p>'}
+  <h4 class="tplHead">My templates <em>${user.length}</em></h4><div class="tplBtns"><button data-tpl-save title="Save this page, the selection or the whole drawing as a reusable template">＋ Save as template…</button><button data-tpl-import title="Import a template or a Port drawing (.json)">Import…</button></div>${u.join('')||`<p class="muted small">Save a page or a selection as a template to reuse it in any drawing — a standard branch, a camera cluster, a rack row.</p>`}
+  <h4 class="tplHead">My drawings <em>${drawings.length}</em></h4>${d.join('')||'<p class="muted small">Other drawings saved in this browser show up here, ready to drop into this one.</p>'}`;
+  thumbs()}
+function card(key,m,mine=false,thumb=null){const doc=kindOf(key)==='d'?null:(kindOf(key)==='b'?built.get(idOf(key)):docNow(key));
+  return`<div class="tcard" draggable="true" data-tsrc="${key}" title="Drag onto the page to add it to this drawing">
+  <div class="tthumb" data-tthumb="${key}">${thumb?`<img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(thumb)}">`:''}</div>
+  <b>${html(m.name)}</b><span class="tmeta" data-tmeta="${key}">${html(doc?stat(doc):m.description)}</span>
+  <div class="tact"><button data-tadd="${key}" title="Choose what to add and where">＋ Add…</button><button data-topen="${key}" title="Open as a new drawing">Open</button>${mine?`<button data-texport="${key}" title="Download this template (.json)">⤓</button><button data-tdel="${key}" title="Delete this template">×</button>`:''}</div>
+  <details class="tparts" data-tparts="${key}"><summary>Pages &amp; blocks</summary><div class="tchips"></div></details></div>`}
+let thumbJob=0;
+function thumbs(){const job=++thumbJob,hosts=[...document.querySelectorAll('[data-tthumb]')].filter(h=>!h.firstChild);let i=0;
+  const next=()=>{if(job!==thumbJob||i>=hosts.length)return;const h=hosts[i++],key=h.dataset.tthumb;
+    if(kindOf(key)!=='d')try{const doc=docNow(key);if(doc){Packs.installDoc(doc);h.append(thumbnail(doc,doc.pages.find(p=>!p.isBackground)||doc.pages[0],220,120));const mt=document.querySelector(`[data-tmeta="${key}"]`);if(mt)mt.textContent=stat(doc)}}catch(err){console.warn('template thumbnail',err)}
+    setTimeout(next,16)};setTimeout(next,0)}
+async function fillParts(det){const box=det.querySelector('.tchips');if(box.childElementCount)return;box.innerHTML='<span class="muted small">Loading…</span>';const key=det.dataset.tparts,doc=await docOf(key);if(!doc){box.textContent='Not available.';return}
+  const ps=Merge.parts(doc);box.innerHTML=(ps.length>1?`<button class="tchip all" draggable="true" data-tsrc="${key}" data-tall="1" title="Adds every page as new pages in this drawing">▦ All ${ps.length} pages as new pages</button>`:'')+
+    ps.map(p=>`<button class="tchip" draggable="true" data-tsrc="${key}" data-tpage="${p.id}" title="Drag this page's content onto the page">▤ ${html(p.name)} <em>${p.devices}</em></button>`+p.blocks.map(b=>`<button class="tchip blk" draggable="true" data-tsrc="${key}" data-tpage="${p.id}" data-tblock="${b.id}" title="Drag this zone and everything in it">▢ ${html(b.name)} <em>${b.devices}</em></button>`).join('')).join('')}
+const specOf=el=>({src:el.dataset.tsrc,page:el.dataset.tpage||null,block:el.dataset.tblock||null,all:!!el.dataset.tall});
+
+// ---------- drag and drop ----------
+function dragStart(e){const el=e.target.closest('[data-tsrc]');if(!el)return;const spec=specOf(el);dragging=spec;e.dataTransfer.setData('application/x-port-template',JSON.stringify(spec));e.dataTransfer.effectAllowed='copy';if(kindOf(spec.src)==='d')docOf(spec.src)}
+function dragOver(e,p){if(!dragging)return false;const doc=docNow(dragging.src);let label=meta(dragging.src)?.name||'Template';
+  const fp=doc&&!dragging.all?Merge.footprint(doc,dragging):null;if(dragging.all)label+=' — every page as new pages';else if(dragging.block&&doc)label=Merge.parts(doc).flatMap(x=>x.blocks).find(b=>b.id===dragging.block)?.name||label;
+  // the insert hangs from the cursor (top-left corner at the drop point), like the page growing right and down
+  S.dropGhost=fp?{x:p[0],y:p[1],w:fp.w,h:fp.h,label}:{x:p[0],y:p[1],w:120,h:60,label};render('overlay');return true}
+function dragEnd(){dragging=null;if(S.dropGhost){S.dropGhost=null;render('overlay')}}
+async function drop(spec,p){dragEnd();const o=prefs();if(spec.all)return add(spec,{...o,mode:'pages'});return add(spec,{...o,place:'at',at:p,anchor:'topleft'})}
+
+// ---------- insert ----------
+const zoneColors=()=>(Shapes.themes[S.doc.theme]||Shapes.themes.port).zones?.[0];
+function summary(name,res,o){const r=res.report,its=res.items||res.pages.flatMap(p=>p.items),dev=its.filter(n=>n.kind==='node').length,links=its.filter(n=>n.kind==='edge').length,bits=[];
+  bits.push(res.pages?`Added ${res.pages.length} page${res.pages.length===1?'':'s'} from “${name}”`:`Added “${name}” — ${dev} device${dev===1?'':'s'}, ${links} link${links===1?'':'s'}`);
+  if(r.subnets.length)bits.push('moved '+r.subnets.map(([a,b])=>a+' → '+b).join(', ')+' to avoid clashes');
+  if(r.readdressed)bits.push(`${r.readdressed} device${r.readdressed>1?'s':''} given free IP addresses`);
+  if(r.hostnames)bits.push(`${r.hostnames} hostname${r.hostnames>1?'s':''} renamed to stay unique`);
+  if(r.layers.length)bits.push('new layer'+(r.layers.length>1?'s ':' ')+r.layers.join(', '));if(r.vlans.length)bits.push('VLAN'+(r.vlans.length>1?'s ':' ')+r.vlans.join(', '));
+  if(r.ipClashes)bits.push(`${r.ipClashes} device IP${r.ipClashes>1?'s are':' is'} already used (Analyze ▸ Check diagram)`);if(o.firstOnly)bits.push(`page 1 of ${o.firstOnly} — use ＋ Add… for the rest`);
+  return bits.join(' · ')+'. Ctrl+Z undoes.'}
+function newPageLike(cur,name){const p=C.page(name);for(const k of['paper','orientation','customW','customH','margin','bg','autoSize'])if(cur[k]!==undefined)p[k]=cur[k];if(cur.background)p.background=cur.background;return p}
+function partName(src,spec,name){const ps=Merge.parts(src);if(spec.block){const b=ps.flatMap(p=>p.blocks).find(x=>x.id===spec.block);if(b)return`${b.name}” from “${name}`}if(spec.page&&ps.length>1){const p=ps.find(x=>x.id===spec.page);if(p)return`${p.name}” from “${name}`}return name}
+async function add(spec,o){const src=await docOf(spec.src),tname=meta(spec.src)?.name||'Template';if(!src)return notify('That template is no longer available.');Packs.installDoc(src);
+  if(narrowScreen()&&document.body.matches('.showLeft,.showRight')){document.body.classList.remove('showLeft','showRight');renderRibbon()}const name=partName(src,spec,tname);
+  if(o.mode==='pages'){const res=mutate(()=>Merge.insertPages(S.doc,src,{after:S.pageIndex,page:spec.all?null:spec.page,avoidClash:o.avoidClash,uniqueHosts:o.uniqueHosts,prefix:o.prefix,layers:o.layers,activeLayer:S.activeLayer}));
+    if(!res)return notify('That template has no drawing pages.');gotoPage(S.doc.pages.indexOf(res.pages[0]));notify(summary(tname,res,o),7000);return res}
+  const pick=Merge.pick(src,spec);if(!pick.items.length)return notify('Nothing to add from “'+name+'”.');
+  if(pg().isBackground&&o.place!=='newpage')return notify('This is a background page — switch to a drawing page first.');
+  const pages=Merge.parts(src).length,firstOnly=!spec.page&&!spec.block&&pages>1&&o.place==='at'?pages:0;
+  const res=mutate(()=>{let page=pg();if(o.place==='newpage'){const blk=spec.block&&Merge.parts(src).flatMap(x=>x.blocks).find(b=>b.id===spec.block);page=newPageLike(pg(),blk?.name||pick.page?.name||name);S.doc.pages.splice(S.pageIndex+1,0,page);S.pageIndex++;clearTransient()}
+    const r=Merge.insert(S.doc,page,src,{...o,page:spec.page,block:spec.block,activeLayer:S.activeLayer,step:gridStep(),colors:zoneColors(),wrap:o.wrap?(o.wrapName||tname):''});
+    if(r){for(const n of r.items)if(n.kind==='edge')Conn.markDirty(n.id);select(r.items.filter(n=>!n.pin).map(n=>n.id))}return r});
+  if(!res)return notify('Nothing to add from “'+name+'”.');
+  if(o.place!=='at')fit();notify(summary(name,res,{...o,firstOnly}),7000);return res}
+
+// ---------- options dialog ----------
+async function openAdd(spec){const src=await docOf(spec.src),m=meta(spec.src);if(!src)return notify('That template is no longer available.');Packs.installDoc(src);
+  const ps=Merge.parts(src),o=prefs(),opt=(v,t,cur)=>`<option value="${v}" ${String(cur)===String(v)?'selected':''}>${t}</option>`;
+  const what=spec.all?'all':spec.block?`b:${spec.page}:${spec.block}`:spec.page?`p:${spec.page}`:(ps[0]?`p:${ps[0].id}`:'all');
+  const whatOpts=(ps.length>1?opt('all',`All ${ps.length} pages — as new pages`,what):'')+ps.map(p=>opt('p:'+p.id,`Page: ${html(p.name)} (${p.devices} devices)`,what)+p.blocks.map(b=>opt(`b:${p.id}:${b.id}`,`   Zone: ${html(b.name)} (${b.devices})`,what)).join('')).join('');
+  const places=[['right','Beside the drawing →'],['below','Below the drawing ↓'],['center','Centre of the view'],['newpage','On a new page']];
+  const d=openDialog(`Add “${html(m?.name||'Template')}” to this drawing`,`<div class="addGrid"><div class="tthumb big" id="addThumb"></div><div>
+  <label class="fld"><span>What to add</span><select id="addWhat">${whatOpts}</select></label>
+  <div class="fld" id="addWhere"><span>Where</span><div class="seg">${places.map(([v,t])=>`<button data-add-place="${v}" class="${o.place===v?'active':''}">${t}</button>`).join('')}</div></div>
+  <div class="row"><label class="fld"><span>Legend</span><select data-add="legend">${opt('auto','Only if this page has none',o.legend)}${opt('yes','Always bring its legend',o.legend)}${opt('no','Never',o.legend)}</select></label>
+  <label class="fld"><span>Layers</span><select data-add="layers">${opt('keep','Keep its layers (merge by name)',o.layers)}${opt('active','Put everything on the active layer',o.layers)}</select></label></div>
+  <label class="check"><input type="checkbox" data-add="avoidClash" ${o.avoidClash?'checked':''}>Avoid IP clashes — move clashing subnets (device IPs and gateways follow) and give taken addresses the next free one</label>
+  <label class="check"><input type="checkbox" data-add="uniqueHosts" ${o.uniqueHosts!==false?'checked':''}>Keep hostnames unique (adds -2, -3… to clashes; a name prefix also prefixes hostnames)</label>
+  <div class="row"><label class="fld"><span>Name prefix (optional)</span><input data-add="prefix" placeholder="e.g. B2 – " value=""></label><span></span></div>
+  <label class="check"><input type="checkbox" data-add="wrap" ${o.wrap?'checked':''}>Wrap it in a zone named <input data-add="wrapName" class="inline" value="${html(m?.name||'')}"></label>
+  <label class="check"><input type="checkbox" data-add="group" ${o.group?'checked':''}>Group it so it moves as one block</label>
+  <p class="fitResult" id="addResult"></p></div></div>
+  <footer><button data-close>Cancel</button><button class="primary" data-add-go>Add to drawing</button></footer>`,{wide:true});
+  let place=places.some(([v])=>v===o.place)?o.place:'right';
+  const read=()=>{const r={place};d.querySelectorAll('[data-add]').forEach(i=>r[i.dataset.add]=i.type==='checkbox'?i.checked:i.value);const w=$('addWhat').value;
+    const s=w==='all'?{src:spec.src,all:true}:w.startsWith('b:')?{src:spec.src,page:w.split(':')[1],block:w.split(':')[2]}:{src:spec.src,page:w.slice(2)};if(place==='center'){r.place='at';r.at=centerOfView();r.anchor='center'}return{r,s}};
+  const preview=()=>{const{r,s}=read();$('addWhere').hidden=!!s.all;const host=$('addThumb');host.replaceChildren();
+    try{if(s.all){const p=src.pages.find(x=>!x.isBackground);if(p)host.append(thumbnail(src,p,300,200))}else{const tmp=C.newDoc();tmp.theme=src.theme;tmp.layers=src.layers;tmp.pages[0].items=Merge.pick(src,s).items.filter(n=>!n.pin);host.append(thumbnail(tmp,tmp.pages[0],300,200))}}catch(err){console.warn(err)}
+    const copy=C.copy(S.doc),page=copy.pages[S.pageIndex],res=s.all?Merge.insertPages(copy,src,{avoidClash:r.avoidClash,uniqueHosts:r.uniqueHosts,prefix:r.prefix}):Merge.insert(copy,r.place==='newpage'?C.page('x'):page,src,{...r,page:s.page,block:s.block,activeLayer:S.activeLayer,wrap:r.wrap?(r.wrapName||m?.name||'Zone'):''});
+    if(!res){$('addResult').textContent='Nothing to add.';return}const its=res.items||res.pages.flatMap(p=>p.items),rp=res.report;
+    $('addResult').innerHTML=`Adds <b>${res.pages?res.pages.length+' page'+(res.pages.length>1?'s':'')+', ':''}${its.filter(n=>n.kind==='node').length} devices and ${its.filter(n=>n.kind==='edge').length} links</b>`+
+      (rp.subnets.length?` · moves ${rp.subnets.map(([a,b])=>`${a} → ${b}`).join(', ')}`:'')+(rp.readdressed?` · re-addresses ${rp.readdressed} device${rp.readdressed>1?'s':''}`:'')+(rp.hostnames?` · renames ${rp.hostnames} hostname${rp.hostnames>1?'s':''}`:'')+(rp.layers.length?` · new layer ${html(rp.layers.join(', '))}`:'')+(rp.vlans.length?` · VLAN ${rp.vlans.join(', ')}`:'')+(rp.ipClashes?` · <span class="warnTxt">${rp.ipClashes} device IP${rp.ipClashes>1?'s':''} already in use</span>`:'')};
+  d.oninput=preview;d.onchange=preview;preview();
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const pb=e.target.closest('[data-add-place]');if(pb){place=pb.dataset.addPlace;d.querySelectorAll('[data-add-place]').forEach(b=>b.classList.toggle('active',b===pb));preview();return}
+    if(e.target.closest('[data-add-go]')){const{r,s}=read();S.prefs.tplInsert={place,legend:r.legend,layers:r.layers,avoidClash:r.avoidClash,uniqueHosts:r.uniqueHosts,wrap:r.wrap,group:r.group};savePrefs();closeDialog();add(s,s.all?{...r,mode:'pages'}:r)}}}
+
+// ---------- save / import / export ----------
+function openSave(){const sel=picked().filter(n=>!n.pin),p=pg();
+  const d=openDialog('Save as template',`<p class="muted">Templates are kept in this browser and listed under <b>Templates ▸ My templates</b>. Drag them into any drawing; ⤓ downloads one to share.</p>
+  <label class="fld"><span>Name</span><input id="tplName" value="${html(sel.length?'My block':p.name)}"></label>
+  <label class="fld"><span>Description</span><input id="tplDesc" placeholder="What it is for"></label>
+  <div class="fld"><span>Save</span><div class="seg"><button data-tpl-what="page" class="${sel.length?'':'active'}">This page</button><button data-tpl-what="sel" class="${sel.length?'active':''}" ${sel.length?'':'disabled'}>Selection (${sel.length})</button><button data-tpl-what="doc">Whole drawing</button></div></div>
+  <footer><button data-close>Cancel</button><button class="primary" data-tpl-go>Save template</button></footer>`);
+  let what=sel.length?'sel':'page';setTimeout(()=>$('tplName').select(),20);
+  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const w=e.target.closest('[data-tpl-what]');if(w&&!w.disabled){what=w.dataset.tplWhat;d.querySelectorAll('[data-tpl-what]').forEach(b=>b.classList.toggle('active',b===w));if(what!=='sel'&&$('tplName').value==='My block')$('tplName').value=what==='doc'?S.doc.name:p.name;return}
+    if(!e.target.closest('[data-tpl-go]'))return;const name=$('tplName').value.trim()||'Template';let doc;
+    if(what==='sel'){const ids=new Set(sel.map(n=>n.id)),its=[...sel,...items().filter(e=>e.kind==='edge'&&!ids.has(e.id)&&e.from&&e.to&&ids.has(e.from.node)&&ids.has(e.to.node))];doc=Merge.docFrom(S.doc,its,name)}
+    else{doc=C.copy(Packs.embedUsed(S.doc));doc.name=name;if(what==='page'){const keep=new Set([p.id,p.background].filter(Boolean));doc.pages=doc.pages.filter(x=>keep.has(x.id))}}
+    Packs.embedUsed(doc);await store({name,description:$('tplDesc').value.trim(),doc});closeDialog();S.ltab='templates';renderLeft();notify(`Saved template “${name}”. Drag it from Templates ▸ My templates into any drawing.`,4500)}}
+async function store({name,description='',doc}){if(!loaded)await load();const t={id:C.uid(),name,description,created:new Date().toISOString(),doc:JSON.parse(JSON.stringify(doc))};user.unshift(t);await saveUser();render();return t}
+function importFile(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=async()=>{try{const t=await importData(JSON.parse(await inp.files[0].text()),inp.files[0].name);notify(`Imported template “${t.name}”.`)}catch(err){notify(err.message||'Not a template or drawing file.')}};inp.click()}
+async function importData(data,file=''){const doc=C.migrate(data.portTemplate?data.doc:data);return store({name:data.name||doc.name||file.replace(/\.json$/i,'')||'Template',description:data.description||doc.meta?.description||'',doc})}
+// A drawing or template file dropped onto the canvas: offer to add it here instead of replacing the drawing.
+async function fileDropped(data,file,at){if(data.portTemplate){const t=await importData(data,file);await add({src:'u:'+t.id},{...prefs(),place:'at',at,anchor:'topleft'});return true}
+  if(!items().length)return false;const doc=C.migrate(data);
+  const d=openDialog('Drawing dropped',`<p>Add <b>${html(file)}</b> to this drawing, or open it instead?</p><footer><button data-dd="open">Open instead</button><button data-dd="tpl">Keep as template</button><button class="primary" data-dd="add">Add here</button></footer>`);
+  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const b=e.target.closest('[data-dd]');if(!b)return;closeDialog();
+    if(b.dataset.dd==='open'){if(S.dirty&&!confirm('Open “'+file+'”? Unsaved changes stay recoverable with Undo.'))return;loadDocument(doc,{name:file});return}
+    if(b.dataset.dd==='add'){const id=C.uid();files.set(id,{name:doc.name||file,doc});add({src:'f:'+id},{...prefs(),place:'at',at,anchor:'topleft'});return}
+    const t=await store({name:doc.name||file,description:'Imported from '+file,doc});notify(`“${t.name}” is in Templates ▸ My templates — drag it into any drawing.`)};return true}
+
+function onClick(e){const t=e.target;
+  if(t.closest('[data-tpl-save]'))return openSave();if(t.closest('[data-tpl-import]'))return importFile();
+  const a=t.closest('[data-tadd]');if(a)return openAdd({src:a.dataset.tadd});
+  const o=t.closest('[data-topen]');if(o){docOf(o.dataset.topen).then(doc=>{if(!doc)return;if(S.dirty&&!confirm('Open it as a new drawing? Unsaved changes stay recoverable with Undo.'))return;loadDocument(C.copy(doc),{name:'template'});if(kindOf(o.dataset.topen)==='b')built.delete(idOf(o.dataset.topen))});return}
+  const x=t.closest('[data-texport]');if(x){const u=user.find(v=>'u:'+v.id===x.dataset.texport);if(u)download(safeName(u.name)+'.template.json',JSON.stringify({portTemplate:1,name:u.name,description:u.description,doc:u.doc}),'application/json');return}
+  const del=t.closest('[data-tdel]');if(del){const u=user.find(v=>'u:'+v.id===del.dataset.tdel);if(u&&confirm(`Delete the template “${u.name}”?`)){user=user.filter(v=>v!==u);cache.delete(del.dataset.tdel);saveUser();render()}return}
+  const chip=t.closest('.tchip');if(chip)return openAdd(specOf(chip))}
+function init(){const pane=$('templatesPane');if(!pane)return;pane.addEventListener('click',onClick);pane.addEventListener('dragstart',dragStart);pane.addEventListener('dragend',dragEnd);
+  pane.addEventListener('toggle',e=>{const det=e.target.closest?.('[data-tparts]');if(det?.open)fillParts(det)},true);
+  pane.addEventListener('input',e=>{if(e.target.id==='tplSearch')render()});load()}
+// Reload the lists (e.g. after another drawing is saved) the next time the panel is shown.
+function invalidate(){loaded=false;for(const k of[...cache.keys()])if(kindOf(k)==='d')cache.delete(k)}
+
+return{init,render,invalidate,openAdd,openSave,add,drop,dragOver,dragEnd,fileDropped,importData,list:()=>user,docOf,meta};
+})();
+
+</script>
+<script>
 // Event wiring and start-up.
 function insertLibrary(id,x,y){const entry=S.library.find(e=>e.id===id);if(!entry)return;mutate(()=>{const a=C.duplicate(entry.items,0,0),b=C.bounds(a);a.forEach(n=>{n.locked=false;n.layer=S.activeLayer;C.move(n,grid(x-b.w/2)-b.x,grid(y-b.h/2)-b.y)});items().push(...a);a.forEach(e=>e.kind==='edge'&&Conn.markDirty(e.id));select(a.map(n=>n.id))})}
 function wire(){
@@ -5323,7 +5659,7 @@ function wire(){
     const ex=t.closest('[data-explore]');if(ex){const[pi,id]=ex.dataset.explore.split(':');if(+pi!==S.pageIndex){S.pageIndex=+pi;clearTransient();fit()}select([id]);const n=find(id);if(n)Ins.ensureVisible(n);return}
     const th=t.closest('[data-theme-apply]');if(th&&!t.closest('#inspector')){mutate(()=>Shapes.applyTheme(S.doc,th.dataset.themeApply));renderRibbon();notify('Theme applied — Undo restores the previous look.');return}
     if(!t.closest('.menu'))hideMenus()});
-  document.addEventListener('pointerdown',e=>{const t=e.target?.closest?e.target:document.body;if(!t.closest('.menu')&&!t.closest('[data-file-menu]'))hideMenus();if(document.body.classList.contains('ribbonPeek')&&!t.closest('.ribbon,.ribbonTabs,.menu,dialog')){document.body.classList.remove('ribbonPeek');renderRibbon()}});
+  document.addEventListener('pointerdown',e=>{const t=e.target?.closest?e.target:document.body;if(!t.closest('.menu')&&!t.closest('[data-file-menu]'))hideMenus();if(document.body.classList.contains('ribbonPeek')&&!t.closest('.ribbon,.ribbonTabs,.menu,dialog')){document.body.classList.remove('ribbonPeek');renderRibbon()}if(t.closest('.workarea')&&document.body.matches('.showLeft,.showRight')){document.body.classList.remove('showLeft','showRight');renderRibbon()}});
   $('ribbonTabs').addEventListener('dblclick',e=>{if(e.target.closest('[data-rtab]'))actions.toggleRibbon()});
   // inspector
   const ins=$('inspector');ins.addEventListener('change',Ins.onChange);ins.addEventListener('input',Ins.onInput);ins.addEventListener('click',Ins.onClick);$('inspectorTabs').addEventListener('click',Ins.onClick);
@@ -5350,8 +5686,9 @@ function wire(){
   $('palette').addEventListener('toggle',e=>{const d=e.target.closest('details[data-cat]');if(!d||$('search').value)return;S.prefs.catOpen??={};if(S.prefs.catOpen[d.dataset.cat]!==d.open){S.prefs.catOpen[d.dataset.cat]=d.open;savePrefs()}const pal=d.querySelector('.palette');if(d.open&&pal&&!pal.children.length)renderPalette()},true);
   $('explorerSearch').addEventListener('input',renderExplorer);
   $('palette').addEventListener('dragstart',e=>{const s=e.target.closest('[data-symbol]'),l=e.target.closest('[data-library]');if(s){e.dataTransfer.setData('application/x-port-symbol',s.dataset.symbol);e.dataTransfer.effectAllowed='copy'}if(l)e.dataTransfer.setData('application/x-port-library',l.dataset.library)});
-  cv.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy'});
-  cv.addEventListener('drop',e=>{e.preventDefault();const p=point(e),type=e.dataTransfer.getData('application/x-port-symbol'),lib=e.dataTransfer.getData('application/x-port-library'),ico=e.dataTransfer.getData('application/x-port-iconify');if(ico){Workspace.pickOnline(ico,p);return}if(type){addNode(type,p[0],p[1],{split:true});bumpRecent(type);S.justDragged=true;setTimeout(()=>S.justDragged=false,50);return}if(lib){insertLibrary(lib,...p);return}const f=e.dataTransfer.files?.[0];if(f)handleFile(f,null,p)});
+  cv.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';TplLib.dragOver(e,point(e))});
+  cv.addEventListener('dragleave',e=>{if(S.dropGhost&&!cv.contains(e.relatedTarget)){S.dropGhost=null;render('overlay')}});
+  cv.addEventListener('drop',e=>{e.preventDefault();const p=point(e),tpl=e.dataTransfer.getData('application/x-port-template');if(tpl){try{TplLib.drop(JSON.parse(tpl),p)}catch(err){console.warn(err)}return}const type=e.dataTransfer.getData('application/x-port-symbol'),lib=e.dataTransfer.getData('application/x-port-library'),ico=e.dataTransfer.getData('application/x-port-iconify');if(ico){Workspace.pickOnline(ico,p);return}if(type){addNode(type,p[0],p[1],{split:true});bumpRecent(type);S.justDragged=true;setTimeout(()=>S.justDragged=false,50);return}if(lib){insertLibrary(lib,...p);return}const f=e.dataTransfer.files?.[0];if(f)handleFile(f,null,p)});
   // layers pane
   const lp=$('layersPane');
   lp.addEventListener('click',e=>{const t=e.target;const act=t.closest('[data-layer-active]');if(act){S.activeLayer=act.dataset.layerActive;renderLayers();renderChrome();return}
@@ -5406,7 +5743,7 @@ async function boot(){
   if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
-  applyUiTheme();applyLayoutPrefs();wire();
+  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();
   await Packs.loadAll();
   try{const lib=await Store.kvGet('library');if(Array.isArray(lib)&&!S.library.length)S.library=lib}catch{}
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();

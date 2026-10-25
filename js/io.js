@@ -16,6 +16,8 @@ async function handleFile(file,handle=null,at=null){
     if(/\.txt$/.test(name)){openImportDialog({text:await file.text(),tab:'text'});return}
     const data=JSON.parse(await file.text());
     if(data.portLibrary||data.library&&Array.isArray(data.library))return importLibraryData(data);
+    if(at&&await TplLib.fileDropped(data,file.name,at))return;
+    if(data.portTemplate){const t=await TplLib.importData(data,file.name);S.ltab='templates';renderLeft();notify(`Template “${t.name}” added to Templates ▸ My templates — drag it into any drawing.`,4500);return}
     const doc=C.migrate(data);if(S.dirty&&!confirm('Open “'+file.name+'”? Unsaved changes stay recoverable with Undo.'))return;
     loadDocument(doc,{handle:name.endsWith('.json')?handle:null,name:file.name});notify(data.version===3?'Drawing opened.':'Port v'+(data.version||1)+' drawing imported and upgraded to v3.')
   }catch(err){notify(err.message||'Unable to read file.')}}

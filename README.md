@@ -45,8 +45,19 @@ The drawing is kept consistent automatically after every edit:
 * **Fit page to drawing** (Design ▸ Page, the inspector or the status bar): free size that hugs the drawing, or the smallest standard sheet; padding, rounding, border inset, orientation, room for the title block and legend — and an option to keep hugging as you edit. The page border and title block follow.
 * **Older drawings** are upgraded on open: existing borders, field-driven title blocks and legends are recognised and pinned.
 
-### Templates
+### Templates — start from one, or add them to the drawing you have
 Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN branches · CCTV / video surveillance · OT / SCADA Purdue model · Hybrid cloud · Small office.
+
+* **Drag a template onto the page** from the left panel's **Templates** tab. A dashed footprint shows where it lands and how big it is.
+* Open a card's **Pages & blocks** to drag just one page, or just one zone with everything inside it (e.g. the DMZ from the campus). **All pages as new pages** adds every page after the current one.
+* **＋ Add…**, *Insert ▸ Template* or *File ▸ Add template to this drawing* opens the options:
+  * what to add, and where: beside or below the drawing, the centre of the view, or a new page;
+  * the legend, and whether to keep its layers;
+  * a name prefix ("B2 – "), wrapping it in a zone, and grouping it.
+
+  A live preview shows what will be added and what will change.
+* **Merging is network-aware.** Layers merge by name, custom fields by key, and embedded shapes come along. Only the VLANs the copied items use are added. Clashing subnets move to the next free one in the same private block; nested subnets move with their parent, and device IPs and gateways follow. Devices whose address is already taken get the next free host address. Clashing hostnames get `-2`, and a name prefix also prefixes hostnames. The page grows to fit, the legend updates, and links re-route around what was there. One Ctrl+Z undoes it.
+* **My templates:** save this page, the selection or the whole drawing as a template, and download or import one as `.json`. **My drawings** lists the other drawings saved in this browser, ready to drop in. Dropping a drawing file on the canvas asks whether to add it or open it.
 
 ---
 
@@ -89,8 +100,10 @@ js/vsdx.js          dependency-free .vsdx writer (+ ZIP writer)
 js/packs.js         shape packs, SVG sanitiser, importers, Iconify search, IndexedDB store
 js/builder.js       auto-layout glue, CSV / NetBox / text / CDP / LLDP importers
 js/templates.js     starter drawings
+js/merge.js         add a template / drawing / page / zone block to a drawing (ids, layers, VLANs, subnets, hostnames)
+js/tplpanel.js      Templates tab: drag and drop, add options, My templates, My drawings
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
-tests/              node:test suites (router, layout, vsdx, core/importers)
+tests/              node:test suites (router, layout, vsdx, core/importers, merge)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview
 ```
 

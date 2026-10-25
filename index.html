@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=53e99095">
+<link rel="stylesheet" href="css/app.css?v=b4f19aaa">
 <style id="printRules"></style>
 </head>
 <body>
@@ -28,7 +28,7 @@
 <div class="ribbon" id="ribbon" role="toolbar"></div>
 <div class="layout">
   <aside class="left" id="leftPanel">
-    <div class="ltabs"><button data-ltab="shapes" class="active">Shapes</button><button data-ltab="icons" title="Search 200,000+ open-source icons online">Icons</button><button data-ltab="layers">Layers</button><button data-ltab="explorer">Explorer</button></div>
+    <div class="ltabs"><button data-ltab="shapes" class="active">Shapes</button><button data-ltab="icons" title="Search 200,000+ open-source icons online">Icons</button><button data-ltab="templates" title="Drag templates, saved drawings, pages or zone blocks into this drawing">Templates</button><button data-ltab="layers">Layers</button><button data-ltab="explorer">Explorer</button></div>
     <div id="shapesPane" class="pane">
       <div class="searchRow"><input id="search" placeholder="Search shapes — fw, nvr, ap…" aria-label="Search shapes" autocomplete="off"><select id="paletteDisplay" title="Palette preview style"><option value="symbol">Symbol</option><option value="tile">Tile</option><option value="circle">Circle</option></select></div>
       <div class="row packBar"><button data-action="importShapes" title="SVG files, a folder, a ZIP of icons (e.g. vendor packs), a draw.io library or images">＋ Import shapes</button><button data-action="managePacks" title="Rename, export or remove shape packs">Packs…</button></div>
@@ -38,6 +38,7 @@
       <div class="searchRow"><input id="iconSearch" placeholder="Search icons online — router, cctv, aws…" autocomplete="off"><select id="iconSet" title="Icon sets"><option value="network">IT &amp; general</option><option value="brands">Brands &amp; logos</option><option value="all">All sets</option></select></div>
       <div id="iconResults"></div>
     </div>
+    <div id="templatesPane" class="pane" hidden></div>
     <div id="layersPane" class="pane" hidden></div>
     <div id="explorerPane" class="pane" hidden><input id="explorerSearch" placeholder="Filter by name, IP, model…" autocomplete="off"><div id="explorerList"></div></div>
   </aside>
@@ -87,18 +88,20 @@
 <script src="js/layout.js?v=51056f31"></script>
 <script src="js/connectors.js?v=b2de2b0d"></script>
 <script src="js/constraints.js?v=201ac2fa"></script>
+<script src="js/merge.js?v=5c93b5a8"></script>
 <script src="js/vsdx.js?v=1795b2a5"></script>
-<script src="js/render.js?v=b27ac066"></script>
-<script src="js/analysis.js?v=293cdf67"></script>
-<script src="js/io.js?v=c35fb27d"></script>
+<script src="js/render.js?v=cfdfce87"></script>
+<script src="js/analysis.js?v=110fa96d"></script>
+<script src="js/io.js?v=99efb477"></script>
 <script src="js/packs.js?v=85a99e86"></script>
 <script src="js/builder.js?v=b9669f82"></script>
-<script src="js/templates.js?v=d03e6802"></script>
+<script src="js/templates.js?v=6669f418"></script>
 <script src="js/app.js?v=0f091004"></script>
 <script src="js/inspector.js?v=22b0ac80"></script>
-<script src="js/actions.js?v=c896c6a4"></script>
-<script src="js/panels.js?v=66a4b905"></script>
+<script src="js/actions.js?v=b0601bba"></script>
+<script src="js/panels.js?v=ec0da5fe"></script>
 <script src="js/workspace.js?v=ca2e8f8f"></script>
-<script src="js/main.js?v=770f2f50"></script>
+<script src="js/tplpanel.js?v=c61b8a46"></script>
+<script src="js/main.js?v=8f3d6207"></script>
 </body>
 </html>

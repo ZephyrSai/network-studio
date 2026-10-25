@@ -34,7 +34,7 @@ function wire(){
     const ex=t.closest('[data-explore]');if(ex){const[pi,id]=ex.dataset.explore.split(':');if(+pi!==S.pageIndex){S.pageIndex=+pi;clearTransient();fit()}select([id]);const n=find(id);if(n)Ins.ensureVisible(n);return}
     const th=t.closest('[data-theme-apply]');if(th&&!t.closest('#inspector')){mutate(()=>Shapes.applyTheme(S.doc,th.dataset.themeApply));renderRibbon();notify('Theme applied — Undo restores the previous look.');return}
     if(!t.closest('.menu'))hideMenus()});
-  document.addEventListener('pointerdown',e=>{const t=e.target?.closest?e.target:document.body;if(!t.closest('.menu')&&!t.closest('[data-file-menu]'))hideMenus();if(document.body.classList.contains('ribbonPeek')&&!t.closest('.ribbon,.ribbonTabs,.menu,dialog')){document.body.classList.remove('ribbonPeek');renderRibbon()}});
+  document.addEventListener('pointerdown',e=>{const t=e.target?.closest?e.target:document.body;if(!t.closest('.menu')&&!t.closest('[data-file-menu]'))hideMenus();if(document.body.classList.contains('ribbonPeek')&&!t.closest('.ribbon,.ribbonTabs,.menu,dialog')){document.body.classList.remove('ribbonPeek');renderRibbon()}if(t.closest('.workarea')&&document.body.matches('.showLeft,.showRight')){document.body.classList.remove('showLeft','showRight');renderRibbon()}});
   $('ribbonTabs').addEventListener('dblclick',e=>{if(e.target.closest('[data-rtab]'))actions.toggleRibbon()});
   // inspector
   const ins=$('inspector');ins.addEventListener('change',Ins.onChange);ins.addEventListener('input',Ins.onInput);ins.addEventListener('click',Ins.onClick);$('inspectorTabs').addEventListener('click',Ins.onClick);
@@ -61,8 +61,9 @@ function wire(){
   $('palette').addEventListener('toggle',e=>{const d=e.target.closest('details[data-cat]');if(!d||$('search').value)return;S.prefs.catOpen??={};if(S.prefs.catOpen[d.dataset.cat]!==d.open){S.prefs.catOpen[d.dataset.cat]=d.open;savePrefs()}const pal=d.querySelector('.palette');if(d.open&&pal&&!pal.children.length)renderPalette()},true);
   $('explorerSearch').addEventListener('input',renderExplorer);
   $('palette').addEventListener('dragstart',e=>{const s=e.target.closest('[data-symbol]'),l=e.target.closest('[data-library]');if(s){e.dataTransfer.setData('application/x-port-symbol',s.dataset.symbol);e.dataTransfer.effectAllowed='copy'}if(l)e.dataTransfer.setData('application/x-port-library',l.dataset.library)});
-  cv.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy'});
-  cv.addEventListener('drop',e=>{e.preventDefault();const p=point(e),type=e.dataTransfer.getData('application/x-port-symbol'),lib=e.dataTransfer.getData('application/x-port-library'),ico=e.dataTransfer.getData('application/x-port-iconify');if(ico){Workspace.pickOnline(ico,p);return}if(type){addNode(type,p[0],p[1],{split:true});bumpRecent(type);S.justDragged=true;setTimeout(()=>S.justDragged=false,50);return}if(lib){insertLibrary(lib,...p);return}const f=e.dataTransfer.files?.[0];if(f)handleFile(f,null,p)});
+  cv.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';TplLib.dragOver(e,point(e))});
+  cv.addEventListener('dragleave',e=>{if(S.dropGhost&&!cv.contains(e.relatedTarget)){S.dropGhost=null;render('overlay')}});
+  cv.addEventListener('drop',e=>{e.preventDefault();const p=point(e),tpl=e.dataTransfer.getData('application/x-port-template');if(tpl){try{TplLib.drop(JSON.parse(tpl),p)}catch(err){console.warn(err)}return}const type=e.dataTransfer.getData('application/x-port-symbol'),lib=e.dataTransfer.getData('application/x-port-library'),ico=e.dataTransfer.getData('application/x-port-iconify');if(ico){Workspace.pickOnline(ico,p);return}if(type){addNode(type,p[0],p[1],{split:true});bumpRecent(type);S.justDragged=true;setTimeout(()=>S.justDragged=false,50);return}if(lib){insertLibrary(lib,...p);return}const f=e.dataTransfer.files?.[0];if(f)handleFile(f,null,p)});
   // layers pane
   const lp=$('layersPane');
   lp.addEventListener('click',e=>{const t=e.target;const act=t.closest('[data-layer-active]');if(act){S.activeLayer=act.dataset.layerActive;renderLayers();renderChrome();return}
@@ -117,7 +118,7 @@ async function boot(){
   if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
-  applyUiTheme();applyLayoutPrefs();wire();
+  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();
   await Packs.loadAll();
   try{const lib=await Store.kvGet('library');if(Array.isArray(lib)&&!S.library.length)S.library=lib}catch{}
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();
