@@ -70,7 +70,7 @@ function beginPointer(e){
   hideMenus();const p=point(e),t=e.target.closest('[data-role]'),role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id),now=Date.now(),key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
   if(S.lastClick&&now-S.lastClick.time<380&&S.lastClick.key===key&&Math.hypot(e.clientX-S.lastClick.x,e.clientY-S.lastClick.y)<6&&S.mode==='select'){S.lastClick=null;onDoubleClick(e,p,t,n);return}
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
-  if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;if(n?.kind==='node'){h(n.id);return}notify('Path trace cancelled.',1500)}
+  if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;const msg=S.pickCancel||'Path trace cancelled.';S.pickCancel=null;if(n?.kind==='node'){h(n.id);return}notify(msg,1500)}
   const capture=()=>{try{$('canvas').setPointerCapture(e.pointerId)}catch{}};
   if(role==='guide'&&S.mode==='select'){remember();S.drag={kind:'guide',guide:t.dataset.guide};capture();return}
   if(S.space||S.mode==='pan'||e.button===1){e.preventDefault();S.drag={kind:'pan',start:[e.clientX,e.clientY],view:{...S.view}};$('canvas').style.cursor='grabbing';capture();return}
@@ -292,7 +292,7 @@ function updateCursorReadout(p){const e=$('cursorPos');if(e)e.textContent=`${(p[
 
 // ---------- menus ----------
 function showMenu(menu,x,y){menu.hidden=false;const r=menu.getBoundingClientRect();menu.style.left=Math.max(4,Math.min(x,innerWidth-r.width-6))+'px';menu.style.top=Math.max(4,Math.min(y,innerHeight-r.height-6))+'px'}
-function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu'])if($(id))$(id).hidden=true}
+function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu','ribbonPop'])if($(id))$(id).hidden=true}
 
 // ---------- keyboard ----------
 function onKey(e){
@@ -302,6 +302,7 @@ function onKey(e){
   if(e.key==='F1'&&mod){e.preventDefault();actions.toggleRibbon();return}
   if(mod&&e.altKey&&(k==='arrowleft'||k==='arrowright')){e.preventDefault();actions[k==='arrowleft'?'toggleLeft':'toggleRight']();return}
   if(mod&&(k==='.'||e.code==='Period')){e.preventDefault();actions.focusMode();return}
+  if(mod&&e.shiftKey&&k==='f'){e.preventDefault();actions.fullscreen();return}
   if(mod){const map={z:()=>e.shiftKey?redo():undo(),y:redo,a:()=>{select(items().filter(n=>itemVisible(n,{doc:S.doc})&&!layerOf(n)?.locked).map(n=>n.id))},d:actions.duplicate,s:()=>e.shiftKey?saveAs():save(),o:actions.open,p:actions.print,g:()=>e.shiftKey?actions.ungroup():actions.group(),f:actions.find,h:actions.find,k:actions.palette,l:()=>e.shiftKey?actions.unlock():actions.lock(),']':()=>order(e.shiftKey?'front':'forward'),'[':()=>order(e.shiftKey?'back':'backward'),'=':()=>zoomAt(1.2),'+':()=>zoomAt(1.2),'-':()=>zoomAt(1/1.2),'0':()=>fit(),'1':()=>setZoom(1),e:actions.exportPng,b:()=>actions.bold(),i:()=>actions.italic()};
     if(map[k]){e.preventDefault();map[k]();return}if(['c','x','v'].includes(k))return;return}
   if(e.code==='Space'){e.preventDefault();if(!S.space){S.space=true;$('canvas').style.cursor='grab'}return}

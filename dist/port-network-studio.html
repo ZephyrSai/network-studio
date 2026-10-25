@@ -59,7 +59,7 @@ header.top{display:flex;align-items:center;gap:8px;padding:0 12px;background:var
 .ribbonTabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:6px 12px 6px;font-weight:550;color:var(--muted)}
 .ribbonTabs button.active{color:var(--blue);border-bottom-color:var(--blue);background:none}
 .ribbonTabs .fileBtn{background:var(--blue);color:#fff;border-radius:6px 6px 0 0;margin-right:6px;border-bottom:0}
-.ribbon{display:flex;align-items:stretch;gap:0;padding:4px 6px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.ribbon{display:flex;align-items:stretch;gap:0;padding:4px 6px;background:var(--panel);border-bottom:1px solid var(--border);overflow:hidden}.ribbon.overfull{overflow-x:auto;scrollbar-width:thin}
 .rgroup{display:flex;flex-direction:column;padding:0 8px;border-right:1px solid var(--border);flex:none}
 .rgroup:last-child{border-right:0}
 .ritems{display:flex;align-items:center;gap:2px;flex:1;flex-wrap:wrap;max-height:56px;align-content:flex-start;max-width:520px}
@@ -396,6 +396,25 @@ dialog.inventory{width:min(1200px,97vw)}
 .byType{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 18px;max-height:55vh;overflow:auto}
 .byType label.check{margin:3px 0}.byType em{margin-left:auto;font-style:normal}.allSec{margin-left:auto;font-size:10.5px;text-transform:none;letter-spacing:0;display:flex;gap:4px;align-items:center;cursor:pointer}
 
+/* ribbon scaling: every group stays in view (see fitRibbon) */
+.rcollapse{display:none;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:54px;padding:3px 8px;border-color:transparent;background:transparent;font-size:11.5px;white-space:nowrap}
+.rcollapse:hover{border-color:var(--border)}
+.rgroup[data-lv]:not([data-lv="0"]){padding:0 5px}
+.rgroup[data-lv="1"] .ritems,.rgroup[data-lv="2"] .ritems,.rgroup[data-lv="3"] .ritems{flex-direction:column;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;height:56px;max-height:none;max-width:none;gap:1px 2px}
+.rgroup[data-lv="1"] .rbtn:not(.big),.rgroup[data-lv="2"] .rbtn,.rgroup[data-lv="3"] .rbtn{height:18px;padding:0 5px;font-size:11.5px;gap:4px}
+.rgroup[data-lv="2"] .rbtn.big,.rgroup[data-lv="3"] .rbtn.big{flex-direction:row}
+.rgroup[data-lv="2"] .rbtn.big svg,.rgroup[data-lv="3"] .rbtn.big svg{width:16px;height:16px}
+.rgroup[data-lv="3"] .rbtn>span{display:none}.rgroup[data-lv="3"] .rbtn{padding:0 3px}
+.rgroup[data-lv="2"] select,.rgroup[data-lv="3"] select{max-width:118px;height:18px;font-size:11px;padding:0 4px}
+.rgroup[data-lv="4"] .ritems,.rgroup[data-lv="5"] .ritems{display:none}.rgroup[data-lv="4"] .rcollapse,.rgroup[data-lv="5"] .rcollapse{display:flex}.rgroup[data-lv="4"] .rname,.rgroup[data-lv="5"] .rname{visibility:hidden}
+.rgroup[data-lv="5"]{padding:0 2px}.rgroup[data-lv="5"] .rcollapse{padding:3px 5px}.rgroup[data-lv="5"] .rcollapse span{display:none}
+.ribbonPop{padding:6px 8px}.ribbonPop .rgroup{border:0;padding:0}.ribbonPop .ritems{max-width:420px;max-height:none}
+
+.mvList{display:flex;flex-direction:column;gap:1px;max-height:34vh;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;margin-bottom:6px}
+.mvList label.check{margin:3px 0}.mvList em{margin-left:auto;font-style:normal;font-size:11px}
+.ptBtns{display:grid;grid-template-columns:1fr 1fr;gap:3px}.ptBtns button{font-size:11px;padding:3px 5px;text-align:left}
+@media (max-width:860px){.rgroup .rname{display:none}}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -460,6 +479,7 @@ dialog.inventory{width:min(1200px,97vw)}
 
 <div id="contextMenu" class="menu" hidden></div>
 <div id="fileMenu" class="menu fileMenu" hidden></div>
+<div id="ribbonPop" class="menu ribbonPop" hidden></div>
 <input id="fileInput" type="file" accept=".json,.csv,.txt,image/*" hidden>
 <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
 <input id="libraryInput" type="file" accept=".json" hidden>
@@ -1038,7 +1058,7 @@ data:'M4 4c0-1 12-1 12 0v12c0 1-12 1-12 0zM4 4c0 1 12 1 12 0M4 10c0 1 12 1 12 0'
 check:'M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5zM7 10l2 2 4-4',spof:'M10 3l8 14H2zM10 8v4M10 14v.5',trace:'M4 4a2 2 0 1 0 0-.1M16 16a2 2 0 1 0 0-.1M6 4h6a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h6',traffic:'M2 15l4-5 4 3 4-7 4 4',poe:'M11 2 5 11h5l-1 7 6-9h-5z',storage:'M4 4h12v4H4zM4 10h12v4H4zM6 6h.1M6 12h.1',filter:'M3 4h14l-5 6v6l-4-2v-4z',clear:'M5 5l10 10M15 5 5 15',ip:'M3 5h14v10H3zM6 8v4M9 8v4h1.5a1.5 1.5 0 0 0 0-3H9',
 align0:'M3 2v16M6 5h10v3H6zM6 12h6v3H6z',align1:'M10 2v16M5 5h10v3H5zM7 12h6v3H7z',align2:'M17 2v16M4 5h10v3H4zM8 12h6v3H8z',align3:'M2 3h16M5 6v10h3V6zM12 6v6h3V6z',align4:'M2 10h16M5 5v10h3V5zM12 7v6h3V7z',align5:'M2 17h16M5 4v10h3V4zM12 8v6h3V8z',distH:'M2 3v14M18 3v14M7 6h6v8H7z',distV:'M3 2h14M3 18h14M6 7h8v6H6z',samew:'M3 6h14v3H3zM6 12h8v3H6zM3 17h14',front:'M7 7h10v10H7zM3 3h10v4M3 3v10h4',back:'M3 3h10v10H3zM13 7h4v10H7v-4',forward:'M10 3v10M6 9l4 4 4-4M4 17h12',backward:'M10 17V7M6 11l4-4 4 4M4 3h12',group:'M2 2h4v4H2zM14 2h4v4h-4zM2 14h4v4H2zM14 14h4v4h-4zM6 4h8M6 16h8M4 6v8M16 6v8',ungroup:'M2 2h6v6H2zM12 12h6v6h-6z',rotate:'M15 4v4h-4M15 8a6 6 0 1 0 1 5',flipH:'M10 2v16M8 5 3 15h5zM12 5l5 10h-5z',lock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6 0v3',unlock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6-1',layers:'M10 2 2 6l8 4 8-4zM2 10l8 4 8-4M2 14l8 4 8-4',
 gridOn:'M3 3h14v14H3zM3 8h14M3 12h14M8 3v14M12 3v14',ruler:'M2 7h16v6H2zM5 7v3M8 7v2M11 7v3M14 7v2',guide:'M7 2v16M2 13h16',ports:'M4 10a2 2 0 1 0 0-.1M16 10a2 2 0 1 0 0-.1M10 4a2 2 0 1 0 0-.1M6 10h8',map:'M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2zM7 2v14M13 4v14',zoomIn:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4M8 6v4',zoomOut:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4',fit:'M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5',hundred:'M4 7l2-1v9M9 6h3v9H9zM14 6h3v9h-3z',present:'M2 3h16v10H2zM10 13v4M6 17h8',moon:'M15 13a7 7 0 0 1-8-10 7 7 0 1 0 8 10z',magnet:'M5 3v7a5 5 0 0 0 10 0V3h-3v7a2 2 0 0 1-4 0V3z',arrows:'M10 3l3 3h-6zM10 17l3-3H7zM3 10l3-3v6zM17 10l-3-3v6z',wheel:'M7 2h6a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zM10 5v3',panels:'M2 3h16v14H2zM6 3v14M14 3v14',
-file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',lasso:'M10 3.5c4.1 0 7.5 2 7.5 4.6S14.1 12.7 10 12.7 2.5 10.7 2.5 8.1 5.9 3.5 10 3.5zM5.4 11.6c-1.3 1-1.7 2.4-1.1 3.4.7 1.2 2.6 1.3 3.6.2',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
+file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',fullscreen:'M3 7V3h4M3 3l5 5M17 7V3h-4M17 3l-5 5M3 13v4h4M3 17l5-5M17 13v4h-4M17 17l-5-5',lasso:'M10 3.5c4.1 0 7.5 2 7.5 4.6S14.1 12.7 10 12.7 2.5 10.7 2.5 8.1 5.9 3.5 10 3.5zM5.4 11.6c-1.3 1-1.7 2.4-1.1 3.4.7 1.2 2.6 1.3 3.6.2',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
 };
 function icon(name,size=18){const d=Icons[name];return d?`<svg class="ico" viewBox="0 0 20 20" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`:''}
 
@@ -2614,6 +2634,32 @@ function origin(list,where='tl'){const b=C.bounds(list.filter(n=>!n.pin));return
 return{apply,origin};
 })();
 if(typeof module!=='undefined')module.exports=Scale;
+
+</script>
+<script>
+// Arrange a device's connection points: evenly along one side, split over two opposite sides, evenly round the
+// whole outline, or spread evenly on the sides they are already on. Points keep their ids, so attached connectors follow.
+const Ports=(()=>{
+const SIDES=['top','right','bottom','left'];
+const side=p=>{const d=[p.y,1-p.x,1-p.y,p.x];return SIDES[d.indexOf(Math.min(...d))]};
+// position round the outline, clockwise from the top-left corner (one unit per side)
+const along=p=>{const s=side(p);return s==='top'?p.x:s==='right'?1+p.y:s==='bottom'?2+(1-p.x):3+(1-p.y)};
+const onSide=(s,t)=>s==='top'?{x:t,y:0}:s==='right'?{x:1,y:t}:s==='bottom'?{x:t,y:1}:{x:0,y:t};
+const even=(k,i)=>(i+1)/(k+1);
+const MODES=[['bottom','In a row along the bottom'],['top','In a row along the top'],['left','In a column on the left'],['right','In a column on the right'],['topBottom','Split between top and bottom'],['leftRight','Split between left and right'],['around','Evenly around the device'],['sides','Evenly on the sides they are on']];
+function arrange(ports,mode,{w=1,h=1}={}){const ps=ports.map(p=>({...p}));if(!ps.length)return ps;
+  if(SIDES.includes(mode)){const horiz=mode==='top'||mode==='bottom',order=[...ps].sort((a,b)=>horiz?a.x-b.x||a.y-b.y:a.y-b.y||a.x-b.x);order.forEach((p,i)=>Object.assign(p,onSide(mode,even(order.length,i))))}
+  else if(mode==='topBottom'||mode==='leftRight'){const tb=mode==='topBottom',[s1,s2]=tb?['top','bottom']:['left','right'],key=tb?'x':'y',order=[...ps].sort((a,b)=>tb?a.y-b.y||a.x-b.x:a.x-b.x||a.y-b.y),half=Math.ceil(order.length/2);
+    [order.slice(0,half),order.slice(half)].forEach((g,gi)=>g.sort((a,b)=>a[key]-b[key]).forEach((p,i)=>Object.assign(p,onSide(gi?s2:s1,even(g.length,i)))))}
+  else if(mode==='around'){const per=2*(w+h),order=[...ps].sort((a,b)=>along(a)-along(b));order.forEach((p,i)=>{let d=(i+.5)/order.length*per;if(d<w)Object.assign(p,{x:d/w,y:0});else if((d-=w)<h)Object.assign(p,{x:1,y:d/h});else if((d-=h)<w)Object.assign(p,{x:1-d/w,y:1});else{d-=w;Object.assign(p,{x:0,y:1-d/h})}})}
+  else if(mode==='sides'){const groups={};for(const p of ps)(groups[side(p)]??=[]).push(p);for(const[s,g]of Object.entries(groups)){const key=s==='top'||s==='bottom'?'x':'y';g.sort((a,b)=>a[key]-b[key]).forEach((p,i)=>Object.assign(p,onSide(s,even(g.length,i))))}}
+  // points still carrying a default side name get the name of the side they ended up on
+  const DEF=/^(Top|Right|Bottom|Left)( \d+)?$/,count={};for(const p of ps)if(DEF.test(p.name||'')){const s=side(p);count[s]=(count[s]||0)+1}
+  const seen={};for(const p of ps)if(DEF.test(p.name||'')){const s=side(p),n=s[0].toUpperCase()+s.slice(1);seen[s]=(seen[s]||0)+1;p.name=count[s]>1?`${n} ${seen[s]}`:n}
+  return ps.map(p=>({...p,x:Math.round(p.x*1000)/1000,y:Math.round(p.y*1000)/1000}))}
+return{arrange,side,MODES};
+})();
+if(typeof module!=='undefined')module.exports=Ports;
 
 </script>
 <script>
@@ -4865,7 +4911,7 @@ function beginPointer(e){
   hideMenus();const p=point(e),t=e.target.closest('[data-role]'),role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id),now=Date.now(),key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
   if(S.lastClick&&now-S.lastClick.time<380&&S.lastClick.key===key&&Math.hypot(e.clientX-S.lastClick.x,e.clientY-S.lastClick.y)<6&&S.mode==='select'){S.lastClick=null;onDoubleClick(e,p,t,n);return}
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
-  if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;if(n?.kind==='node'){h(n.id);return}notify('Path trace cancelled.',1500)}
+  if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;const msg=S.pickCancel||'Path trace cancelled.';S.pickCancel=null;if(n?.kind==='node'){h(n.id);return}notify(msg,1500)}
   const capture=()=>{try{$('canvas').setPointerCapture(e.pointerId)}catch{}};
   if(role==='guide'&&S.mode==='select'){remember();S.drag={kind:'guide',guide:t.dataset.guide};capture();return}
   if(S.space||S.mode==='pan'||e.button===1){e.preventDefault();S.drag={kind:'pan',start:[e.clientX,e.clientY],view:{...S.view}};$('canvas').style.cursor='grabbing';capture();return}
@@ -5087,7 +5133,7 @@ function updateCursorReadout(p){const e=$('cursorPos');if(e)e.textContent=`${(p[
 
 // ---------- menus ----------
 function showMenu(menu,x,y){menu.hidden=false;const r=menu.getBoundingClientRect();menu.style.left=Math.max(4,Math.min(x,innerWidth-r.width-6))+'px';menu.style.top=Math.max(4,Math.min(y,innerHeight-r.height-6))+'px'}
-function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu'])if($(id))$(id).hidden=true}
+function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu','ribbonPop'])if($(id))$(id).hidden=true}
 
 // ---------- keyboard ----------
 function onKey(e){
@@ -5097,6 +5143,7 @@ function onKey(e){
   if(e.key==='F1'&&mod){e.preventDefault();actions.toggleRibbon();return}
   if(mod&&e.altKey&&(k==='arrowleft'||k==='arrowright')){e.preventDefault();actions[k==='arrowleft'?'toggleLeft':'toggleRight']();return}
   if(mod&&(k==='.'||e.code==='Period')){e.preventDefault();actions.focusMode();return}
+  if(mod&&e.shiftKey&&k==='f'){e.preventDefault();actions.fullscreen();return}
   if(mod){const map={z:()=>e.shiftKey?redo():undo(),y:redo,a:()=>{select(items().filter(n=>itemVisible(n,{doc:S.doc})&&!layerOf(n)?.locked).map(n=>n.id))},d:actions.duplicate,s:()=>e.shiftKey?saveAs():save(),o:actions.open,p:actions.print,g:()=>e.shiftKey?actions.ungroup():actions.group(),f:actions.find,h:actions.find,k:actions.palette,l:()=>e.shiftKey?actions.unlock():actions.lock(),']':()=>order(e.shiftKey?'front':'forward'),'[':()=>order(e.shiftKey?'back':'backward'),'=':()=>zoomAt(1.2),'+':()=>zoomAt(1.2),'-':()=>zoomAt(1/1.2),'0':()=>fit(),'1':()=>setZoom(1),e:actions.exportPng,b:()=>actions.bold(),i:()=>actions.italic()};
     if(map[k]){e.preventDefault();map[k]();return}if(['c','x','v'].includes(k))return;return}
   if(e.code==='Space'){e.preventDefault();if(!S.space){S.space=true;$('canvas').style.cursor='grab'}return}
@@ -5177,7 +5224,7 @@ function nodePanel(n){
     else out+=section('Appearance',`${row(field('Line',color('stroke',n.stroke)),field('Fill',color('fill',n.fill==='none'?'':n.fill)))}${row(field('Line weight',inp('strokeWidth',n.strokeWidth??1.75,'number','min="0" max="12" step="0.25"')),field('Line style',sel('dash',DASH,n.dash||'')))}${chk('fillNone',n.fill==='none','No fill')}`,'appearance')}
   if(kind!=='rack'&&kind!=='rackitem')out+=geometry(n);else out+=geometry(n,false);
   if(n.ports&&kind!=='rack')out+=section('Connection points',`<div class="portList">${n.ports.map(p=>`<div class="portrow"><input data-port-name="${p.id}" value="${h(p.name)}" aria-label="Port name"><span class="muted">${portUse(n,p)}</span><button data-port-delete="${p.id}" title="Delete point">×</button></div>`).join('')}</div>
-    <details class="sub"><summary>Generate interface points…</summary>${row(field('Side',sel('_genSide',[['bottom','Bottom'],['top','Top'],['left','Left'],['right','Right']],'bottom','data-nobind="1" id="genSide"')),field('Count',`<input id="genCount" type="number" value="8" min="1" max="96">`))}${row(field('Name prefix',`<input id="genPrefix" value="Gi1/0/">`),field('Start no.',`<input id="genStart" type="number" value="1">`))}${chk('_genReplace',false,'Replace existing points').replace('data-bind="_genReplace"','id="genReplace"')}${btn('genPorts','Create points','class="primary wide"')}</details>${chk('_showPorts',S.prefs.showPorts,'Show points & names on selection').replace('data-bind="_showPorts"','data-pref="showPorts"')}`,'ports');
+    <details class="sub"><summary>Generate interface points…</summary>${row(field('Side',sel('_genSide',[['bottom','Bottom'],['top','Top'],['left','Left'],['right','Right']],'bottom','data-nobind="1" id="genSide"')),field('Count',`<input id="genCount" type="number" value="8" min="1" max="96">`))}${row(field('Name prefix',`<input id="genPrefix" value="Gi1/0/">`),field('Start no.',`<input id="genStart" type="number" value="1">`))}${chk('_genReplace',false,'Replace existing points').replace('data-bind="_genReplace"','id="genReplace"')}${btn('genPorts','Create points','class="primary wide"')}</details><div class="fld"><span>Arrange points</span><div class="ptBtns">${Ports.MODES.map(([k,v])=>btn('ports_'+k,{bottom:'↧ Bottom row',top:'↥ Top row',left:'⇤ Left column',right:'⇥ Right column',topBottom:'⇅ Top + bottom',leftRight:'⇄ Left + right',around:'◯ Around',sides:'≡ Even on sides'}[k],`title="${v}"`)).join('')}</div></div>${chk('_showPorts',S.prefs.showPorts,'Show points & names on selection').replace('data-bind="_showPorts"','data-pref="showPorts"')}`,'ports');
   out+=section('Hyperlink',`${field('URL or page',`<input data-bind="url" value="${h(n.url||'')}" placeholder="https://… (Ctrl+click to open)" list="pageLinks">`)}<datalist id="pageLinks">${S.doc.pages.map(p=>`<option value="#page:${p.id}">Page: ${h(p.name)}</option>`).join('')}</datalist>`,'link');
   return out+common(n)}
 function portUse(n,p){const c=items().filter(e=>e.kind==='edge'&&(e.from?.port===p.id&&e.from.node===n.id||e.to?.port===p.id&&e.to.node===n.id)).length;return c?'● '+c:'○'}
@@ -5321,7 +5368,7 @@ function assignIps(){const z=picked()[0];if(!z||z.kind!=='zone')return;const c=C
 function traceInteractive(fromId){const from=fromId||picked().find(n=>n.kind==='node')?.id;if(!from)return notify('Select the start device, then choose Trace path.');S.traceFrom=from;notify('Now click the destination device…',6000);S.pickHandler=id=>{const p=Analysis.path(pg(),from,id);if(!p){notify('No path between these devices.');S.analysis=null}else{const G=Analysis.graph(pg()),alt=Analysis.allPaths(G,from,id,3);S.analysis={kind:'path',nodes:new Set(p.nodes),edges:new Set(p.edges),color:'#16a34a'};notify(`Path: ${p.nodes.map(i=>Analysis.nameOf(find(i))).join(' → ')} (${p.edges.length} hop${p.edges.length===1?'':'s'})${alt.length>1?` · ${alt.length} alternative routes`:' · no alternative route'}`,9000)}render()}}
 const actions={
   // file
-  new:()=>openTemplates(),selectAll:()=>Select.all(),selectByType:()=>Select.openByType(),invertSel:()=>Select.invert(),selectNone:()=>{select([]);render()},newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
+  new:()=>openTemplates(),fullscreen:()=>{if(document.fullscreenElement)document.exitFullscreen?.();else(document.documentElement.requestFullscreen?.()||Promise.reject()).catch(()=>notify('This browser blocked full screen — try F11 (Windows) or ⌃⌘F (Mac).'))},moveLinks:()=>{const n=picked().find(x=>x.kind==='node'&&Shapes.isDevice(x));if(!n)return notify('Select a device first.');Quick.openMoveLinks(n.id,picked().filter(e=>e.kind==='edge').map(e=>e.id))},selectAll:()=>Select.all(),selectByType:()=>Select.openByType(),invertSel:()=>Select.invert(),selectNone:()=>{select([]);render()},newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
   exportSvg:()=>exportSvg(),exportPng:()=>exportPng(2),exportPng4:()=>exportPng(4),exportPngT:()=>exportPng(2,true),copyPng:()=>copyPng(),exportDrawio:()=>exportDrawio(),exportVsdx:()=>exportVsdx(),exportCsv:()=>showReport(Analysis.inventory(S.doc)),
   print:()=>previewPrint(),printAll:()=>previewPrint(true),closePrint:()=>$('printPreview').hidden=true,printNow:()=>window.print(),share:()=>shareLink(),docProps:()=>{S.selected.clear();S.tab='doc';Ins.invalidate();render()},
   // edit
@@ -5387,6 +5434,7 @@ const actions={
   importShapes:()=>$('shapeInput').click(),managePacks:()=>Workspace.openPacks(),myDrawings:()=>Workspace.openDrawings(),
   shortcuts:()=>openShortcuts(),help:()=>openHelp(),palette:()=>openPalette(),about:()=>openHelp(),
 };
+for(const[k]of Ports.MODES)actions['ports_'+k]=()=>Quick.arrangePorts(k);
 for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom','deleteConnectors','liveCheck'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render();if(k==='liveCheck')scheduleCheck()};
 
 </script>
@@ -5442,15 +5490,21 @@ const RIBBON=[
     {name:'Behaviour',items:[T('deleteConnectors','Delete links with shapes','trash'),T('liveCheck','Live design check','check')]},
     {name:'Snap',items:[T('snap','Snap to grid','magnet'),X(()=>`<label class="rsel" title="Grid spacing"><select id="gridStepSel">${[5,10,20,25,50].map(v=>`<option value="${v}" ${+S.prefs.gridStep===v?'selected':''}>Grid ${v}px</option>`).join('')}</select></label>`)]},
     {name:'Zoom',items:[B('fit','Fit page','fit','Shift+1'),B('fitSelection','Selection','fitpage','Shift+2'),B('zoom100','100%','hundred','Ctrl+1'),B('zoomIn','Zoom in','zoomIn','Ctrl+='),B('zoomOut','Zoom out','zoomOut','Ctrl+-')]},
-    {name:'Layout',items:[B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('resetLayout','Reset layout','reroute','Restore title bar, ribbon, panels and status bar'),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
+    {name:'Layout',items:[B('fullscreen','Full screen','fullscreen','The whole editor full screen — ribbon, panels and all (Ctrl+Shift+F)',true),B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('resetLayout','Reset layout','reroute','Restore title bar, ribbon, panels and status bar'),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
     {name:'Window',items:[T('wheelZoom','Wheel zooms','wheel'),B('uiTheme','Light / dark','moon'),B('present','Present','present','Full-screen; arrows change page; Esc exits',true)]},
     {name:'Help',items:[B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
 ];
 function renderRibbon(){const tab=RIBBON.find(r=>r.id===(S.ribbonTab||'home'))||RIBBON[0];
   const cls=document.body.classList,peekOn=cls.contains('ribbonPeek'),collapsed=!!S.prefs.ribbonCollapsed;
   $('ribbonTabs').innerHTML=`<button class="fileBtn" data-file-menu>File</button>`+RIBBON.map(r=>`<button data-rtab="${r.id}" class="${r===tab&&(!collapsed||peekOn)?'active':''}" title="${collapsed?'Click to show · double-click to pin the ribbon':'Double-click to collapse the ribbon (Ctrl+F1)'}">${r.name}</button>`).join('')+
-    `<span class="spacer"></span>${S.prefs.showHeader===false?`<span class="tabDoc" title="${html(S.doc.name)}">${html(S.doc.name)}</span>`:''}<span class="chromeBtns">${[['toggleLeft','sideL','Shapes panel (Ctrl+Alt+←)',narrowScreen()?document.body.classList.contains('showLeft'):S.prefs.leftOpen],['toggleRight','sideR','Inspector (Ctrl+Alt+→)',narrowScreen()?document.body.classList.contains('showRight'):S.prefs.rightOpen],['toggleRibbon',collapsed?'ribbonDown':'ribbonUp',collapsed?'Pin the ribbon open (Ctrl+F1)':'Collapse the ribbon (Ctrl+F1)',!collapsed],['toggleHeader','titleBar','Title bar',S.prefs.showHeader!==false],['toggleStatus','statusBar','Status bar & page tabs',S.prefs.showStatus!==false],['focusMode','focus','Focus mode — canvas only (Ctrl+.)',document.body.classList.contains('focus')]].map(([a,ic,t,on])=>`<button data-action="${a}" class="${on?'on':''}" title="${t}">${icon(ic,15)}</button>`).join('')}</span>`;
-  $('ribbon').innerHTML=tab.groups.map(g=>`<div class="rgroup"><div class="ritems">${g.items.map(i=>{if(i.t==='html')return i.fn();const big=i.big?' big':'';if(i.t==='mode')return`<button data-mode="${i.mode}" class="rbtn${big} ${S.mode===i.mode?'active':''}" title="${i.label} (${i.key})">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`;if(i.t==='toggle')return`<button data-action="toggle_${i.pref}" class="rbtn ${S.prefs[i.pref]?'active':''}" title="${i.label}">${icon(i.icon,16)}<span>${i.label}</span></button>`;return`<button data-action="${i.action}" class="rbtn${big}" title="${html(i.title||i.label)}">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`}).join('')}</div><div class="rname">${g.name}</div></div>`).join('')}
+    `<span class="spacer"></span>${S.prefs.showHeader===false?`<span class="tabDoc" title="${html(S.doc.name)}">${html(S.doc.name)}</span>`:''}<span class="chromeBtns">${[['toggleLeft','sideL','Shapes panel (Ctrl+Alt+←)',narrowScreen()?document.body.classList.contains('showLeft'):S.prefs.leftOpen],['toggleRight','sideR','Inspector (Ctrl+Alt+→)',narrowScreen()?document.body.classList.contains('showRight'):S.prefs.rightOpen],['toggleRibbon',collapsed?'ribbonDown':'ribbonUp',collapsed?'Pin the ribbon open (Ctrl+F1)':'Collapse the ribbon (Ctrl+F1)',!collapsed],['toggleHeader','titleBar','Title bar',S.prefs.showHeader!==false],['toggleStatus','statusBar','Status bar & page tabs',S.prefs.showStatus!==false],['focusMode','focus','Focus mode — canvas only (Ctrl+.)',document.body.classList.contains('focus')],['fullscreen','fullscreen',document.fullscreenElement?'Exit full screen':'Full screen — the whole editor (Ctrl+Shift+F)',!!document.fullscreenElement]].map(([a,ic,t,on])=>`<button data-action="${a}" class="${on?'on':''}" title="${t}">${icon(ic,15)}</button>`).join('')}</span>`;
+  $('ribbon').innerHTML=tab.groups.map((g,gi)=>`<div class="rgroup" data-g="${gi}" data-lv="0"><button class="rcollapse" data-rgroup="${gi}" title="${html(g.name)}: ${html(g.items.filter(i=>i.label).map(i=>i.label).join(', '))}">${icon(g.items.find(i=>i.icon)?.icon||'more',22)}<span>${g.name} ▾</span></button><div class="ritems">${g.items.map(i=>{if(i.t==='html')return i.fn();const big=i.big?' big':'';if(i.t==='mode')return`<button data-mode="${i.mode}" class="rbtn${big} ${S.mode===i.mode?'active':''}" title="${i.label} (${i.key})">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`;if(i.t==='toggle')return`<button data-action="toggle_${i.pref}" class="rbtn ${S.prefs[i.pref]?'active':''}" title="${i.label}">${icon(i.icon,16)}<span>${i.label}</span></button>`;return`<button data-action="${i.action}" class="rbtn${big}" title="${html(i.title?i.label+' — '+i.title:i.label)}">${icon(i.icon,i.big?22:16)}<span>${i.label}</span></button>`}).join('')}</div><div class="rname">${g.name}</div></div>`).join('');fitRibbon()}
+// Office-style scaling: every group stays in view. Groups shrink from the right, one step at a time, until the ribbon fits:
+// 1 small buttons stacked three high · 2 big buttons become small · 3 icons only (names in tooltips) · 4 the group folds into one
+// button · 5 that button shows its icon only.
+function fitRibbon(){const r=$('ribbon');if(!r||!r.offsetWidth)return;const gs=[...r.querySelectorAll('.rgroup')];gs.forEach(g=>g.dataset.lv='0');const fits=()=>r.scrollWidth<=r.clientWidth+1;
+  for(let lv=1;lv<=5&&!fits();lv++)for(let i=gs.length-1;i>=0&&!fits();i--)gs[i].dataset.lv=lv;r.classList.toggle('overfull',!fits())}
+function openRibbonGroup(btn){const g=btn.closest('.rgroup'),m=$('ribbonPop');if(!m.hidden&&m.dataset.g===g.dataset.g){hideMenus();return}hideMenus();m.dataset.g=g.dataset.g;m.innerHTML=`<div class="rgroup popped"><div class="ritems">${g.querySelector('.ritems').innerHTML}</div><div class="rname">${g.querySelector('.rname').textContent}</div></div>`;const b=btn.getBoundingClientRect();showMenu(m,b.left,b.bottom+4)}
 const FILE_MENU=[['new','New from template…','template','Ctrl+N'],['newBlank','New blank drawing','file'],['insertTemplate','Add template to this drawing…','template'],['saveTemplate','Save as template…','save'],['newRevision','New revision…','delta'],['myDrawings','My drawings (this browser)…','open'],['open','Open file…','open','Ctrl+O'],['save','Save','save','Ctrl+S'],['saveAs','Save as…','save','Ctrl+Shift+S'],'-',['exportVsdx','Export to Visio (.vsdx)','visio'],['exportDrawio','Export to draw.io','drawio'],['exportSvg','Export page as SVG','export'],['exportPng','Export page as PNG (2×)','image','Ctrl+E'],['exportPng4','Export page as PNG (4×, print)','image'],['exportPngT','Export PNG with transparent background','image'],['copyPng','Copy page as image','copy'],'-',['print','Print / PDF…','print','Ctrl+P'],['printAll','Print all pages…','print'],['share','Copy share link','share'],['downloadOffline','Download offline edition (one HTML file)','export'],'-',['docProps','Document properties','fields'],['importShapes','Import shapes / icon pack…','import'],['managePacks','Shape packs…','layers'],['importLibrary','Import symbol library…','import'],['exportLibrary','Export symbol library','export']];
 function openFileMenu(btn){const m=$('fileMenu');m.innerHTML=FILE_MENU.map(i=>i==='-'?'<hr>':`<button data-action="${i[0]}">${icon(i[2],16)}<span>${i[1]}</span>${i[3]?`<kbd>${i[3]}</kbd>`:''}</button>`).join('');const r=btn.getBoundingClientRect();showMenu(m,r.left,r.bottom+4)}
 
@@ -5970,12 +6024,16 @@ function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x
   if(nodes.length)h+=sub(devs.length?'Device colour':'Line colour',swGrid('q:nc:',COLORS))+sub('Fill',swGrid('q:nf:',FILLS))+sub('Size',[['0.8','Smaller (−20%)'],['0.9','Smaller (−10%)'],['1.1','Larger (+10%)'],['1.25','Larger (+25%)'],['reset','Default size']].map(([k,v])=>`<button data-ctx="q:sz:${k}">${v}</button>`).join(''));
   if(zones.length){const T=Shapes.themes[S.doc.theme]||Shapes.themes.port;h+=sub('Zone colour',`<div class="swGrid">${[...T.zones,...Shapes.themes.port.zones,['#fef2f2','#fca5a5'],['#f0fdf4','#86efac'],['#fefce8','#fde047'],['#f8fafc','#94a3b8']].map(([f,s])=>`<button data-ctx="q:zc:${f},${s}" style="--c:${f};box-shadow:inset 0 0 0 2px ${s}" title="${f}"></button>`).join('')}</div>`)+sub('Zone style',[['plain','Plain'],['header','Header band'],['tab','Tab'],['outline','Outline only']].map(([k,v])=>`<button data-ctx="q:zs:${k}">${v}</button>`).join(''))}
   if(texty.length)h+=sub('Text size',`<button data-ctx="q:ts:-">Smaller</button><button data-ctx="q:ts:+">Larger</button><hr>`+SIZES.map(s=>`<button data-ctx="q:ts:${s}">${s} pt</button>`).join(''));
+  const withPorts=sel.filter(x=>x.kind==='node'&&x.ports?.length&&!isMarkup(x));if(withPorts.length)h+=sub('Connection points',Ports.MODES.map(([k,v])=>`<button data-ctx="q:pt:${k}">${v}</button>`).join('')+`<hr><button data-mode="port">Add or drag points (Points tool)</button>`);
+  if(devs.length===1&&items().some(e=>e.kind==='edge'&&(e.from?.node===devs[0].id||e.to?.node===devs[0].id))){const n=sel.filter(e=>e.kind==='edge'&&(e.from?.node===devs[0].id||e.to?.node===devs[0].id)).length;h+=`<button data-ctx="q:mv">${n?`Move the ${plural(n,'selected link')} to…`:'Move links to another device…'}</button>`}
   const one=sel[0],sim=[];if(one.kind==='edge')sim.push(['lt','Same link type']);if(one.kind==='node')sim.push(['type','Same type ('+html(Shapes.nameOf(one.type))+')']);sim.push(['style','Same colour and style'],['layer','Same layer']);
   h+=sub('Select similar',sim.map(([k,v])=>`<button data-ctx="q:sim:${k}">${v}</button>`).join(''))+`<button data-ctx="q:scale">Scale…</button>`;
   return h}
 function setColor(prefix,v){apply(prefix+v)}
 function apply(c){const[,op,...rest]=c.split(':'),v=rest.join(':');
   if(op==='scale'){openScale();return true}if(op==='sim'){selectSimilar(v);return true}
+  if(op==='mv'){const sel=picked(),dev=sel.find(n=>n.kind==='node'&&Shapes.isDevice(n));if(dev)openMoveLinks(dev.id,sel.filter(e=>e.kind==='edge'&&(e.from?.node===dev.id||e.to?.node===dev.id)).map(e=>e.id));return true}
+  if(op==='pt'){arrangePorts(v);return true}
   if(op==='sf'){const devs=picked().filter(n=>n.kind==='node'&&Shapes.isDevice(n));if(v==='_names'){mutate(()=>{S.doc.display.prefixFields=!S.doc.display.prefixFields});return true}if(v==='_none'){mutate(()=>devs.forEach(n=>delete n.showFields));return true}
     const on=!devs.every(n=>Inventory.shown(n).includes(v));Inventory.showOn([v],on,devs);const miss=devs.filter(n=>!String(n.data?.[v]??'').trim()).length;notify(`${S.doc.fields.find(f=>f.key===v)?.label||v} ${on?'shown':'hidden'} for ${plural(devs.length,'device')}${on&&miss?` — ${miss} have no value yet (fill them in Data ▸ Inventory)`:''}.`,3500);return true}
   if(!ensureEditable())return true;const ed=editable();let reroute=[];
@@ -6097,9 +6155,45 @@ let revTimer=0;
 function revInfo(){clearTimeout(revTimer);revTimer=setTimeout(()=>{const b=$('revInfo');if(!b||!S.doc)return;const ch=Revisions.changes(S.doc),rev=S.doc.meta.revision||'—';b.textContent=`Rev ${rev}${ch.count?` · ${plural(ch.count,'change')}`:''}`;b.classList.toggle('pending',ch.count>0);b.title=ch.count?`${describe(ch)} since revision ${rev} — click to issue a new revision`:`Revision ${rev} — click for revisions`},500)}
 function prepare(doc){if(!doc.revBaseline)Revisions.setBaseline(doc);Revisions.ensureLog(doc)}
 
+// ---------- connection points ----------
+function arrangePorts(mode,targets=picked().filter(n=>n.kind==='node'&&n.ports?.length&&!isMarkup(n))){if(!targets.length)return notify('Select a device first.');if(targets.some(isLocked))return notify('Unlock the selection first.');
+  mutate(()=>{for(const n of targets){n.ports=Ports.arrange(n.ports,mode,{w:n.w,h:n.h});for(const e of items())if(e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id))Conn.markDirty(e.id)}});
+  S.prefs.showPorts||notify(`${Ports.MODES.find(m=>m[0]===mode)[1]} — ${plural(targets.reduce((s,n)=>s+n.ports.length,0),'point')} on ${plural(targets.length,'device')}. Connectors follow their points.`,2600);render('overlay')}
+
+// ---------- move links to another (or a new) device ----------
+function openMoveLinks(srcId,pre=[]){const src=find(srcId);if(!src)return;const name=n=>n?.labels?.[0]?.text?.split('\n')[0]||Shapes.nameOf(n?.type||'');
+  const links=items().filter(e=>e.kind==='edge'&&(e.from?.node===src.id||e.to?.node===src.id));if(!links.length)return notify('This device has no links.');
+  const atSrc=e=>e.from?.node===src.id?'from':'to',other=e=>find(e[atSrc(e)==='from'?'to':'from']?.node),chosen=new Set(pre.length?pre:links.map(e=>e.id));
+  const devs=items().filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&n.id!==src.id).sort((a,b)=>name(a).localeCompare(name(b),undefined,{numeric:true}));
+  const cats=Shapes.catalog().filter(c=>c.items.some(i=>Shapes.kindOf(i.type)==='device'));
+  const d=openDialog(`Move links from “${html(name(src))}”`,`<p class="muted">Tick the links to move. Their other ends stay where they are; only this end moves to the destination.</p>
+    <div class="mvList">${links.map(e=>{const o=other(e),ifn=atSrc(e)==='from'?e.fromIf:e.toIf;return`<label class="check"><input type="checkbox" data-mv="${e.id}" ${chosen.has(e.id)?'checked':''}><span class="lgSw line" style="border-top:3px ${e.dash?'dashed':'solid'} ${e.stroke}"></span>${html(name(o)||'(open end)')} <em class="muted">${html([ifn,Shapes.linkTypes[e.linkType]?.name].filter(Boolean).join(' · '))}</em></label>`}).join('')}</div>
+    <div class="row"><button data-mv-all>All</button><button data-mv-none>None</button></div>
+    <div class="fld"><span>Move them to</span><div class="seg"><button data-mv-dest="existing" class="active">Another device</button><button data-mv-dest="new">A new device</button></div></div>
+    <div id="mvExisting" class="row"><label class="fld"><span>Device</span><select id="mvTarget">${devs.map(n=>`<option value="${n.id}">${html(name(n))} — ${html(Shapes.nameOf(n.type))}</option>`).join('')}</select></label><div class="fld"><span>&nbsp;</span><button data-mv-pick>Pick it on the page…</button></div></div>
+    <div id="mvNew" hidden><div class="row"><label class="fld"><span>Type</span><select id="mvType">${cats.map(c=>`<optgroup label="${html(c.name)}">${c.items.filter(i=>Shapes.kindOf(i.type)==='device').map(i=>`<option value="${i.type}" ${i.type===src.type?'selected':''}>${html(i.name)}</option>`).join('')}</optgroup>`).join('')}</select></label><label class="fld"><span>Name</span><input id="mvName" value="${html(name(src))} (2)"></label></div>
+      <div class="fld"><span>Place it</span><div class="seg"><button data-mv-place="right" class="active">To the right</button><button data-mv-place="below">Below</button><button data-mv-place="left">To the left</button></div></div></div>
+    <label class="check"><input type="checkbox" id="mvKeepIf" checked>Keep interface names on the moved ends</label>
+    <footer><button data-close>Cancel</button><button class="primary" data-mv-go>Move links</button></footer>`);
+  let dest='existing',place='right';const ticked=()=>[...d.querySelectorAll('[data-mv]:checked')].map(c=>c.dataset.mv);
+  const label=()=>{const k=ticked().length;d.querySelector('[data-mv-go]').textContent=k?`Move ${plural(k,'link')}`:'Move links';d.querySelector('[data-mv-go]').disabled=!k||dest==='existing'&&!devs.length};label();d.onchange=label;
+  const apply=(targetId,ids,keepIf)=>{let skipped=0;const t=mutate(()=>{let t=targetId&&find(targetId);
+      if(!t){t=Shapes.make($('mvType').value,0,0,$('mvName').value.trim()||name(src)+' (2)');const gap=110,pos=place==='below'?[src.x,src.y+src.h+gap]:place==='left'?[src.x-gap-t.w,src.y]:[src.x+src.w+gap,src.y];C.move(t,pos[0]-t.x,pos[1]-t.y);
+        for(let i=0;i<40&&items().some(o=>o.kind==='node'&&C.overlaps?.(C.box(o),C.box(t)));i++)C.move(t,place==='below'?t.w+30:0,place==='below'?0:t.h+40);t.layer=src.layer;applyThemeToNew(t);items().push(t)}
+      for(const id of ids){const e=find(id);if(!e)continue;const k=atSrc(e),o=k==='from'?'to':'from';if(e[o]?.node===t.id){skipped++;continue}e[k]={node:t.id,port:null};if(!keepIf){if(k==='from')delete e.fromIf;else delete e.toIf}Conn.markDirty(e.id)}
+      select([t.id,...ids.filter(id=>find(id))]);return t});
+    notify(`Moved ${plural(ids.length-skipped,'link')} from “${name(src)}” to “${name(t)}”${skipped?` · ${skipped} skipped (already connected to it)`:''}. Ctrl+Z undoes.`,4000)};
+  d.onclick=e=>{const t=e.target;if(t.closest('[data-close]'))return closeDialog();
+    if(t.closest('[data-mv-all]')||t.closest('[data-mv-none]')){const on=!!t.closest('[data-mv-all]');d.querySelectorAll('[data-mv]').forEach(c=>c.checked=on);label();return}
+    const ds=t.closest('[data-mv-dest]');if(ds){dest=ds.dataset.mvDest;d.querySelectorAll('[data-mv-dest]').forEach(b=>b.classList.toggle('active',b===ds));$('mvExisting').hidden=dest!=='existing';$('mvNew').hidden=dest!=='new';label();return}
+    const pl=t.closest('[data-mv-place]');if(pl){place=pl.dataset.mvPlace;d.querySelectorAll('[data-mv-place]').forEach(b=>b.classList.toggle('active',b===pl));return}
+    const ids=ticked(),keepIf=$('mvKeepIf').checked;
+    if(t.closest('[data-mv-pick]')){if(!ids.length)return notify('Tick at least one link.');closeDialog();S.pickCancel='Moving links cancelled.';S.pickHandler=id=>{if(id===src.id)return notify('That is the device the links come from — pick another one.');apply(id,ids,keepIf)};notify(`Click the device the ${plural(ids.length,'link')} should move to · Esc cancels.`,6000);return}
+    if(t.closest('[data-mv-go]')){if(!ids.length)return;closeDialog();apply(dest==='existing'?$('mvTarget').value:null,ids,keepIf)}}}
+
 function init(){const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
   document.addEventListener('click',e=>{const b=e.target.closest?.('[data-legend-style]');if(b){const[id,...k]=b.dataset.legendStyle.split('|');openLegendStyle(id,k.join('|'))}})}
-return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow};
+return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow,arrangePorts,openMoveLinks};
 })();
 
 </script>
@@ -6255,7 +6349,8 @@ function wire(){
   document.addEventListener('click',e=>{
     const t=e.target;
     const a=t.closest('[data-action]');if(a&&!a.disabled){hideMenus();actions[a.dataset.action]?.();return}
-    const m=t.closest('[data-mode]');if(m){setMode(m.dataset.mode);return}
+    const rg=t.closest('[data-rgroup]');if(rg){openRibbonGroup(rg);return}
+    const m=t.closest('[data-mode]');if(m){hideMenus();setMode(m.dataset.mode);return}
     if(t.closest('[data-file-menu]')){const fm=$('fileMenu');if(!fm.hidden){hideMenus();return}openFileMenu(t.closest('[data-file-menu]'));return}
     const rt=t.closest('[data-rtab]');if(rt){const same=S.ribbonTab===rt.dataset.rtab;S.ribbonTab=rt.dataset.rtab;if(S.prefs.ribbonCollapsed)document.body.classList.toggle('ribbonPeek',!(same&&document.body.classList.contains('ribbonPeek')));renderRibbon();return}
     const lt=t.closest('[data-ltab]');if(lt){S.ltab=lt.dataset.ltab;renderLeft();return}
@@ -6272,7 +6367,7 @@ function wire(){
   const ins=$('inspector');ins.addEventListener('change',Ins.onChange);ins.addEventListener('input',Ins.onInput);ins.addEventListener('click',Ins.onClick);$('inspectorTabs').addEventListener('click',Ins.onClick);
   ins.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.target.blur();e.target.focus()}});
   // ribbon controls
-  $('ribbon').addEventListener('change',e=>{const t=e.target,id=t.id,sel=editable();
+  const ribbonChange=e=>{const t=e.target,id=t.id,sel=editable();
     if(id==='linkTypeSel'){S.linkType=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length)mutate(()=>es.forEach(x=>Shapes.applyLinkType(x,t.value,S.doc)));renderRibbon();return}
     if(id==='routeSel'){S.routeStyle=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length&&t.value!=='curved')mutate(()=>es.forEach(x=>{x.routing=t.value;x.curve='straight';Conn.orthogonalize(x);Conn.markDirty(x.id)}));return}
     if(id==='fontSizeSel'&&t.value){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.size=+t.value)));t.value='';return}
@@ -6284,7 +6379,9 @@ function wire(){
     if(id==='jumpSel'){mutate(()=>S.doc.display.jumpStyle=t.value);return}
     if(id==='colorBySel'){mutate(()=>S.doc.display.colorBy=t.value);return}
     if(id==='showFieldSel'&&t.value){const k=t.value;mutate(()=>{const f=S.doc.display.fields||=[];S.doc.display.fields=f.includes(k)?f.filter(x=>x!==k):[...f,k]});renderRibbon();return}
-    if(id==='gridStepSel'){S.prefs.gridStep=+t.value;savePrefs();render();return}});
+    if(id==='gridStepSel'){S.prefs.gridStep=+t.value;savePrefs();render();return}};
+  // a folded ribbon group opens in a popup: its controls work the same there
+  $('ribbon').addEventListener('change',ribbonChange);$('ribbonPop').addEventListener('change',e=>{ribbonChange(e);hideMenus()});
   $('docName').addEventListener('change',e=>{const v=e.target.value.trim()||'Untitled network';mutate(()=>S.doc.name=v);document.title=v+' · Port Network Studio'});
   $('docName').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
   // left panel
@@ -6339,7 +6436,8 @@ function wire(){
   document.body.addEventListener('drop',e=>{if(e.target.closest('#canvas'))return;const f=e.dataTransfer.files?.[0];if(f){e.preventDefault();handleFile(f)}});
   // window
   new ResizeObserver(()=>render()).observe($('workarea'));
-  window.addEventListener('resize',()=>{clearTimeout(window.__lt);window.__lt=setTimeout(checkLayout,300)});
+  document.addEventListener('fullscreenchange',()=>{renderRibbon();setTimeout(fitRibbon,120)});
+  window.addEventListener('resize',()=>{clearTimeout(window.__lt);window.__lt=setTimeout(checkLayout,300);clearTimeout(window.__rf);window.__rf=setTimeout(fitRibbon,60)});
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.prefs.theme==='auto')applyUiTheme()});
   window.addEventListener('beforeunload',e=>{clearTimeout(autosaveTimer);if(S.dirty)autosave()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.dirty)Workspace.saveCurrent(true)});

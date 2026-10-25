@@ -23,7 +23,8 @@ function wire(){
   document.addEventListener('click',e=>{
     const t=e.target;
     const a=t.closest('[data-action]');if(a&&!a.disabled){hideMenus();actions[a.dataset.action]?.();return}
-    const m=t.closest('[data-mode]');if(m){setMode(m.dataset.mode);return}
+    const rg=t.closest('[data-rgroup]');if(rg){openRibbonGroup(rg);return}
+    const m=t.closest('[data-mode]');if(m){hideMenus();setMode(m.dataset.mode);return}
     if(t.closest('[data-file-menu]')){const fm=$('fileMenu');if(!fm.hidden){hideMenus();return}openFileMenu(t.closest('[data-file-menu]'));return}
     const rt=t.closest('[data-rtab]');if(rt){const same=S.ribbonTab===rt.dataset.rtab;S.ribbonTab=rt.dataset.rtab;if(S.prefs.ribbonCollapsed)document.body.classList.toggle('ribbonPeek',!(same&&document.body.classList.contains('ribbonPeek')));renderRibbon();return}
     const lt=t.closest('[data-ltab]');if(lt){S.ltab=lt.dataset.ltab;renderLeft();return}
@@ -40,7 +41,7 @@ function wire(){
   const ins=$('inspector');ins.addEventListener('change',Ins.onChange);ins.addEventListener('input',Ins.onInput);ins.addEventListener('click',Ins.onClick);$('inspectorTabs').addEventListener('click',Ins.onClick);
   ins.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.target.blur();e.target.focus()}});
   // ribbon controls
-  $('ribbon').addEventListener('change',e=>{const t=e.target,id=t.id,sel=editable();
+  const ribbonChange=e=>{const t=e.target,id=t.id,sel=editable();
     if(id==='linkTypeSel'){S.linkType=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length)mutate(()=>es.forEach(x=>Shapes.applyLinkType(x,t.value,S.doc)));renderRibbon();return}
     if(id==='routeSel'){S.routeStyle=t.value;const es=sel.filter(n=>n.kind==='edge');if(es.length&&t.value!=='curved')mutate(()=>es.forEach(x=>{x.routing=t.value;x.curve='straight';Conn.orthogonalize(x);Conn.markDirty(x.id)}));return}
     if(id==='fontSizeSel'&&t.value){const ls=S.activeLabel?[find(S.activeLabel.owner)?.labels.find(l=>l.id===S.activeLabel.id)]:sel.flatMap(n=>n.labels||[]);if(ls.length)mutate(()=>ls.forEach(l=>l&&(l.size=+t.value)));t.value='';return}
@@ -52,7 +53,9 @@ function wire(){
     if(id==='jumpSel'){mutate(()=>S.doc.display.jumpStyle=t.value);return}
     if(id==='colorBySel'){mutate(()=>S.doc.display.colorBy=t.value);return}
     if(id==='showFieldSel'&&t.value){const k=t.value;mutate(()=>{const f=S.doc.display.fields||=[];S.doc.display.fields=f.includes(k)?f.filter(x=>x!==k):[...f,k]});renderRibbon();return}
-    if(id==='gridStepSel'){S.prefs.gridStep=+t.value;savePrefs();render();return}});
+    if(id==='gridStepSel'){S.prefs.gridStep=+t.value;savePrefs();render();return}};
+  // a folded ribbon group opens in a popup: its controls work the same there
+  $('ribbon').addEventListener('change',ribbonChange);$('ribbonPop').addEventListener('change',e=>{ribbonChange(e);hideMenus()});
   $('docName').addEventListener('change',e=>{const v=e.target.value.trim()||'Untitled network';mutate(()=>S.doc.name=v);document.title=v+' · Port Network Studio'});
   $('docName').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
   // left panel
@@ -107,7 +110,8 @@ function wire(){
   document.body.addEventListener('drop',e=>{if(e.target.closest('#canvas'))return;const f=e.dataTransfer.files?.[0];if(f){e.preventDefault();handleFile(f)}});
   // window
   new ResizeObserver(()=>render()).observe($('workarea'));
-  window.addEventListener('resize',()=>{clearTimeout(window.__lt);window.__lt=setTimeout(checkLayout,300)});
+  document.addEventListener('fullscreenchange',()=>{renderRibbon();setTimeout(fitRibbon,120)});
+  window.addEventListener('resize',()=>{clearTimeout(window.__lt);window.__lt=setTimeout(checkLayout,300);clearTimeout(window.__rf);window.__rf=setTimeout(fitRibbon,60)});
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.prefs.theme==='auto')applyUiTheme()});
   window.addEventListener('beforeunload',e=>{clearTimeout(autosaveTimer);if(S.dirty)autosave()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.dirty)Workspace.saveCurrent(true)});

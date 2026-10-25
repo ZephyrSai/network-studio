@@ -49,7 +49,7 @@ header.top{display:flex;align-items:center;gap:8px;padding:0 12px;background:var
 .ribbonTabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:6px 12px 6px;font-weight:550;color:var(--muted)}
 .ribbonTabs button.active{color:var(--blue);border-bottom-color:var(--blue);background:none}
 .ribbonTabs .fileBtn{background:var(--blue);color:#fff;border-radius:6px 6px 0 0;margin-right:6px;border-bottom:0}
-.ribbon{display:flex;align-items:stretch;gap:0;padding:4px 6px;background:var(--panel);border-bottom:1px solid var(--border);overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.ribbon{display:flex;align-items:stretch;gap:0;padding:4px 6px;background:var(--panel);border-bottom:1px solid var(--border);overflow:hidden}.ribbon.overfull{overflow-x:auto;scrollbar-width:thin}
 .rgroup{display:flex;flex-direction:column;padding:0 8px;border-right:1px solid var(--border);flex:none}
 .rgroup:last-child{border-right:0}
 .ritems{display:flex;align-items:center;gap:2px;flex:1;flex-wrap:wrap;max-height:56px;align-content:flex-start;max-width:520px}
@@ -385,3 +385,22 @@ dialog.inventory{width:min(1200px,97vw)}
 /* select by type */
 .byType{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 18px;max-height:55vh;overflow:auto}
 .byType label.check{margin:3px 0}.byType em{margin-left:auto;font-style:normal}.allSec{margin-left:auto;font-size:10.5px;text-transform:none;letter-spacing:0;display:flex;gap:4px;align-items:center;cursor:pointer}
+
+/* ribbon scaling: every group stays in view (see fitRibbon) */
+.rcollapse{display:none;flex-direction:column;align-items:center;justify-content:center;gap:3px;height:54px;padding:3px 8px;border-color:transparent;background:transparent;font-size:11.5px;white-space:nowrap}
+.rcollapse:hover{border-color:var(--border)}
+.rgroup[data-lv]:not([data-lv="0"]){padding:0 5px}
+.rgroup[data-lv="1"] .ritems,.rgroup[data-lv="2"] .ritems,.rgroup[data-lv="3"] .ritems{flex-direction:column;flex-wrap:wrap;align-items:flex-start;align-content:flex-start;height:56px;max-height:none;max-width:none;gap:1px 2px}
+.rgroup[data-lv="1"] .rbtn:not(.big),.rgroup[data-lv="2"] .rbtn,.rgroup[data-lv="3"] .rbtn{height:18px;padding:0 5px;font-size:11.5px;gap:4px}
+.rgroup[data-lv="2"] .rbtn.big,.rgroup[data-lv="3"] .rbtn.big{flex-direction:row}
+.rgroup[data-lv="2"] .rbtn.big svg,.rgroup[data-lv="3"] .rbtn.big svg{width:16px;height:16px}
+.rgroup[data-lv="3"] .rbtn>span{display:none}.rgroup[data-lv="3"] .rbtn{padding:0 3px}
+.rgroup[data-lv="2"] select,.rgroup[data-lv="3"] select{max-width:118px;height:18px;font-size:11px;padding:0 4px}
+.rgroup[data-lv="4"] .ritems,.rgroup[data-lv="5"] .ritems{display:none}.rgroup[data-lv="4"] .rcollapse,.rgroup[data-lv="5"] .rcollapse{display:flex}.rgroup[data-lv="4"] .rname,.rgroup[data-lv="5"] .rname{visibility:hidden}
+.rgroup[data-lv="5"]{padding:0 2px}.rgroup[data-lv="5"] .rcollapse{padding:3px 5px}.rgroup[data-lv="5"] .rcollapse span{display:none}
+.ribbonPop{padding:6px 8px}.ribbonPop .rgroup{border:0;padding:0}.ribbonPop .ritems{max-width:420px;max-height:none}
+
+.mvList{display:flex;flex-direction:column;gap:1px;max-height:34vh;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:4px 8px;margin-bottom:6px}
+.mvList label.check{margin:3px 0}.mvList em{margin-left:auto;font-style:normal;font-size:11px}
+.ptBtns{display:grid;grid-template-columns:1fr 1fr;gap:3px}.ptBtns button{font-size:11px;padding:3px 5px;text-align:left}
+@media (max-width:860px){.rgroup .rname{display:none}}

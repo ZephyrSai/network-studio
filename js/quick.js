@@ -28,12 +28,16 @@ function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x
   if(nodes.length)h+=sub(devs.length?'Device colour':'Line colour',swGrid('q:nc:',COLORS))+sub('Fill',swGrid('q:nf:',FILLS))+sub('Size',[['0.8','Smaller (−20%)'],['0.9','Smaller (−10%)'],['1.1','Larger (+10%)'],['1.25','Larger (+25%)'],['reset','Default size']].map(([k,v])=>`<button data-ctx="q:sz:${k}">${v}</button>`).join(''));
   if(zones.length){const T=Shapes.themes[S.doc.theme]||Shapes.themes.port;h+=sub('Zone colour',`<div class="swGrid">${[...T.zones,...Shapes.themes.port.zones,['#fef2f2','#fca5a5'],['#f0fdf4','#86efac'],['#fefce8','#fde047'],['#f8fafc','#94a3b8']].map(([f,s])=>`<button data-ctx="q:zc:${f},${s}" style="--c:${f};box-shadow:inset 0 0 0 2px ${s}" title="${f}"></button>`).join('')}</div>`)+sub('Zone style',[['plain','Plain'],['header','Header band'],['tab','Tab'],['outline','Outline only']].map(([k,v])=>`<button data-ctx="q:zs:${k}">${v}</button>`).join(''))}
   if(texty.length)h+=sub('Text size',`<button data-ctx="q:ts:-">Smaller</button><button data-ctx="q:ts:+">Larger</button><hr>`+SIZES.map(s=>`<button data-ctx="q:ts:${s}">${s} pt</button>`).join(''));
+  const withPorts=sel.filter(x=>x.kind==='node'&&x.ports?.length&&!isMarkup(x));if(withPorts.length)h+=sub('Connection points',Ports.MODES.map(([k,v])=>`<button data-ctx="q:pt:${k}">${v}</button>`).join('')+`<hr><button data-mode="port">Add or drag points (Points tool)</button>`);
+  if(devs.length===1&&items().some(e=>e.kind==='edge'&&(e.from?.node===devs[0].id||e.to?.node===devs[0].id))){const n=sel.filter(e=>e.kind==='edge'&&(e.from?.node===devs[0].id||e.to?.node===devs[0].id)).length;h+=`<button data-ctx="q:mv">${n?`Move the ${plural(n,'selected link')} to…`:'Move links to another device…'}</button>`}
   const one=sel[0],sim=[];if(one.kind==='edge')sim.push(['lt','Same link type']);if(one.kind==='node')sim.push(['type','Same type ('+html(Shapes.nameOf(one.type))+')']);sim.push(['style','Same colour and style'],['layer','Same layer']);
   h+=sub('Select similar',sim.map(([k,v])=>`<button data-ctx="q:sim:${k}">${v}</button>`).join(''))+`<button data-ctx="q:scale">Scale…</button>`;
   return h}
 function setColor(prefix,v){apply(prefix+v)}
 function apply(c){const[,op,...rest]=c.split(':'),v=rest.join(':');
   if(op==='scale'){openScale();return true}if(op==='sim'){selectSimilar(v);return true}
+  if(op==='mv'){const sel=picked(),dev=sel.find(n=>n.kind==='node'&&Shapes.isDevice(n));if(dev)openMoveLinks(dev.id,sel.filter(e=>e.kind==='edge'&&(e.from?.node===dev.id||e.to?.node===dev.id)).map(e=>e.id));return true}
+  if(op==='pt'){arrangePorts(v);return true}
   if(op==='sf'){const devs=picked().filter(n=>n.kind==='node'&&Shapes.isDevice(n));if(v==='_names'){mutate(()=>{S.doc.display.prefixFields=!S.doc.display.prefixFields});return true}if(v==='_none'){mutate(()=>devs.forEach(n=>delete n.showFields));return true}
     const on=!devs.every(n=>Inventory.shown(n).includes(v));Inventory.showOn([v],on,devs);const miss=devs.filter(n=>!String(n.data?.[v]??'').trim()).length;notify(`${S.doc.fields.find(f=>f.key===v)?.label||v} ${on?'shown':'hidden'} for ${plural(devs.length,'device')}${on&&miss?` — ${miss} have no value yet (fill them in Data ▸ Inventory)`:''}.`,3500);return true}
   if(!ensureEditable())return true;const ed=editable();let reroute=[];
@@ -155,7 +159,43 @@ let revTimer=0;
 function revInfo(){clearTimeout(revTimer);revTimer=setTimeout(()=>{const b=$('revInfo');if(!b||!S.doc)return;const ch=Revisions.changes(S.doc),rev=S.doc.meta.revision||'—';b.textContent=`Rev ${rev}${ch.count?` · ${plural(ch.count,'change')}`:''}`;b.classList.toggle('pending',ch.count>0);b.title=ch.count?`${describe(ch)} since revision ${rev} — click to issue a new revision`:`Revision ${rev} — click for revisions`},500)}
 function prepare(doc){if(!doc.revBaseline)Revisions.setBaseline(doc);Revisions.ensureLog(doc)}
 
+// ---------- connection points ----------
+function arrangePorts(mode,targets=picked().filter(n=>n.kind==='node'&&n.ports?.length&&!isMarkup(n))){if(!targets.length)return notify('Select a device first.');if(targets.some(isLocked))return notify('Unlock the selection first.');
+  mutate(()=>{for(const n of targets){n.ports=Ports.arrange(n.ports,mode,{w:n.w,h:n.h});for(const e of items())if(e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id))Conn.markDirty(e.id)}});
+  S.prefs.showPorts||notify(`${Ports.MODES.find(m=>m[0]===mode)[1]} — ${plural(targets.reduce((s,n)=>s+n.ports.length,0),'point')} on ${plural(targets.length,'device')}. Connectors follow their points.`,2600);render('overlay')}
+
+// ---------- move links to another (or a new) device ----------
+function openMoveLinks(srcId,pre=[]){const src=find(srcId);if(!src)return;const name=n=>n?.labels?.[0]?.text?.split('\n')[0]||Shapes.nameOf(n?.type||'');
+  const links=items().filter(e=>e.kind==='edge'&&(e.from?.node===src.id||e.to?.node===src.id));if(!links.length)return notify('This device has no links.');
+  const atSrc=e=>e.from?.node===src.id?'from':'to',other=e=>find(e[atSrc(e)==='from'?'to':'from']?.node),chosen=new Set(pre.length?pre:links.map(e=>e.id));
+  const devs=items().filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&n.id!==src.id).sort((a,b)=>name(a).localeCompare(name(b),undefined,{numeric:true}));
+  const cats=Shapes.catalog().filter(c=>c.items.some(i=>Shapes.kindOf(i.type)==='device'));
+  const d=openDialog(`Move links from “${html(name(src))}”`,`<p class="muted">Tick the links to move. Their other ends stay where they are; only this end moves to the destination.</p>
+    <div class="mvList">${links.map(e=>{const o=other(e),ifn=atSrc(e)==='from'?e.fromIf:e.toIf;return`<label class="check"><input type="checkbox" data-mv="${e.id}" ${chosen.has(e.id)?'checked':''}><span class="lgSw line" style="border-top:3px ${e.dash?'dashed':'solid'} ${e.stroke}"></span>${html(name(o)||'(open end)')} <em class="muted">${html([ifn,Shapes.linkTypes[e.linkType]?.name].filter(Boolean).join(' · '))}</em></label>`}).join('')}</div>
+    <div class="row"><button data-mv-all>All</button><button data-mv-none>None</button></div>
+    <div class="fld"><span>Move them to</span><div class="seg"><button data-mv-dest="existing" class="active">Another device</button><button data-mv-dest="new">A new device</button></div></div>
+    <div id="mvExisting" class="row"><label class="fld"><span>Device</span><select id="mvTarget">${devs.map(n=>`<option value="${n.id}">${html(name(n))} — ${html(Shapes.nameOf(n.type))}</option>`).join('')}</select></label><div class="fld"><span>&nbsp;</span><button data-mv-pick>Pick it on the page…</button></div></div>
+    <div id="mvNew" hidden><div class="row"><label class="fld"><span>Type</span><select id="mvType">${cats.map(c=>`<optgroup label="${html(c.name)}">${c.items.filter(i=>Shapes.kindOf(i.type)==='device').map(i=>`<option value="${i.type}" ${i.type===src.type?'selected':''}>${html(i.name)}</option>`).join('')}</optgroup>`).join('')}</select></label><label class="fld"><span>Name</span><input id="mvName" value="${html(name(src))} (2)"></label></div>
+      <div class="fld"><span>Place it</span><div class="seg"><button data-mv-place="right" class="active">To the right</button><button data-mv-place="below">Below</button><button data-mv-place="left">To the left</button></div></div></div>
+    <label class="check"><input type="checkbox" id="mvKeepIf" checked>Keep interface names on the moved ends</label>
+    <footer><button data-close>Cancel</button><button class="primary" data-mv-go>Move links</button></footer>`);
+  let dest='existing',place='right';const ticked=()=>[...d.querySelectorAll('[data-mv]:checked')].map(c=>c.dataset.mv);
+  const label=()=>{const k=ticked().length;d.querySelector('[data-mv-go]').textContent=k?`Move ${plural(k,'link')}`:'Move links';d.querySelector('[data-mv-go]').disabled=!k||dest==='existing'&&!devs.length};label();d.onchange=label;
+  const apply=(targetId,ids,keepIf)=>{let skipped=0;const t=mutate(()=>{let t=targetId&&find(targetId);
+      if(!t){t=Shapes.make($('mvType').value,0,0,$('mvName').value.trim()||name(src)+' (2)');const gap=110,pos=place==='below'?[src.x,src.y+src.h+gap]:place==='left'?[src.x-gap-t.w,src.y]:[src.x+src.w+gap,src.y];C.move(t,pos[0]-t.x,pos[1]-t.y);
+        for(let i=0;i<40&&items().some(o=>o.kind==='node'&&C.overlaps?.(C.box(o),C.box(t)));i++)C.move(t,place==='below'?t.w+30:0,place==='below'?0:t.h+40);t.layer=src.layer;applyThemeToNew(t);items().push(t)}
+      for(const id of ids){const e=find(id);if(!e)continue;const k=atSrc(e),o=k==='from'?'to':'from';if(e[o]?.node===t.id){skipped++;continue}e[k]={node:t.id,port:null};if(!keepIf){if(k==='from')delete e.fromIf;else delete e.toIf}Conn.markDirty(e.id)}
+      select([t.id,...ids.filter(id=>find(id))]);return t});
+    notify(`Moved ${plural(ids.length-skipped,'link')} from “${name(src)}” to “${name(t)}”${skipped?` · ${skipped} skipped (already connected to it)`:''}. Ctrl+Z undoes.`,4000)};
+  d.onclick=e=>{const t=e.target;if(t.closest('[data-close]'))return closeDialog();
+    if(t.closest('[data-mv-all]')||t.closest('[data-mv-none]')){const on=!!t.closest('[data-mv-all]');d.querySelectorAll('[data-mv]').forEach(c=>c.checked=on);label();return}
+    const ds=t.closest('[data-mv-dest]');if(ds){dest=ds.dataset.mvDest;d.querySelectorAll('[data-mv-dest]').forEach(b=>b.classList.toggle('active',b===ds));$('mvExisting').hidden=dest!=='existing';$('mvNew').hidden=dest!=='new';label();return}
+    const pl=t.closest('[data-mv-place]');if(pl){place=pl.dataset.mvPlace;d.querySelectorAll('[data-mv-place]').forEach(b=>b.classList.toggle('active',b===pl));return}
+    const ids=ticked(),keepIf=$('mvKeepIf').checked;
+    if(t.closest('[data-mv-pick]')){if(!ids.length)return notify('Tick at least one link.');closeDialog();S.pickCancel='Moving links cancelled.';S.pickHandler=id=>{if(id===src.id)return notify('That is the device the links come from — pick another one.');apply(id,ids,keepIf)};notify(`Click the device the ${plural(ids.length,'link')} should move to · Esc cancels.`,6000);return}
+    if(t.closest('[data-mv-go]')){if(!ids.length)return;closeDialog();apply(dest==='existing'?$('mvTarget').value:null,ids,keepIf)}}}
+
 function init(){const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
   document.addEventListener('click',e=>{const b=e.target.closest?.('[data-legend-style]');if(b){const[id,...k]=b.dataset.legendStyle.split('|');openLegendStyle(id,k.join('|'))}})}
-return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow};
+return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow,arrangePorts,openMoveLinks};
 })();

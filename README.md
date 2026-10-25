@@ -61,6 +61,12 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 
 ---
 
+### Ribbon, full screen, links and connection points
+* **The ribbon always fits, with no scrolling.** When a tab's groups don't fit the window, they shrink from the right one step at a time: buttons stack three rows high, then big buttons turn small, then icons only (names in tooltips), and finally a group folds into one button that opens it as a popup.
+* **Full screen** (button at the top right, *View ▸ Layout*, or Ctrl/⌘+Shift+F) makes the whole editor full screen: ribbon, panels and all. *Present* still shows just the drawing.
+* **Move links.** Right-click a device ▸ *Move links to another device…* (or *Move the N selected links to…* after selecting some links). Tick the links, then choose an existing device, pick one on the page, or create a new device placed beside it. The other ends stay put, and interface names are kept if you want.
+* **Arrange connection points.** Right-click ▸ *Connection points*, or the inspector's *Arrange points*: in a row along the top or bottom, in a column on the left or right, split between two opposite sides, evenly around the device, or evenly on the sides they're already on. Points keep their identity, so attached connectors follow.
+
 ### Selecting (Visio-style)
 * **Click** picks the top-most shape. While you hover, an outline shows exactly what a click will select.
   * Unfilled shapes (revision clouds, frames) are picked on their outline, with a tolerance that stays the same at any zoom, so what's inside them stays clickable.
@@ -138,8 +144,9 @@ js/revisions.js     revision log, change tracking, clouds / deltas, revision tab
 js/quick.js         right-click quick configure, legend restyle, Scale dialog, revisions UI
 js/inventory.js     inventory builder and per-device fields on the drawing
 js/select.js        window / lasso / Alt-click / Tab selection, select by type
+js/ports.js         arrange connection points (pure)
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
-tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions)
+tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions, ports)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview
 ```
 
