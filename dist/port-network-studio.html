@@ -392,6 +392,10 @@ dialog.inventory{width:min(1200px,97vw)}
 .submenu .ck{display:inline-block;width:12px}.submenu em{margin-left:auto;padding-left:10px;font-style:normal;color:var(--muted);font-size:10.5px}
 @media (max-width:860px){.invGrid{grid-template-columns:1fr}.checks.cols2{grid-template-columns:1fr}}
 
+/* select by type */
+.byType{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 18px;max-height:55vh;overflow:auto}
+.byType label.check{margin:3px 0}.byType em{margin-left:auto;font-style:normal}.allSec{margin-left:auto;font-size:10.5px;text-transform:none;letter-spacing:0;display:flex;gap:4px;align-items:center;cursor:pointer}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -1034,7 +1038,7 @@ data:'M4 4c0-1 12-1 12 0v12c0 1-12 1-12 0zM4 4c0 1 12 1 12 0M4 10c0 1 12 1 12 0'
 check:'M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5zM7 10l2 2 4-4',spof:'M10 3l8 14H2zM10 8v4M10 14v.5',trace:'M4 4a2 2 0 1 0 0-.1M16 16a2 2 0 1 0 0-.1M6 4h6a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h6',traffic:'M2 15l4-5 4 3 4-7 4 4',poe:'M11 2 5 11h5l-1 7 6-9h-5z',storage:'M4 4h12v4H4zM4 10h12v4H4zM6 6h.1M6 12h.1',filter:'M3 4h14l-5 6v6l-4-2v-4z',clear:'M5 5l10 10M15 5 5 15',ip:'M3 5h14v10H3zM6 8v4M9 8v4h1.5a1.5 1.5 0 0 0 0-3H9',
 align0:'M3 2v16M6 5h10v3H6zM6 12h6v3H6z',align1:'M10 2v16M5 5h10v3H5zM7 12h6v3H7z',align2:'M17 2v16M4 5h10v3H4zM8 12h6v3H8z',align3:'M2 3h16M5 6v10h3V6zM12 6v6h3V6z',align4:'M2 10h16M5 5v10h3V5zM12 7v6h3V7z',align5:'M2 17h16M5 4v10h3V4zM12 8v6h3V8z',distH:'M2 3v14M18 3v14M7 6h6v8H7z',distV:'M3 2h14M3 18h14M6 7h8v6H6z',samew:'M3 6h14v3H3zM6 12h8v3H6zM3 17h14',front:'M7 7h10v10H7zM3 3h10v4M3 3v10h4',back:'M3 3h10v10H3zM13 7h4v10H7v-4',forward:'M10 3v10M6 9l4 4 4-4M4 17h12',backward:'M10 17V7M6 11l4-4 4 4M4 3h12',group:'M2 2h4v4H2zM14 2h4v4h-4zM2 14h4v4H2zM14 14h4v4h-4zM6 4h8M6 16h8M4 6v8M16 6v8',ungroup:'M2 2h6v6H2zM12 12h6v6h-6z',rotate:'M15 4v4h-4M15 8a6 6 0 1 0 1 5',flipH:'M10 2v16M8 5 3 15h5zM12 5l5 10h-5z',lock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6 0v3',unlock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6-1',layers:'M10 2 2 6l8 4 8-4zM2 10l8 4 8-4M2 14l8 4 8-4',
 gridOn:'M3 3h14v14H3zM3 8h14M3 12h14M8 3v14M12 3v14',ruler:'M2 7h16v6H2zM5 7v3M8 7v2M11 7v3M14 7v2',guide:'M7 2v16M2 13h16',ports:'M4 10a2 2 0 1 0 0-.1M16 10a2 2 0 1 0 0-.1M10 4a2 2 0 1 0 0-.1M6 10h8',map:'M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2zM7 2v14M13 4v14',zoomIn:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4M8 6v4',zoomOut:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4',fit:'M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5',hundred:'M4 7l2-1v9M9 6h3v9H9zM14 6h3v9h-3z',present:'M2 3h16v10H2zM10 13v4M6 17h8',moon:'M15 13a7 7 0 0 1-8-10 7 7 0 1 0 8 10z',magnet:'M5 3v7a5 5 0 0 0 10 0V3h-3v7a2 2 0 0 1-4 0V3z',arrows:'M10 3l3 3h-6zM10 17l3-3H7zM3 10l3-3v6zM17 10l-3-3v6z',wheel:'M7 2h6a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zM10 5v3',panels:'M2 3h16v14H2zM6 3v14M14 3v14',
-file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
+file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',lasso:'M10 3.5c4.1 0 7.5 2 7.5 4.6S14.1 12.7 10 12.7 2.5 10.7 2.5 8.1 5.9 3.5 10 3.5zM5.4 11.6c-1.3 1-1.7 2.4-1.1 3.4.7 1.2 2.6 1.3 3.6.2',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
 };
 function icon(name,size=18){const d=Icons[name];return d?`<svg class="ico" viewBox="0 0 20 20" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`:''}
 
@@ -3943,7 +3947,10 @@ function drawNode(n,g,ctx){
     if(n.data?.status==='To remove'&&ctx.doc.display?.statusMarks!==false)el('path',{d:`M4 4L${w-4} ${h-4}M${w-4} 4L4 ${h-4}`,stroke:'#dc2626','stroke-width':2.5,'stroke-linecap':'round',opacity:.85},t);
   }
   if(n.data?.status==='Planned'&&ctx.doc.display?.statusMarks!==false&&kind==='device')el('rect',{x:-4,y:-4,width:w+8,height:h+8,rx:8,fill:'none',stroke:'#2563eb','stroke-width':1.2,'stroke-dasharray':'4 3'},t);
-  hitRect(n,t,ctx);
+  // unfilled shapes (revision clouds, frames, open lines) are picked on their outline — with a fixed on-screen
+  // tolerance — so what is inside them stays clickable; everything else on its box
+  if(kind==='basic'&&ctx.interactive&&(n.fill==='none'||Shapes.basic[n.type].paths(w,h).every(q=>q.open)))for(const q of Shapes.basic[n.type].paths(w,h))el('path',{d:q.d,fill:'none',stroke:'transparent','stroke-width':14,'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':n.id,'data-role':'object'},t);
+  else hitRect(n,t,ctx);
   if(ctx.interactive&&n.url){const b=el('g',{transform:`translate(${n.x+n.w-4} ${n.y-2})`,'pointer-events':'none'},g);el('circle',{cx:0,cy:0,r:6.5,fill:'#fff',stroke:'#376be5'},b);el('path',{d:'M-2.5 1.5l5-5M-1 -3.5h3.5V0',stroke:'#376be5','stroke-width':1.3,fill:'none'},b)}
 }
 function rackOf(n,page){if(!Shapes.rackItems[n.type])return null;const b=Core.box(n),c=[b.x+b.w/2,b.y+b.h/2];return page.items.find(r=>r.kind==='node'&&r.type==='rack'&&Core.inside({x:c[0],y:c[1],w:0,h:0},Shapes.rackInner(r)))||null}
@@ -4024,7 +4031,8 @@ function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return nu
   if(type==='dot')el('circle',{cx:-2,cy:0,r:3.2,fill:color},m);else if(type==='circle')el('circle',{cx:-3,cy:0,r:3,fill:ctx.bg,stroke:color,'stroke-width':1.3},m);else if(type==='diamond')el('path',{d:'M0 0L-4 -3L-8 0L-4 3Z',fill:color},m);else if(type==='openArrow')el('path',{d:'M-7 -4L0 0L-7 4',fill:'none',stroke:color,'stroke-width':1.4},m);else if(type==='bar')el('path',{d:'M-1 -4.5V4.5',stroke:color,'stroke-width':1.6},m);else el('path',{d:'M1 0L-7 -4L-7 4Z',fill:color},m);return`url(#${id})`}
 function drawEdge(e,g,defs,ctx,before){
   const d=Conn.path(e,before,ctx.doc.display?.jumpStyle||'arc'),w=e.strokeWidth||2,load=ctx.analysis?.loads?.get(e.id),color=load?load.color:e.stroke||'#4a6fa5';
-  if(ctx.interactive)el('path',{d,fill:'none',stroke:'transparent','stroke-width':Math.max(12,w+10),'data-id':e.id,'data-role':'edge'},g);
+  // pick tolerance stays ~14 px on screen at any zoom
+  if(ctx.interactive)el('path',{d,fill:'none',stroke:'transparent','stroke-width':Math.max(14,(w+6)*(S.view?.zoom||1)),'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':e.id,'data-role':'edge'},g);
   const ms=markerDef(e,e.startMarker,'s',defs,ctx,color),me=markerDef(e,e.endMarker,'e',defs,ctx,color);
   if(e.double){el('path',{d,fill:'none',stroke:color,'stroke-width':w*2.6,'stroke-linejoin':'round','pointer-events':'none'},g);el('path',{d,fill:'none',stroke:ctx.bg,'stroke-width':w*1.05,'stroke-linejoin':'round','pointer-events':'none'},g);if(ms||me)el('path',{d,fill:'none',stroke:'transparent','stroke-width':w*1.6,'marker-start':ms,'marker-end':me,'pointer-events':'none'},g)}
   else el('path',{d,fill:'none',stroke:color,'stroke-width':w,'stroke-dasharray':e.dash||null,'stroke-linejoin':'round','stroke-linecap':e.dash?'butt':'round','marker-start':ms,'marker-end':me,'pointer-events':'none'},g);
@@ -4095,6 +4103,12 @@ function renderOverlay(){
   for(const id of S.highlights){const n=find(id);if(n){const b=Core.bounds([n],n.kind!=='edge');el('rect',{x:b.x-5/z,y:b.y-5/z,width:b.w+10/z,height:b.h+10/z,rx:4/z,fill:'#f59e0b','fill-opacity':.12,stroke:'#f59e0b','stroke-width':2/z,'pointer-events':'none'},o)}}
   // broken endpoints
   const byIdAll=new Map(items().map(n=>[n.id,n]));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&!Conn.resolveEnd(e,k,byIdAll)){const p=k==='from'?e.points[0]:e.points.at(-1);el('circle',{cx:p[0],cy:p[1],r:5/z,fill:'#fff4e6',stroke:'#e49a25','stroke-width':2/z,'pointer-events':'none'},o)}
+  // hover preview: outline what a click would select
+  const hi=!S.drag&&S.mode==='select'&&S.hoverItem&&!S.selected.has(S.hoverItem)&&find(S.hoverItem);
+  if(hi){const st={fill:'none',stroke:blue,'stroke-opacity':.55,'pointer-events':'none'};
+    if(hi.kind==='edge')el('path',{...st,d:Conn.path(hi),'stroke-width':(hi.strokeWidth||2)+5/z,'stroke-opacity':.28,'stroke-linecap':'round'},o);
+    else if(hi.kind==='node'&&Shapes.basic[hi.type]&&(hi.fill==='none')){const g2=el('g',{transform:`translate(${hi.x} ${hi.y})`},o);for(const q of Shapes.basic[hi.type].paths(hi.w,hi.h))el('path',{...st,d:q.d,'stroke-width':4/z,'stroke-opacity':.35},g2)}
+    else if(hi.kind!=='node'){const b=Core.box(hi);el('rect',{...st,x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,'stroke-width':1.5/z,'stroke-dasharray':`${5/z} ${3/z}`},o)}}
   // hover
   const hov=S.hoverId&&find(S.hoverId);
   if(hov&&!S.drag&&hov.kind==='node'&&!isLocked(hov)&&['select','connect','port'].includes(S.mode)){const b=Core.box(hov);el('rect',{x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,fill:'none',stroke:blue,'stroke-opacity':.45,'stroke-width':sw,'pointer-events':'none'},o);
@@ -4104,7 +4118,8 @@ function renderOverlay(){
   // selection
   const sel=picked();
   if(sel.length){
-    if(sel.length>1)for(const n of sel){if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+3/z,'stroke-opacity':.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x,y:b.y,width:b.w,height:b.h,fill:'none',stroke:blue,'stroke-opacity':.6,'stroke-width':sw,'pointer-events':'none'},o)}}
+    // the first selected item is the primary one (Align ▸ relative to first selected, Same size): a stronger outline
+    if(sel.length>1){const prim=[...S.selected][0];for(const n of sel){const pr=n.id===prim;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+(pr?5:3)/z,'stroke-opacity':pr?.5:.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-(pr?2:0)/z,y:b.y-(pr?2:0)/z,width:b.w+(pr?4:0)/z,height:b.h+(pr?4:0)/z,fill:'none',stroke:pr?'#c026d3':blue,'stroke-opacity':pr?.85:.6,'stroke-width':(pr?2:1)*sw,'pointer-events':'none'},o)}}}
     if(sel.length===1&&sel[0].kind==='edge')drawEdgeHandles(sel[0],o,z);
     else{const b=Core.bounds(sel);el('rect',{x:b.x-4/z,y:b.y-4/z,width:b.w+8/z,height:b.h+8/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o);
       const ed=editable();if(ed.length===sel.length&&!S.drag){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
@@ -4120,7 +4135,13 @@ function renderOverlay(){
   if(S.snapPort){const q=S.snapPort.p,r=9/z;el('circle',{cx:q[0],cy:q[1],r,fill:'#25b889','fill-opacity':.18,stroke:'#159c70','stroke-width':2/z,'pointer-events':'none'},o);const t=el('text',{x:q[0]+r+5/z,y:q[1]-r,fill:'#128461','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none',stroke:'#fff','stroke-width':3/z,'paint-order':'stroke'},o);t.textContent=hoverPortLabel(S.snapPort)}
   for(const gl of S.guideLines)el('line',{x1:gl[0],y1:gl[1],x2:gl[2],y2:gl[3],stroke:'#e0559b','stroke-width':sw,'stroke-dasharray':`${4/z} ${3/z}`,'pointer-events':'none'},o);
   if(S.spacing)for(const s of S.spacing){el('line',{x1:s[0],y1:s[1],x2:s[2],y2:s[3],stroke:'#e0559b','stroke-width':sw,'pointer-events':'none'},o)}
-  const d=S.drag;if(d&&['box','zone','textbox','rackdraw'].includes(d.kind)){const p=d.current||d.start,cross=d.kind==='box'&&p[0]<d.start[0];el('rect',{x:Math.min(p[0],d.start[0]),y:Math.min(p[1],d.start[1]),width:Math.abs(p[0]-d.start[0]),height:Math.abs(p[1]-d.start[1]),fill:blue,'fill-opacity':.07,stroke:blue,'stroke-dasharray':cross?`${5/z} ${3/z}`:null,'stroke-width':sw,'pointer-events':'none'},o)}
+  const d=S.drag;if(d&&['box','zone','textbox','rackdraw'].includes(d.kind)){const p=d.current||d.start,touch=d.kind==='box'&&d.touch,col=touch?'#16a34a':blue,x=Math.min(p[0],d.start[0]),y=Math.min(p[1],d.start[1]),w=Math.abs(p[0]-d.start[0]),h=Math.abs(p[1]-d.start[1]);
+    el('rect',{x,y,width:w,height:h,fill:col,'fill-opacity':.07,stroke:col,'stroke-dasharray':touch?`${5/z} ${3/z}`:null,'stroke-width':sw,'pointer-events':'none'},o);
+    // live preview of what the window will select
+    if(d.kind==='box'&&Math.max(w,h)*z>3)for(const id of Select.windowSelect({x,y,w,h},!!touch)){const n=find(id);if(!n||S.selected.has(id))continue;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:col,'stroke-width':(n.strokeWidth||2)+4/z,'stroke-opacity':.3,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:col,'fill-opacity':.1,stroke:col,'stroke-width':sw,'pointer-events':'none'},o)}}
+    if(d.kind==='box'&&w*z>40){const t=el('text',{x:x+4/z,y:y-5/z,'font-size':11/z,'font-family':Core.FONT,fill:col,'font-weight':600,'pointer-events':'none'},o);t.textContent=touch?`Touching (${ALTK})`:`Fully inside · hold ${ALTK} for touching`}}
+  if(d?.kind==='lasso'&&d.pts.length>2)for(const id of Select.lassoSelect(d.pts,!!d.touch)){const n=find(id);if(!n||S.selected.has(id)||n.kind==='edge')continue;const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:d.touch?'#16a34a':blue,'fill-opacity':.1,stroke:d.touch?'#16a34a':blue,'stroke-width':sw,'pointer-events':'none'},o)}
+  if(d?.kind==='lasso'&&d.pts.length>1){const col=d.touch?'#16a34a':blue;el('path',{d:'M'+d.pts.map(q=>q.join(' ')).join('L')+'Z',fill:col,'fill-opacity':.07,stroke:col,'stroke-width':sw,'stroke-dasharray':d.touch?`${5/z} ${3/z}`:null,'pointer-events':'none'},o)}
   if(d?.kind==='move'&&d.rackSlot){const r=d.rackSlot;el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:'#25b889','fill-opacity':.25,stroke:'#159c70','stroke-width':sw,'pointer-events':'none'},o)}
 }
 function drawPorts(n,o,z,named=false){for(const p of n.ports||[]){const q=Core.portPoint(n,p);const c=el('circle',{cx:q[0],cy:q[1],r:4/z,fill:'#fff',stroke:'#3779db','stroke-width':1.5/z,'data-id':n.id,'data-role':'port','data-port':p.id,cursor:'crosshair'},o);const t=el('title',{},c);t.textContent=p.name||'Port';if(named&&p.name){const tx=el('text',{x:q[0]+6/z,y:q[1]-6/z,'font-size':9/z,fill:'#3779db','font-family':Core.FONT,'pointer-events':'none'},o);tx.textContent=p.name}}}
@@ -4802,7 +4823,8 @@ let toastTimer=null;
 function notify(text,ms=3800){const t=$('toast');t.textContent=text;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,ms)}
 
 // ---------- modes ----------
-const HINTS={select:'Drag to move · Shift-click adds · Alt-drag duplicates · Drag a port or the blue arrows to connect · Double-click to edit text',connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.'};
+const IS_MAC=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent),MODK=IS_MAC?'⌘':'Ctrl',ALTK=IS_MAC?'⌥':'Alt';
+const HINTS={select:`Click to select · Shift/${MODK}-click adds · drag on empty space for a window (fully inside; ${ALTK} = touching) · ${ALTK}-click picks what is underneath · Tab steps · ${MODK}/${ALTK}-drag duplicates`,lasso:`Draw round what to select (fully inside; ${ALTK} = touching) · Shift adds · Esc returns to the pointer`,connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.'};
 function setMode(m){S.mode=m;S.trace=null;S.hover=null;S.snapPort=null;S.dropTarget=null;S.painter=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));$('canvas').style.cursor=m==='pan'?'grab':m==='select'?'default':'crosshair';$('hint').textContent=HINTS[m]||'';render('overlay');render('panel')}
 
 // ---------- coordinates & snapping ----------
@@ -4838,7 +4860,8 @@ function moveSet(ids){
 
 // ---------- pointer ----------
 function beginPointer(e){
-  if(e.button===2)return;if(!$('inlineText').hidden){$('inlineText').blur();return}
+  // on a Mac, Ctrl+click is the right-click: leave it to the context menu (⌘ takes Ctrl's role there)
+  if(e.button===2||IS_MAC&&e.ctrlKey&&!e.metaKey)return;if(!$('inlineText').hidden){$('inlineText').blur();return}
   hideMenus();const p=point(e),t=e.target.closest('[data-role]'),role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id),now=Date.now(),key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
   if(S.lastClick&&now-S.lastClick.time<380&&S.lastClick.key===key&&Math.hypot(e.clientX-S.lastClick.x,e.clientY-S.lastClick.y)<6&&S.mode==='select'){S.lastClick=null;onDoubleClick(e,p,t,n);return}
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
@@ -4853,22 +4876,31 @@ function beginPointer(e){
   if(S.mode==='connect'){
     if(S.trace){let c=snapTarget(p,e);if(c.candidate){remember();c=commitPort(c);changed()}if(c.glue)c={p:c.p,ref:c.ref};S.trace.steps.push(S.trace.points.length);S.trace.points.push(...routeTo(S.trace.points.at(-1),c.p));S.trace.to=c.ref;if(c.ref){finishTrace();return}S.hover=null;render('overlay');return}
     const c=snapTarget(p,e);startConnect(c,p,e);capture();return}
+  if(S.mode==='lasso'){const add=e.shiftKey||e.ctrlKey||e.metaKey;if(!add)S.selected.clear();S.drag={kind:'lasso',pts:[p],add,touch:e.altKey};capture();render('overlay');render('panel');return}
   if(S.mode==='zone'){S.drag={kind:'zone',start:[grid(p[0]),grid(p[1])]};S.drag.current=S.drag.start;capture();return}
   if(S.mode==='text'){S.drag={kind:'textbox',start:p,current:p};capture();return}
   if(S.mode==='port'&&n?.kind==='node'&&!isLocked(n)){if(role==='port'){remember();S.drag={kind:'port',id:n.id,port:t.dataset.port};capture()}else{const c=edgeCandidate(n,p);mutate(()=>n.ports.push({id:C.uid(),name:'Port '+(n.ports.length+1),x:c.candidate.x,y:c.candidate.y}))}return}
   if(role==='resize'){if(!editable().length)return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
   if(n){
     if(n.kind==='node'&&n.url&&(e.ctrlKey||e.metaKey)){followLink(n.url);return}
-    if(e.shiftKey){selection(id,true,e.ctrlKey||e.metaKey);render('overlay');render('panel');return}
-    if(!S.selected.has(id)||e.ctrlKey||e.metaKey)selection(id,false,e.ctrlKey||e.metaKey);
+    const mod=e.ctrlKey||e.metaKey;
+    if(e.shiftKey){selection(id,true);render('overlay');render('panel');return}
+    // the empty inside of a zone: a click selects the zone, a drag draws a selection window over what is in it
+    if(n.kind==='zone'&&role==='object'&&!S.selected.has(id)&&!mod&&zoneInterior(n,p)){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add:false,touch:e.altKey,zoneClick:id,startClient:[e.clientX,e.clientY]};capture();render('overlay');render('panel');return}
+    const prevSel=[...S.selected],wasSel=S.selected.has(id),groupSel=!!n.group&&items().filter(x=>x.group===n.group).every(x=>S.selected.has(x.id));
+    // Ctrl adds now; released without dragging, a Ctrl-click on something already selected removes it
+    if(mod){if(!wasSel)selection(id,true)}else if(!wasSel)selection(id,false);
     if(isLocked(n)){render('overlay');render('panel');return}
-    const kind=role==='label'?'label':role==='segment'?'segment':role==='bend'?'bend':'move';
+    // a zone's title is part of its heading: dragging it moves the zone (Visio containers); device labels drag on their own
+    const kind=role==='label'&&n.kind!=='zone'?'label':role==='segment'?'segment':role==='bend'?'bend':'move';
     S.activeLabel=kind==='label'?{owner:id,id:t.dataset.label}:null;S.segment=kind==='segment'?{id,index:+t.dataset.index}:null;S.bend=kind==='bend'?{id,index:+t.dataset.index}:null;
     remember();
-    let set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
-    if(kind==='move'&&e.altKey){const dup=C.duplicate(set,0,0);items().push(...dup);set=dup;S.selected=new Set(dup.map(x=>x.id));S.duplicated=true}
-    S.drag={kind,start:p,id:kind==='move'&&e.altKey?set.find(x=>x.kind!=='edge')?.id:id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set)};
-  }else{if(!e.shiftKey)S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add:e.shiftKey}}
+    const set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
+    // Ctrl- or Alt-drag duplicates (once the pointer really moves); Alt-click reaches what is underneath; clicking a
+    // member of an already selected group picks just that member
+    S.drag={kind,start:p,startClient:[e.clientX,e.clientY],id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set),
+      dupPending:kind==='move'&&(e.altKey||mod),altClick:e.altKey&&!mod,prevSel,ctrlClick:mod?(wasSel?'remove':'added'):null,subselect:kind==='move'&&!mod&&!e.altKey&&groupSel?id:null};
+  }else{const add=e.shiftKey||e.ctrlKey||e.metaKey;if(!add)S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add,touch:e.altKey,startClient:[e.clientX,e.clientY]}}
   capture();render('overlay');render('panel')}
 
 function startConnect(c,p,e){
@@ -4882,14 +4914,19 @@ function pointerMove(e,fromPan=false){
   if(!fromPan)autoPan(e);const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
   if(!d){
     if(S.mode==='connect'){if(S.trace){const t=snapTarget(p,e);S.hover=t.p}else snapTarget(p,e);S.hoverId=nodesAt(p)[0]?.id||null;render('overlay')}
-    else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id,n=id&&find(id);let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
+    else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id,n=id&&find(id);const hv=n&&Select.selectable(n)&&!n.pin?n.id:null;if(hv!==S.hoverItem){S.hoverItem=hv;render('overlay')}let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
     else render('overlay');
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
   if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;render('overlay');return}
-  if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;render('overlay');return}
+  if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;if(d.kind==='box')d.touch=e.altKey;render('overlay');return}
+  if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
   if(d.kind==='connect'){const t=snapTarget(p,e,{exclude:d.from?.node});d.target=t;d.moved=d.moved||Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>4;d.preview=previewRoute(d,t);render('overlay');return}
+  // a press that moves less than 4 px is a click, not a drag (no accidental nudges)
+  if(d.startClient&&!d.moved&&['move','label','segment','bend'].includes(d.kind)&&Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])<4)return;
+  if(d.kind==='move'&&d.dupPending){const live=d.original.map(o=>find(o.id)).filter(Boolean),dup=C.duplicate(live,0,0);items().push(...dup);d.original=C.copy(dup);d.id=(dup.find(x=>x.kind!=='edge')||dup[0]).id;S.selected=new Set(dup.map(x=>x.id));S.duplicated=true;d.dupPending=false}
+  if(d.kind==='move'){d.altClick=false;d.ctrlClick=null;d.subselect=null}
   let dx=p[0]-d.start[0],dy=p[1]-d.start[1];const n=find(d.id),o=d.original?.find?.(x=>x.id===d.id);
   if(d.kind==='port'){const port=n.ports.find(q=>q.id===d.port),[u,v]=C.localPoint(n,p);port.x=Math.max(0,Math.min(1,Math.round(u*40)/40));port.y=Math.max(0,Math.min(1,Math.round(v*40)/40))}
   if(d.kind==='label'){const l=n.labels.find(x=>x.id===d.label),old=o.labels.find(x=>x.id===d.label);if(l.anchor){l.anchor.dx=(old.anchor.dx||0)+dx;l.anchor.dy=(old.anchor.dy||0)+dy}else{l.x=grid(old.x+dx,e);l.y=grid(old.y+dy,e)}}
@@ -4935,7 +4972,10 @@ function doResize(d,p,e){
 
 function pointerUp(e){
   const d=S.drag;if(!d)return;S.drag=null;S.guideLines=[];S.spacing=null;const p=point(e);$('canvas').style.cursor=S.mode==='pan'?'grab':S.mode==='select'?'default':'crosshair';
-  if(d.kind==='box'){const q=d.current||d.start,x=Math.min(q[0],d.start[0]),y=Math.min(q[1],d.start[1]),w=Math.abs(q[0]-d.start[0]),h=Math.abs(q[1]-d.start[1]),cross=q[0]<d.start[0];if(w>2||h>2)for(const n of items()){if(!itemVisible(n,{doc:S.doc})||layerOf(n)?.locked)continue;const b=C.bounds([n]);if(cross?b.x<x+w&&b.x+b.w>x&&b.y<y+h&&b.y+b.h>y:b.x>=x&&b.y>=y&&b.x+b.w<=x+w&&b.y+b.h<=y+h){if(n.group)items().filter(t=>t.group===n.group).forEach(t=>S.selected.add(t.id));else S.selected.add(n.id)}}}
+  if(d.kind==='box'){const q=d.current||d.start,r={x:Math.min(q[0],d.start[0]),y:Math.min(q[1],d.start[1]),w:Math.abs(q[0]-d.start[0]),h:Math.abs(q[1]-d.start[1])},big=Math.max(r.w,r.h)*S.view.zoom>3;
+    // window selection: only what it fully covers, whichever way you drag; hold Alt for everything it touches
+    if(big)for(const id of Select.windowSelect(r,!!d.touch))S.selected.add(id);else if(d.zoneClick)selection(d.zoneClick)}
+  else if(d.kind==='lasso'){for(const id of Select.lassoSelect(d.pts,!!d.touch))S.selected.add(id);if(S.selected.size)notify(`${S.selected.size} selected with the lasso${d.touch?' (touching)':''}.`,1500)}
   else if(d.kind==='zone'){const q=d.current||d.start,w=Math.abs(q[0]-d.start[0]),h=Math.abs(q[1]-d.start[1]);if(w>20&&h>20)mutate(()=>{const z=C.zone('Network zone',Math.min(q[0],d.start[0]),Math.min(q[1],d.start[1]),w,h);z.layer=S.activeLayer;items().unshift(z);select([z.id])});setMode('select');if(w>20&&h>20)setTimeout(()=>editLabel(picked()[0].id,picked()[0].labels[0].id),30)}
   else if(d.kind==='textbox'){const q=d.current,w=Math.abs(q[0]-d.start[0]);const x=w>30?Math.min(q[0],d.start[0]):d.start[0],y=w>30?Math.min(q[1],d.start[1]):d.start[1];const n=mutate(()=>{const t=C.text('Text',x,y,w>30?w:240,60,14);if(w>30)t.labels[0].wrapWidth=w-20;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});setMode('select');editLabel(n.id,n.labels[0].id,true)}
   else if(d.kind==='autoconn'){autoConnect(d.id,d.dir)}
@@ -4944,6 +4984,7 @@ function pointerUp(e){
       if(d.pending?.glue||edge.routing==='auto'||edge.routing==='straight')Conn.markDirty(edge.id);Conn.orthogonalize(edge);edge.points=Conn.simplify(edge.points)}}
     if(d.kind==='move'&&d.rackSlot)notify('Placed at U'+Shapes.rackU(items().find(r=>r.type==='rack'&&C.inside({x:d.rackSlot.x+1,y:d.rackSlot.y+1,w:0,h:0},Shapes.rackInner(r))),{y:d.rackSlot.y,h:d.rackSlot.h})+'.',1800);
     S.snapPort=null;S.dropTarget=null;changed()}
+  else if(d.kind==='move'&&(d.altClick||d.ctrlClick||d.subselect)){S.history.pop();if(d.altClick)Select.cycleAt(...d.startClient,d.prevSel);else if(d.ctrlClick==='remove')selection(d.id,true);else if(d.subselect){select([d.subselect]);notify('Picked one shape of the group — click outside to go back, Ctrl+Shift+G ungroups.',2200)}}
   else if(d.kind!=='pan'&&d.kind!=='autoconn'){if(S.duplicated){changed()}else S.history.pop()}
   S.duplicated=false;S.snapPort=null;S.dropTarget=null;render()}
 
@@ -5059,6 +5100,7 @@ function onKey(e){
   if(mod){const map={z:()=>e.shiftKey?redo():undo(),y:redo,a:()=>{select(items().filter(n=>itemVisible(n,{doc:S.doc})&&!layerOf(n)?.locked).map(n=>n.id))},d:actions.duplicate,s:()=>e.shiftKey?saveAs():save(),o:actions.open,p:actions.print,g:()=>e.shiftKey?actions.ungroup():actions.group(),f:actions.find,h:actions.find,k:actions.palette,l:()=>e.shiftKey?actions.unlock():actions.lock(),']':()=>order(e.shiftKey?'front':'forward'),'[':()=>order(e.shiftKey?'back':'backward'),'=':()=>zoomAt(1.2),'+':()=>zoomAt(1.2),'-':()=>zoomAt(1/1.2),'0':()=>fit(),'1':()=>setZoom(1),e:actions.exportPng,b:()=>actions.bold(),i:()=>actions.italic()};
     if(map[k]){e.preventDefault();map[k]();return}if(['c','x','v'].includes(k))return;return}
   if(e.code==='Space'){e.preventDefault();if(!S.space){S.space=true;$('canvas').style.cursor='grab'}return}
+  if(k==='tab'&&!mod&&!e.altKey){e.preventDefault();Select.tab(e.shiftKey);return}
   if(k==='escape'&&document.body.classList.contains('ribbonPeek')){document.body.classList.remove('ribbonPeek');renderRibbon();return}
   if(k==='escape'){if(S.drag&&S.history.length&&!['box','pan','zone','textbox'].includes(S.drag.kind)){const s=S.history.pop();S.drag=null;restore(s)}S.drag=null;hideMenus();if(S.analysis||S.highlights.size||S.filter){S.analysis=null;S.highlights.clear();setFilter(null);render();return}setMode('select');S.selected.clear();S.activeLabel=null;S.painter=false;$('printPreview').hidden=true;render();return}
   if(S.mode==='connect'&&S.trace&&k==='backspace'){e.preventDefault();if(S.trace.steps.length)S.trace.points.splice(S.trace.steps.pop());else S.trace=null;render('overlay');return}
@@ -5074,6 +5116,9 @@ function onKey(e){
 
 // Double-click on a legend row: restyle every link / device of that type.
 function openLegendRow(n,key){Quick.openLegendStyle(n.id,key)}
+
+// Inside a zone, away from its border and heading: where a drag should draw a selection window, not move the zone.
+function zoneInterior(z,p){const b=8/S.view.zoom,head=Math.max(26,z.labels?.[0]?z.labels[0].y-z.y+10:26);return p[0]>z.x+b&&p[0]<z.x+z.w-b&&p[1]>z.y+head&&p[1]<z.y+z.h-b}
 
 </script>
 <script>
@@ -5276,7 +5321,7 @@ function assignIps(){const z=picked()[0];if(!z||z.kind!=='zone')return;const c=C
 function traceInteractive(fromId){const from=fromId||picked().find(n=>n.kind==='node')?.id;if(!from)return notify('Select the start device, then choose Trace path.');S.traceFrom=from;notify('Now click the destination device…',6000);S.pickHandler=id=>{const p=Analysis.path(pg(),from,id);if(!p){notify('No path between these devices.');S.analysis=null}else{const G=Analysis.graph(pg()),alt=Analysis.allPaths(G,from,id,3);S.analysis={kind:'path',nodes:new Set(p.nodes),edges:new Set(p.edges),color:'#16a34a'};notify(`Path: ${p.nodes.map(i=>Analysis.nameOf(find(i))).join(' → ')} (${p.edges.length} hop${p.edges.length===1?'':'s'})${alt.length>1?` · ${alt.length} alternative routes`:' · no alternative route'}`,9000)}render()}}
 const actions={
   // file
-  new:()=>openTemplates(),newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
+  new:()=>openTemplates(),selectAll:()=>Select.all(),selectByType:()=>Select.openByType(),invertSel:()=>Select.invert(),selectNone:()=>{select([]);render()},newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
   exportSvg:()=>exportSvg(),exportPng:()=>exportPng(2),exportPng4:()=>exportPng(4),exportPngT:()=>exportPng(2,true),copyPng:()=>copyPng(),exportDrawio:()=>exportDrawio(),exportVsdx:()=>exportVsdx(),exportCsv:()=>showReport(Analysis.inventory(S.doc)),
   print:()=>previewPrint(),printAll:()=>previewPrint(true),closePrint:()=>$('printPreview').hidden=true,printNow:()=>window.print(),share:()=>shareLink(),docProps:()=>{S.selected.clear();S.tab='doc';Ins.invalidate();render()},
   // edit
@@ -5356,7 +5401,8 @@ const routeSelect=()=>`<label class="rsel" title="Routing style for new connecto
 const RIBBON=[
   {id:'home',name:'Home',groups:[
     {name:'Clipboard',items:[B('paste','Paste','paste','Paste (Ctrl+V)',true),B('cut','Cut','cut','Ctrl+X'),B('copy','Copy','copy','Ctrl+C'),B('duplicate','Duplicate','duplicate','Ctrl+D'),B('painter','Format painter','brush','Copy formatting from the selection and click targets')]},
-    {name:'Tools',items:[M('select','Pointer','select','V',true),M('connect','Connector','connect','C',true),M('zone','Zone','zone','Z'),M('text','Text','text','T'),M('port','Points','port','P'),M('pan','Pan','pan','H')]},
+    {name:'Tools',items:[M('select','Pointer','select','V',true),M('connect','Connector','connect','C',true),M('zone','Zone','zone','Z'),M('text','Text','text','T'),M('port','Points','port','P'),M('pan','Pan','pan','H'),M('lasso','Lasso','lasso','')]},
+    {name:'Select',items:[B('selectAll','All','select','Ctrl+A'),B('selectByType','By type…','filter','Select devices, links, zones, markup… by type or layer'),B('invertSel','Invert','arrows','Select everything that is not selected'),B('selectNone','None','clear','Esc')]},
     {name:'Connector',items:[X(linkTypeSelect),X(routeSelect),B('reroute','Re-route','reroute','Re-route the selected connectors around shapes')]},
     {name:'Text',items:[X(()=>`<label class="rsel" title="Text size"><select id="fontSizeSel"><option value="">Size</option>${[8,9,10,11,12,13,14,16,18,20,24,28,32,40].map(s=>`<option>${s}</option>`).join('')}</select></label>`),B('bold','Bold','bold','Ctrl+B'),B('italic','Italic','italic','Ctrl+I'),X(()=>`<label class="rcolor" title="Text colour"><input type="color" id="fontColor" value="#34465e"><span>A</span></label>`)]},
     {name:'Shape',items:[X(()=>`<label class="rsel" title="Device display style"><select id="displaySel"><option value="">Display…</option><option value="symbol">Symbol</option><option value="card">Card</option><option value="tile">Tile</option><option value="circle">Circle</option></select></label>`),X(()=>`<label class="rcolor" title="Line / accent colour"><input type="color" id="strokeColor" value="#2f5ea8"><span>▬</span></label><label class="rcolor" title="Fill colour"><input type="color" id="fillColor" value="#ffffff"><span>◼</span></label>`)]},
@@ -5542,7 +5588,7 @@ function openVlans(){let rows=C.copy(S.doc.vlans||[]);const draw=()=>`<table cla
   d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(e.target.closest('[data-vadd]')){const next=Math.max(0,...rows.map(r=>+r.id||0))+10;rows.push({id:next,name:'VLAN '+next,subnet:'',gateway:'',color:Shapes.PALETTE[rows.length%Shapes.PALETTE.length]});$('vlanTable').innerHTML=draw();return}const del=e.target.closest('[data-vdel]');if(del){rows.splice(+del.dataset.vdel,1);$('vlanTable').innerHTML=draw();return}
     if(e.target.closest('[data-vzones]')){for(const p of S.doc.pages)for(const z of p.items)if(z.kind==='zone'&&z.data?.vlan&&!rows.some(r=>String(r.id)===String(z.data.vlan)))rows.push({id:z.data.vlan,name:Analysis.zoneName(z),subnet:z.data.subnet||'',gateway:z.data.gateway||'',color:Shapes.PALETTE[rows.length%Shapes.PALETTE.length]});$('vlanTable').innerHTML=draw();return}
     if(e.target.closest('[data-vsave]')){mutate(()=>S.doc.vlans=rows.filter(r=>String(r.id).trim()));closeDialog();notify('VLAN registry saved ('+S.doc.vlans.length+').')}}}
-const SHORTCUTS=[['V / C / Z / T / P / H','Pointer · Connector · Zone · Text · Points · Pan'],['Space + drag','Pan'],['Ctrl/⌘ + wheel or pinch','Zoom'],['Shift+1 / Shift+2 · F','Fit page / fit selection'],['Ctrl+1','Zoom 100 %'],['Enter / F2 / double-click','Edit text'],['Delete','Delete selection, section or bend'],['Arrows (Shift ×10)','Nudge'],['Alt + drag','Duplicate while dragging'],['Ctrl/⌘ + drag','Move without snapping'],['Shift + drag','Constrain to axis / keep proportions'],['Ctrl+C / X / V / D','Copy · cut · paste · duplicate (works across tabs)'],['Ctrl+Z / Ctrl+Y','Undo / redo'],['Ctrl+G / Ctrl+Shift+G','Group / ungroup'],['Ctrl+] / Ctrl+[','Bring forward / send backward (+Shift: front/back)'],['Ctrl+L / Ctrl+Shift+L','Lock / unlock'],['Ctrl+B / Ctrl+I','Bold / italic text'],['Ctrl+F','Find & replace'],['Ctrl+K','Command palette'],['Ctrl+S / Ctrl+Shift+S','Save / save as'],['Ctrl+P','Print / PDF'],['Ctrl+E','Export PNG'],['L','Auto-layout page'],['Ctrl+click','Open a shape hyperlink'],['Ctrl+. ','Focus mode (canvas only)'],['Ctrl+F1','Collapse / pin the ribbon'],['Ctrl+Alt+← / Ctrl+Alt+→','Hide / show the shapes panel / inspector'],['Esc','Cancel · clear highlights · back to pointer'],['Connector mode: Backspace / Enter','Remove last bend / finish manual path']];
+const SHORTCUTS=[['V / C / Z / T / P / H','Pointer · Connector · Zone · Text · Points · Pan'],['Space + drag','Pan'],['Ctrl/⌘ + wheel or pinch','Zoom'],['Shift+1 / Shift+2 · F','Fit page / fit selection'],['Ctrl+1','Zoom 100 %'],['Enter / F2 / double-click','Edit text'],['Delete','Delete selection, section or bend'],['Arrows (Shift ×10)','Nudge'],['Click','Select (top-most shape; unfilled shapes such as revision clouds by their outline)'],['Shift / Ctrl/⌘ + click','Add to / remove from the selection'],['Click a grouped shape again','Select just that member of the group'],['Alt + click','Select what is underneath (repeat to cycle)'],['Drag on empty space or inside a zone','Window: selects only what is fully inside (hold Alt for touching)'],['Tab / Shift+Tab','Select next / previous shape'],['Ctrl+A','Select all'],['Ctrl/⌘ or Alt + drag','Duplicate while dragging (held from the start)'],['Ctrl/⌘ pressed during a drag','Move without snapping'],['Shift + drag','Constrain to axis / keep proportions'],['Ctrl+C / X / V / D','Copy · cut · paste · duplicate (works across tabs)'],['Ctrl+Z / Ctrl+Y','Undo / redo'],['Ctrl+G / Ctrl+Shift+G','Group / ungroup'],['Ctrl+] / Ctrl+[','Bring forward / send backward (+Shift: front/back)'],['Ctrl+L / Ctrl+Shift+L','Lock / unlock'],['Ctrl+B / Ctrl+I','Bold / italic text'],['Ctrl+F','Find & replace'],['Ctrl+K','Command palette'],['Ctrl+S / Ctrl+Shift+S','Save / save as'],['Ctrl+P','Print / PDF'],['Ctrl+E','Export PNG'],['L','Auto-layout page'],['Ctrl/⌘ + click a shape with a link','Open its hyperlink'],['Ctrl+. ','Focus mode (canvas only)'],['Ctrl+F1','Collapse / pin the ribbon'],['Ctrl+Alt+← / Ctrl+Alt+→','Hide / show the shapes panel / inspector'],['Esc','Cancel · clear highlights · back to pointer'],['Connector mode: Backspace / Enter','Remove last bend / finish manual path']];
 function openShortcuts(){openDialog('Keyboard shortcuts',`<table class="kv keys">${SHORTCUTS.map(([k,t])=>`<tr><td>${k.split(' / ').map(x=>`<kbd>${html(x)}</kbd>`).join(' ')}</td><td>${html(t)}</td></tr>`).join('')}</table>`).onclick=e=>{if(e.target.closest('[data-close]'))closeDialog()}}
 function openHelp(){openDialog('Port Network Studio',`<p><b>Draw precise network diagrams, keep the data with them.</b> A browser-based, offline Visio alternative for network, security, CCTV, OT and data-centre designs.</p><ul class="help">
 <li><b>Shapes</b> — drag from the left panel or click to drop at the centre. Drop a device onto a link to insert it inline. Search knows synonyms (“fw”, “nvr”, “ap”…).</li>
@@ -6134,6 +6180,52 @@ function openShow(){const sel=picked().filter(n=>n.kind==='node'&&Shapes.isDevic
   d.onclick=e=>{if(e.target.closest('[data-close]'))closeDialog()}}
 
 return{open,openShow,build,catalog,shown,showOn,report,DEFAULT};
+})();
+
+</script>
+<script>
+// Selection, Visio-style: window selection takes only what it fully covers (Alt = touching), lasso, Alt-click to
+// reach what is underneath, Tab / Shift+Tab to step through shapes, Select by type / layer, invert.
+const Select=(()=>{
+const selectable=n=>!!n&&itemVisible(n,{doc:S.doc})&&!layerOf(n)?.locked;
+const geom=n=>C.bounds([n]);
+const inside=(b,r)=>b.x>=r.x-.5&&b.y>=r.y-.5&&b.x+b.w<=r.x+r.w+.5&&b.y+b.h<=r.y+r.h+.5;
+const touches=(b,r)=>b.x<r.x+r.w&&b.x+b.w>r.x&&b.y<r.y+r.h&&b.y+b.h>r.y;
+// Groups count only when every member qualifies — unless selecting by touch.
+function pick(test,touch){const all=items().filter(selectable),hit=new Set(all.filter(test).map(n=>n.id)),out=new Set();
+  for(const n of all){if(!hit.has(n.id))continue;if(n.group){const mem=items().filter(t=>t.group===n.group&&selectable(t));if(touch||mem.every(t=>hit.has(t.id)))mem.forEach(t=>out.add(t.id))}else out.add(n.id)}return out}
+const windowSelect=(r,touch)=>pick(n=>touch?touches(geom(n),r):inside(geom(n),r),touch);
+function pip([x,y],poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c}return c}
+const corners=n=>{if(n.kind==='edge')return n.points;const b=geom(n);return[[b.x,b.y],[b.x+b.w,b.y],[b.x,b.y+b.h],[b.x+b.w,b.y+b.h]]};
+const lassoSelect=(poly,touch)=>poly.length<3?new Set():pick(n=>touch?corners(n).some(q=>pip(q,poly)):corners(n).every(q=>pip(q,poly)),touch);
+
+function describe(n){if(!n)return'';const name=n.kind==='edge'?'connector':n.kind==='node'?(Revisions.MARKUP.has(n.type)?Shapes.basic[n.type]?.name.toLowerCase():Shapes.nameOf(n.type)):n.kind;const t=n.labels?.[0]?.text?.trim();return t&&n.kind!=='edge'?`${name} “${t.split('\n')[0]}”`:name}
+// Everything selectable under a screen point, top-most first.
+function stackAt(cx,cy){const ids=[];for(const el of document.elementsFromPoint(cx,cy)){const id=el.closest?.('[data-id]')?.dataset.id;if(id&&!ids.includes(id)&&selectable(find(id)))ids.push(id)}return ids}
+// prev: the selection before the click (the press itself may already have selected the top item)
+function cycleAt(cx,cy,prev=[...S.selected]){const ids=stackAt(cx,cy);if(!ids.length)return false;const cur=prev.length===1?prev[0]:null,next=ids[(ids.indexOf(cur)+1)%ids.length];
+  select([next]);notify(`Selected ${describe(find(next))}${ids.length>1?` · ${ids.length} items here — ${ALTK}-click again for the next one`:''}.`,2200);return true}
+// Tab order: reading order (top to bottom, then left to right).
+function tab(back){const list=items().filter(n=>selectable(n)&&!n.pin).map(n=>({n,c:C.center(n.kind==='edge'?{...geom(n),kind:'zone'}:n)})).sort((a,b)=>Math.abs(a.c[1]-b.c[1])>24?a.c[1]-b.c[1]:a.c[0]-b.c[0]).map(x=>x.n);if(!list.length)return;
+  const cur=[...S.selected].at(-1),i=list.findIndex(n=>n.id===cur),next=list[(i<0?(back?list.length-1:0):i+(back?-1:1)+list.length)%list.length];select([next.id]);notify(`${describe(next)} · Tab / Shift+Tab steps through shapes`,1500)}
+function invert(){const cur=S.selected;select(items().filter(n=>selectable(n)&&!n.pin&&!cur.has(n.id)).map(n=>n.id));notify(`${S.selected.size} selected.`,1400)}
+function all(){select(items().filter(n=>selectable(n)).map(n=>n.id));notify(`${S.selected.size} selected.`,1400)}
+
+// Select by type / layer (like Visio's Select by Type).
+function openByType(){const list=items().filter(n=>selectable(n)&&!n.pin),groups=new Map();
+  const add=(key,label,n,sec)=>{if(!groups.has(key))groups.set(key,{label,sec,ids:[]});groups.get(key).ids.push(n.id)};
+  for(const n of list){if(n.kind==='node'&&Revisions.MARKUP.has(n.type))add('m:'+n.type,Shapes.basic[n.type].name,n,'Revision markup');else if(n.kind==='node'&&Shapes.isDevice(n))add('d:'+n.type,Shapes.nameOf(n.type),n,'Devices');else if(n.kind==='node')add('s:'+n.type,Shapes.basic[n.type]?.name||(Shapes.rackItems[n.type]?.name)||Shapes.nameOf(n.type),n,'Shapes & racks');
+    else if(n.kind==='edge')add('l:'+(n.linkType||'_'),Shapes.linkTypes[n.linkType]?.name||'Connector',n,'Connectors');else add('k:'+n.kind,{zone:'Zones',text:'Text & callouts',table:'Tables',legend:'Legends'}[n.kind]||n.kind,n,'Other')}
+  const secs=['Devices','Connectors','Shapes & racks','Other','Revision markup'],layers=S.doc.layers.map(l=>({l,ids:list.filter(n=>(n.layer||S.doc.layers[0].id)===l.id).map(n=>n.id)})).filter(x=>x.ids.length);
+  const d=openDialog('Select by type',`<p class="muted">Tick what to select on this page. Combine types, or pick whole layers.</p><div class="byType">${secs.filter(s=>[...groups.values()].some(g=>g.sec===s)).map(s=>`<div><h4 class="tplHead">${s} <label class="allSec"><input type="checkbox" data-bt-sec="${s}"> all</label></h4>${[...groups].filter(([,g])=>g.sec===s).sort((a,b)=>a[1].label.localeCompare(b[1].label)).map(([k,g])=>`<label class="check"><input type="checkbox" data-bt="${html(k)}" data-sec="${s}">${html(g.label)} <em class="muted">${g.ids.length}</em></label>`).join('')}</div>`).join('')}
+    ${layers.length>1?`<div><h4 class="tplHead">Layers</h4>${layers.map(x=>`<label class="check"><input type="checkbox" data-bl="${x.l.id}">${html(x.l.name)} <em class="muted">${x.ids.length}</em></label>`).join('')}</div>`:''}</div>
+    <label class="check"><input type="checkbox" id="btAdd">Add to the current selection</label><p class="fitResult" id="btCount">Nothing ticked.</p>
+    <footer><button data-close>Cancel</button><button class="primary" data-bt-go>Select</button></footer>`,{wide:true});
+  const chosen=()=>{const ids=new Set($('btAdd').checked?S.selected:[]);d.querySelectorAll('[data-bt]:checked').forEach(c=>groups.get(c.dataset.bt).ids.forEach(i=>ids.add(i)));d.querySelectorAll('[data-bl]:checked').forEach(c=>layers.find(x=>x.l.id===c.dataset.bl).ids.forEach(i=>ids.add(i)));return ids};
+  d.onchange=e=>{const s=e.target.dataset.btSec;if(s)d.querySelectorAll(`[data-sec="${s}"]`).forEach(c=>c.checked=e.target.checked);$('btCount').textContent=`${chosen().size} item(s) will be selected.`};
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(!e.target.closest('[data-bt-go]'))return;const ids=chosen();closeDialog();select([...ids]);notify(`${ids.size} selected — right-click to change them all.`,2200)}}
+
+return{windowSelect,lassoSelect,stackAt,cycleAt,tab,invert,all,openByType,describe,selectable,inside,touches,pip};
 })();
 
 </script>

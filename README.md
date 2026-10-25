@@ -61,6 +61,19 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 
 ---
 
+### Selecting (Visio-style)
+* **Click** picks the top-most shape. While you hover, an outline shows exactly what a click will select.
+  * Unfilled shapes (revision clouds, frames) are picked on their outline, with a tolerance that stays the same at any zoom, so what's inside them stays clickable.
+  * Connectors have the same fixed tolerance.
+* **Shift- or Ctrl/⌘-click** adds and removes. Click a grouped shape once for the group, and again for just that member. **Alt-click** selects what's underneath (repeat to cycle). **Tab / Shift+Tab** step through shapes. On a Mac, ⌘ takes Ctrl's role, because Ctrl-click is the right-click there.
+* **Window selection** (drag on empty space) takes only what is *fully* inside, whichever way you drag, and outlines it before you let go. Hold **Alt** for everything it touches. Groups count only when entirely inside.
+* **Zones:**
+  * Dragging inside a zone's empty area draws a window over its contents instead of moving the zone.
+  * Clicking there selects the zone.
+  * Drag the heading or border to move the zone.
+* **More ways to select** (*Home ▸ Select*): Lasso, By type… (device types, link types, zones, markup, layers), Invert, None.
+* A press that moves under 4 px is a click, so nothing gets nudged by accident. Ctrl/⌘- or Alt-drag duplicates. In a multi-selection, the first item is marked as the primary one, which alignment uses.
+
 ### Quick editing, legend, revisions, scaling and inventory
 * **Right-click to configure a whole selection.** Change the link type (copper → fibre), line colour, width, style and arrows; device colour, fill, size, display and status; zone colour and style; and text size. *Select similar* picks every item with the same link type, device type or style.
 * **Restyle from the legend.** Double-click a legend row, or use its button in the Legend panel. Change "10G fibre" to orange and every fibre link follows, and so do new ones. You can also rename the row, or change a device type's colour or display. If links of one type are styled differently, the legend shows a separate row for each look.
@@ -124,6 +137,7 @@ js/scale.js         zone-aware scaling engine
 js/revisions.js     revision log, change tracking, clouds / deltas, revision tables
 js/quick.js         right-click quick configure, legend restyle, Scale dialog, revisions UI
 js/inventory.js     inventory builder and per-device fields on the drawing
+js/select.js        window / lasso / Alt-click / Tab selection, select by type
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
 tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview

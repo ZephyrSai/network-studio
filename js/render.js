@@ -90,7 +90,10 @@ function drawNode(n,g,ctx){
     if(n.data?.status==='To remove'&&ctx.doc.display?.statusMarks!==false)el('path',{d:`M4 4L${w-4} ${h-4}M${w-4} 4L4 ${h-4}`,stroke:'#dc2626','stroke-width':2.5,'stroke-linecap':'round',opacity:.85},t);
   }
   if(n.data?.status==='Planned'&&ctx.doc.display?.statusMarks!==false&&kind==='device')el('rect',{x:-4,y:-4,width:w+8,height:h+8,rx:8,fill:'none',stroke:'#2563eb','stroke-width':1.2,'stroke-dasharray':'4 3'},t);
-  hitRect(n,t,ctx);
+  // unfilled shapes (revision clouds, frames, open lines) are picked on their outline — with a fixed on-screen
+  // tolerance — so what is inside them stays clickable; everything else on its box
+  if(kind==='basic'&&ctx.interactive&&(n.fill==='none'||Shapes.basic[n.type].paths(w,h).every(q=>q.open)))for(const q of Shapes.basic[n.type].paths(w,h))el('path',{d:q.d,fill:'none',stroke:'transparent','stroke-width':14,'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':n.id,'data-role':'object'},t);
+  else hitRect(n,t,ctx);
   if(ctx.interactive&&n.url){const b=el('g',{transform:`translate(${n.x+n.w-4} ${n.y-2})`,'pointer-events':'none'},g);el('circle',{cx:0,cy:0,r:6.5,fill:'#fff',stroke:'#376be5'},b);el('path',{d:'M-2.5 1.5l5-5M-1 -3.5h3.5V0',stroke:'#376be5','stroke-width':1.3,fill:'none'},b)}
 }
 function rackOf(n,page){if(!Shapes.rackItems[n.type])return null;const b=Core.box(n),c=[b.x+b.w/2,b.y+b.h/2];return page.items.find(r=>r.kind==='node'&&r.type==='rack'&&Core.inside({x:c[0],y:c[1],w:0,h:0},Shapes.rackInner(r)))||null}
@@ -171,7 +174,8 @@ function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return nu
   if(type==='dot')el('circle',{cx:-2,cy:0,r:3.2,fill:color},m);else if(type==='circle')el('circle',{cx:-3,cy:0,r:3,fill:ctx.bg,stroke:color,'stroke-width':1.3},m);else if(type==='diamond')el('path',{d:'M0 0L-4 -3L-8 0L-4 3Z',fill:color},m);else if(type==='openArrow')el('path',{d:'M-7 -4L0 0L-7 4',fill:'none',stroke:color,'stroke-width':1.4},m);else if(type==='bar')el('path',{d:'M-1 -4.5V4.5',stroke:color,'stroke-width':1.6},m);else el('path',{d:'M1 0L-7 -4L-7 4Z',fill:color},m);return`url(#${id})`}
 function drawEdge(e,g,defs,ctx,before){
   const d=Conn.path(e,before,ctx.doc.display?.jumpStyle||'arc'),w=e.strokeWidth||2,load=ctx.analysis?.loads?.get(e.id),color=load?load.color:e.stroke||'#4a6fa5';
-  if(ctx.interactive)el('path',{d,fill:'none',stroke:'transparent','stroke-width':Math.max(12,w+10),'data-id':e.id,'data-role':'edge'},g);
+  // pick tolerance stays ~14 px on screen at any zoom
+  if(ctx.interactive)el('path',{d,fill:'none',stroke:'transparent','stroke-width':Math.max(14,(w+6)*(S.view?.zoom||1)),'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':e.id,'data-role':'edge'},g);
   const ms=markerDef(e,e.startMarker,'s',defs,ctx,color),me=markerDef(e,e.endMarker,'e',defs,ctx,color);
   if(e.double){el('path',{d,fill:'none',stroke:color,'stroke-width':w*2.6,'stroke-linejoin':'round','pointer-events':'none'},g);el('path',{d,fill:'none',stroke:ctx.bg,'stroke-width':w*1.05,'stroke-linejoin':'round','pointer-events':'none'},g);if(ms||me)el('path',{d,fill:'none',stroke:'transparent','stroke-width':w*1.6,'marker-start':ms,'marker-end':me,'pointer-events':'none'},g)}
   else el('path',{d,fill:'none',stroke:color,'stroke-width':w,'stroke-dasharray':e.dash||null,'stroke-linejoin':'round','stroke-linecap':e.dash?'butt':'round','marker-start':ms,'marker-end':me,'pointer-events':'none'},g);
@@ -242,6 +246,12 @@ function renderOverlay(){
   for(const id of S.highlights){const n=find(id);if(n){const b=Core.bounds([n],n.kind!=='edge');el('rect',{x:b.x-5/z,y:b.y-5/z,width:b.w+10/z,height:b.h+10/z,rx:4/z,fill:'#f59e0b','fill-opacity':.12,stroke:'#f59e0b','stroke-width':2/z,'pointer-events':'none'},o)}}
   // broken endpoints
   const byIdAll=new Map(items().map(n=>[n.id,n]));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&!Conn.resolveEnd(e,k,byIdAll)){const p=k==='from'?e.points[0]:e.points.at(-1);el('circle',{cx:p[0],cy:p[1],r:5/z,fill:'#fff4e6',stroke:'#e49a25','stroke-width':2/z,'pointer-events':'none'},o)}
+  // hover preview: outline what a click would select
+  const hi=!S.drag&&S.mode==='select'&&S.hoverItem&&!S.selected.has(S.hoverItem)&&find(S.hoverItem);
+  if(hi){const st={fill:'none',stroke:blue,'stroke-opacity':.55,'pointer-events':'none'};
+    if(hi.kind==='edge')el('path',{...st,d:Conn.path(hi),'stroke-width':(hi.strokeWidth||2)+5/z,'stroke-opacity':.28,'stroke-linecap':'round'},o);
+    else if(hi.kind==='node'&&Shapes.basic[hi.type]&&(hi.fill==='none')){const g2=el('g',{transform:`translate(${hi.x} ${hi.y})`},o);for(const q of Shapes.basic[hi.type].paths(hi.w,hi.h))el('path',{...st,d:q.d,'stroke-width':4/z,'stroke-opacity':.35},g2)}
+    else if(hi.kind!=='node'){const b=Core.box(hi);el('rect',{...st,x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,'stroke-width':1.5/z,'stroke-dasharray':`${5/z} ${3/z}`},o)}}
   // hover
   const hov=S.hoverId&&find(S.hoverId);
   if(hov&&!S.drag&&hov.kind==='node'&&!isLocked(hov)&&['select','connect','port'].includes(S.mode)){const b=Core.box(hov);el('rect',{x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,fill:'none',stroke:blue,'stroke-opacity':.45,'stroke-width':sw,'pointer-events':'none'},o);
@@ -251,7 +261,8 @@ function renderOverlay(){
   // selection
   const sel=picked();
   if(sel.length){
-    if(sel.length>1)for(const n of sel){if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+3/z,'stroke-opacity':.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x,y:b.y,width:b.w,height:b.h,fill:'none',stroke:blue,'stroke-opacity':.6,'stroke-width':sw,'pointer-events':'none'},o)}}
+    // the first selected item is the primary one (Align ▸ relative to first selected, Same size): a stronger outline
+    if(sel.length>1){const prim=[...S.selected][0];for(const n of sel){const pr=n.id===prim;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+(pr?5:3)/z,'stroke-opacity':pr?.5:.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-(pr?2:0)/z,y:b.y-(pr?2:0)/z,width:b.w+(pr?4:0)/z,height:b.h+(pr?4:0)/z,fill:'none',stroke:pr?'#c026d3':blue,'stroke-opacity':pr?.85:.6,'stroke-width':(pr?2:1)*sw,'pointer-events':'none'},o)}}}
     if(sel.length===1&&sel[0].kind==='edge')drawEdgeHandles(sel[0],o,z);
     else{const b=Core.bounds(sel);el('rect',{x:b.x-4/z,y:b.y-4/z,width:b.w+8/z,height:b.h+8/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o);
       const ed=editable();if(ed.length===sel.length&&!S.drag){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
@@ -267,7 +278,13 @@ function renderOverlay(){
   if(S.snapPort){const q=S.snapPort.p,r=9/z;el('circle',{cx:q[0],cy:q[1],r,fill:'#25b889','fill-opacity':.18,stroke:'#159c70','stroke-width':2/z,'pointer-events':'none'},o);const t=el('text',{x:q[0]+r+5/z,y:q[1]-r,fill:'#128461','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none',stroke:'#fff','stroke-width':3/z,'paint-order':'stroke'},o);t.textContent=hoverPortLabel(S.snapPort)}
   for(const gl of S.guideLines)el('line',{x1:gl[0],y1:gl[1],x2:gl[2],y2:gl[3],stroke:'#e0559b','stroke-width':sw,'stroke-dasharray':`${4/z} ${3/z}`,'pointer-events':'none'},o);
   if(S.spacing)for(const s of S.spacing){el('line',{x1:s[0],y1:s[1],x2:s[2],y2:s[3],stroke:'#e0559b','stroke-width':sw,'pointer-events':'none'},o)}
-  const d=S.drag;if(d&&['box','zone','textbox','rackdraw'].includes(d.kind)){const p=d.current||d.start,cross=d.kind==='box'&&p[0]<d.start[0];el('rect',{x:Math.min(p[0],d.start[0]),y:Math.min(p[1],d.start[1]),width:Math.abs(p[0]-d.start[0]),height:Math.abs(p[1]-d.start[1]),fill:blue,'fill-opacity':.07,stroke:blue,'stroke-dasharray':cross?`${5/z} ${3/z}`:null,'stroke-width':sw,'pointer-events':'none'},o)}
+  const d=S.drag;if(d&&['box','zone','textbox','rackdraw'].includes(d.kind)){const p=d.current||d.start,touch=d.kind==='box'&&d.touch,col=touch?'#16a34a':blue,x=Math.min(p[0],d.start[0]),y=Math.min(p[1],d.start[1]),w=Math.abs(p[0]-d.start[0]),h=Math.abs(p[1]-d.start[1]);
+    el('rect',{x,y,width:w,height:h,fill:col,'fill-opacity':.07,stroke:col,'stroke-dasharray':touch?`${5/z} ${3/z}`:null,'stroke-width':sw,'pointer-events':'none'},o);
+    // live preview of what the window will select
+    if(d.kind==='box'&&Math.max(w,h)*z>3)for(const id of Select.windowSelect({x,y,w,h},!!touch)){const n=find(id);if(!n||S.selected.has(id))continue;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:col,'stroke-width':(n.strokeWidth||2)+4/z,'stroke-opacity':.3,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:col,'fill-opacity':.1,stroke:col,'stroke-width':sw,'pointer-events':'none'},o)}}
+    if(d.kind==='box'&&w*z>40){const t=el('text',{x:x+4/z,y:y-5/z,'font-size':11/z,'font-family':Core.FONT,fill:col,'font-weight':600,'pointer-events':'none'},o);t.textContent=touch?`Touching (${ALTK})`:`Fully inside · hold ${ALTK} for touching`}}
+  if(d?.kind==='lasso'&&d.pts.length>2)for(const id of Select.lassoSelect(d.pts,!!d.touch)){const n=find(id);if(!n||S.selected.has(id)||n.kind==='edge')continue;const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:d.touch?'#16a34a':blue,'fill-opacity':.1,stroke:d.touch?'#16a34a':blue,'stroke-width':sw,'pointer-events':'none'},o)}
+  if(d?.kind==='lasso'&&d.pts.length>1){const col=d.touch?'#16a34a':blue;el('path',{d:'M'+d.pts.map(q=>q.join(' ')).join('L')+'Z',fill:col,'fill-opacity':.07,stroke:col,'stroke-width':sw,'stroke-dasharray':d.touch?`${5/z} ${3/z}`:null,'pointer-events':'none'},o)}
   if(d?.kind==='move'&&d.rackSlot){const r=d.rackSlot;el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:'#25b889','fill-opacity':.25,stroke:'#159c70','stroke-width':sw,'pointer-events':'none'},o)}
 }
 function drawPorts(n,o,z,named=false){for(const p of n.ports||[]){const q=Core.portPoint(n,p);const c=el('circle',{cx:q[0],cy:q[1],r:4/z,fill:'#fff',stroke:'#3779db','stroke-width':1.5/z,'data-id':n.id,'data-role':'port','data-port':p.id,cursor:'crosshair'},o);const t=el('title',{},c);t.textContent=p.name||'Port';if(named&&p.name){const tx=el('text',{x:q[0]+6/z,y:q[1]-6/z,'font-size':9/z,fill:'#3779db','font-family':Core.FONT,'pointer-events':'none'},o);tx.textContent=p.name}}}

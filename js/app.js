@@ -28,7 +28,8 @@ let toastTimer=null;
 function notify(text,ms=3800){const t=$('toast');t.textContent=text;t.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,ms)}
 
 // ---------- modes ----------
-const HINTS={select:'Drag to move · Shift-click adds · Alt-drag duplicates · Drag a port or the blue arrows to connect · Double-click to edit text',connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.'};
+const IS_MAC=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent),MODK=IS_MAC?'⌘':'Ctrl',ALTK=IS_MAC?'⌥':'Alt';
+const HINTS={select:`Click to select · Shift/${MODK}-click adds · drag on empty space for a window (fully inside; ${ALTK} = touching) · ${ALTK}-click picks what is underneath · Tab steps · ${MODK}/${ALTK}-drag duplicates`,lasso:`Draw round what to select (fully inside; ${ALTK} = touching) · Shift adds · Esc returns to the pointer`,connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.'};
 function setMode(m){S.mode=m;S.trace=null;S.hover=null;S.snapPort=null;S.dropTarget=null;S.painter=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));$('canvas').style.cursor=m==='pan'?'grab':m==='select'?'default':'crosshair';$('hint').textContent=HINTS[m]||'';render('overlay');render('panel')}
 
 // ---------- coordinates & snapping ----------
@@ -64,7 +65,8 @@ function moveSet(ids){
 
 // ---------- pointer ----------
 function beginPointer(e){
-  if(e.button===2)return;if(!$('inlineText').hidden){$('inlineText').blur();return}
+  // on a Mac, Ctrl+click is the right-click: leave it to the context menu (⌘ takes Ctrl's role there)
+  if(e.button===2||IS_MAC&&e.ctrlKey&&!e.metaKey)return;if(!$('inlineText').hidden){$('inlineText').blur();return}
   hideMenus();const p=point(e),t=e.target.closest('[data-role]'),role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id),now=Date.now(),key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
   if(S.lastClick&&now-S.lastClick.time<380&&S.lastClick.key===key&&Math.hypot(e.clientX-S.lastClick.x,e.clientY-S.lastClick.y)<6&&S.mode==='select'){S.lastClick=null;onDoubleClick(e,p,t,n);return}
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
@@ -79,22 +81,31 @@ function beginPointer(e){
   if(S.mode==='connect'){
     if(S.trace){let c=snapTarget(p,e);if(c.candidate){remember();c=commitPort(c);changed()}if(c.glue)c={p:c.p,ref:c.ref};S.trace.steps.push(S.trace.points.length);S.trace.points.push(...routeTo(S.trace.points.at(-1),c.p));S.trace.to=c.ref;if(c.ref){finishTrace();return}S.hover=null;render('overlay');return}
     const c=snapTarget(p,e);startConnect(c,p,e);capture();return}
+  if(S.mode==='lasso'){const add=e.shiftKey||e.ctrlKey||e.metaKey;if(!add)S.selected.clear();S.drag={kind:'lasso',pts:[p],add,touch:e.altKey};capture();render('overlay');render('panel');return}
   if(S.mode==='zone'){S.drag={kind:'zone',start:[grid(p[0]),grid(p[1])]};S.drag.current=S.drag.start;capture();return}
   if(S.mode==='text'){S.drag={kind:'textbox',start:p,current:p};capture();return}
   if(S.mode==='port'&&n?.kind==='node'&&!isLocked(n)){if(role==='port'){remember();S.drag={kind:'port',id:n.id,port:t.dataset.port};capture()}else{const c=edgeCandidate(n,p);mutate(()=>n.ports.push({id:C.uid(),name:'Port '+(n.ports.length+1),x:c.candidate.x,y:c.candidate.y}))}return}
   if(role==='resize'){if(!editable().length)return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
   if(n){
     if(n.kind==='node'&&n.url&&(e.ctrlKey||e.metaKey)){followLink(n.url);return}
-    if(e.shiftKey){selection(id,true,e.ctrlKey||e.metaKey);render('overlay');render('panel');return}
-    if(!S.selected.has(id)||e.ctrlKey||e.metaKey)selection(id,false,e.ctrlKey||e.metaKey);
+    const mod=e.ctrlKey||e.metaKey;
+    if(e.shiftKey){selection(id,true);render('overlay');render('panel');return}
+    // the empty inside of a zone: a click selects the zone, a drag draws a selection window over what is in it
+    if(n.kind==='zone'&&role==='object'&&!S.selected.has(id)&&!mod&&zoneInterior(n,p)){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add:false,touch:e.altKey,zoneClick:id,startClient:[e.clientX,e.clientY]};capture();render('overlay');render('panel');return}
+    const prevSel=[...S.selected],wasSel=S.selected.has(id),groupSel=!!n.group&&items().filter(x=>x.group===n.group).every(x=>S.selected.has(x.id));
+    // Ctrl adds now; released without dragging, a Ctrl-click on something already selected removes it
+    if(mod){if(!wasSel)selection(id,true)}else if(!wasSel)selection(id,false);
     if(isLocked(n)){render('overlay');render('panel');return}
-    const kind=role==='label'?'label':role==='segment'?'segment':role==='bend'?'bend':'move';
+    // a zone's title is part of its heading: dragging it moves the zone (Visio containers); device labels drag on their own
+    const kind=role==='label'&&n.kind!=='zone'?'label':role==='segment'?'segment':role==='bend'?'bend':'move';
     S.activeLabel=kind==='label'?{owner:id,id:t.dataset.label}:null;S.segment=kind==='segment'?{id,index:+t.dataset.index}:null;S.bend=kind==='bend'?{id,index:+t.dataset.index}:null;
     remember();
-    let set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
-    if(kind==='move'&&e.altKey){const dup=C.duplicate(set,0,0);items().push(...dup);set=dup;S.selected=new Set(dup.map(x=>x.id));S.duplicated=true}
-    S.drag={kind,start:p,id:kind==='move'&&e.altKey?set.find(x=>x.kind!=='edge')?.id:id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set)};
-  }else{if(!e.shiftKey)S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add:e.shiftKey}}
+    const set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
+    // Ctrl- or Alt-drag duplicates (once the pointer really moves); Alt-click reaches what is underneath; clicking a
+    // member of an already selected group picks just that member
+    S.drag={kind,start:p,startClient:[e.clientX,e.clientY],id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set),
+      dupPending:kind==='move'&&(e.altKey||mod),altClick:e.altKey&&!mod,prevSel,ctrlClick:mod?(wasSel?'remove':'added'):null,subselect:kind==='move'&&!mod&&!e.altKey&&groupSel?id:null};
+  }else{const add=e.shiftKey||e.ctrlKey||e.metaKey;if(!add)S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add,touch:e.altKey,startClient:[e.clientX,e.clientY]}}
   capture();render('overlay');render('panel')}
 
 function startConnect(c,p,e){
@@ -108,14 +119,19 @@ function pointerMove(e,fromPan=false){
   if(!fromPan)autoPan(e);const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
   if(!d){
     if(S.mode==='connect'){if(S.trace){const t=snapTarget(p,e);S.hover=t.p}else snapTarget(p,e);S.hoverId=nodesAt(p)[0]?.id||null;render('overlay')}
-    else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id,n=id&&find(id);let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
+    else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id,n=id&&find(id);const hv=n&&Select.selectable(n)&&!n.pin?n.id:null;if(hv!==S.hoverItem){S.hoverItem=hv;render('overlay')}let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
     else render('overlay');
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
   if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;render('overlay');return}
-  if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;render('overlay');return}
+  if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;if(d.kind==='box')d.touch=e.altKey;render('overlay');return}
+  if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
   if(d.kind==='connect'){const t=snapTarget(p,e,{exclude:d.from?.node});d.target=t;d.moved=d.moved||Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>4;d.preview=previewRoute(d,t);render('overlay');return}
+  // a press that moves less than 4 px is a click, not a drag (no accidental nudges)
+  if(d.startClient&&!d.moved&&['move','label','segment','bend'].includes(d.kind)&&Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])<4)return;
+  if(d.kind==='move'&&d.dupPending){const live=d.original.map(o=>find(o.id)).filter(Boolean),dup=C.duplicate(live,0,0);items().push(...dup);d.original=C.copy(dup);d.id=(dup.find(x=>x.kind!=='edge')||dup[0]).id;S.selected=new Set(dup.map(x=>x.id));S.duplicated=true;d.dupPending=false}
+  if(d.kind==='move'){d.altClick=false;d.ctrlClick=null;d.subselect=null}
   let dx=p[0]-d.start[0],dy=p[1]-d.start[1];const n=find(d.id),o=d.original?.find?.(x=>x.id===d.id);
   if(d.kind==='port'){const port=n.ports.find(q=>q.id===d.port),[u,v]=C.localPoint(n,p);port.x=Math.max(0,Math.min(1,Math.round(u*40)/40));port.y=Math.max(0,Math.min(1,Math.round(v*40)/40))}
   if(d.kind==='label'){const l=n.labels.find(x=>x.id===d.label),old=o.labels.find(x=>x.id===d.label);if(l.anchor){l.anchor.dx=(old.anchor.dx||0)+dx;l.anchor.dy=(old.anchor.dy||0)+dy}else{l.x=grid(old.x+dx,e);l.y=grid(old.y+dy,e)}}
@@ -161,7 +177,10 @@ function doResize(d,p,e){
 
 function pointerUp(e){
   const d=S.drag;if(!d)return;S.drag=null;S.guideLines=[];S.spacing=null;const p=point(e);$('canvas').style.cursor=S.mode==='pan'?'grab':S.mode==='select'?'default':'crosshair';
-  if(d.kind==='box'){const q=d.current||d.start,x=Math.min(q[0],d.start[0]),y=Math.min(q[1],d.start[1]),w=Math.abs(q[0]-d.start[0]),h=Math.abs(q[1]-d.start[1]),cross=q[0]<d.start[0];if(w>2||h>2)for(const n of items()){if(!itemVisible(n,{doc:S.doc})||layerOf(n)?.locked)continue;const b=C.bounds([n]);if(cross?b.x<x+w&&b.x+b.w>x&&b.y<y+h&&b.y+b.h>y:b.x>=x&&b.y>=y&&b.x+b.w<=x+w&&b.y+b.h<=y+h){if(n.group)items().filter(t=>t.group===n.group).forEach(t=>S.selected.add(t.id));else S.selected.add(n.id)}}}
+  if(d.kind==='box'){const q=d.current||d.start,r={x:Math.min(q[0],d.start[0]),y:Math.min(q[1],d.start[1]),w:Math.abs(q[0]-d.start[0]),h:Math.abs(q[1]-d.start[1])},big=Math.max(r.w,r.h)*S.view.zoom>3;
+    // window selection: only what it fully covers, whichever way you drag; hold Alt for everything it touches
+    if(big)for(const id of Select.windowSelect(r,!!d.touch))S.selected.add(id);else if(d.zoneClick)selection(d.zoneClick)}
+  else if(d.kind==='lasso'){for(const id of Select.lassoSelect(d.pts,!!d.touch))S.selected.add(id);if(S.selected.size)notify(`${S.selected.size} selected with the lasso${d.touch?' (touching)':''}.`,1500)}
   else if(d.kind==='zone'){const q=d.current||d.start,w=Math.abs(q[0]-d.start[0]),h=Math.abs(q[1]-d.start[1]);if(w>20&&h>20)mutate(()=>{const z=C.zone('Network zone',Math.min(q[0],d.start[0]),Math.min(q[1],d.start[1]),w,h);z.layer=S.activeLayer;items().unshift(z);select([z.id])});setMode('select');if(w>20&&h>20)setTimeout(()=>editLabel(picked()[0].id,picked()[0].labels[0].id),30)}
   else if(d.kind==='textbox'){const q=d.current,w=Math.abs(q[0]-d.start[0]);const x=w>30?Math.min(q[0],d.start[0]):d.start[0],y=w>30?Math.min(q[1],d.start[1]):d.start[1];const n=mutate(()=>{const t=C.text('Text',x,y,w>30?w:240,60,14);if(w>30)t.labels[0].wrapWidth=w-20;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});setMode('select');editLabel(n.id,n.labels[0].id,true)}
   else if(d.kind==='autoconn'){autoConnect(d.id,d.dir)}
@@ -170,6 +189,7 @@ function pointerUp(e){
       if(d.pending?.glue||edge.routing==='auto'||edge.routing==='straight')Conn.markDirty(edge.id);Conn.orthogonalize(edge);edge.points=Conn.simplify(edge.points)}}
     if(d.kind==='move'&&d.rackSlot)notify('Placed at U'+Shapes.rackU(items().find(r=>r.type==='rack'&&C.inside({x:d.rackSlot.x+1,y:d.rackSlot.y+1,w:0,h:0},Shapes.rackInner(r))),{y:d.rackSlot.y,h:d.rackSlot.h})+'.',1800);
     S.snapPort=null;S.dropTarget=null;changed()}
+  else if(d.kind==='move'&&(d.altClick||d.ctrlClick||d.subselect)){S.history.pop();if(d.altClick)Select.cycleAt(...d.startClient,d.prevSel);else if(d.ctrlClick==='remove')selection(d.id,true);else if(d.subselect){select([d.subselect]);notify('Picked one shape of the group — click outside to go back, Ctrl+Shift+G ungroups.',2200)}}
   else if(d.kind!=='pan'&&d.kind!=='autoconn'){if(S.duplicated){changed()}else S.history.pop()}
   S.duplicated=false;S.snapPort=null;S.dropTarget=null;render()}
 
@@ -285,6 +305,7 @@ function onKey(e){
   if(mod){const map={z:()=>e.shiftKey?redo():undo(),y:redo,a:()=>{select(items().filter(n=>itemVisible(n,{doc:S.doc})&&!layerOf(n)?.locked).map(n=>n.id))},d:actions.duplicate,s:()=>e.shiftKey?saveAs():save(),o:actions.open,p:actions.print,g:()=>e.shiftKey?actions.ungroup():actions.group(),f:actions.find,h:actions.find,k:actions.palette,l:()=>e.shiftKey?actions.unlock():actions.lock(),']':()=>order(e.shiftKey?'front':'forward'),'[':()=>order(e.shiftKey?'back':'backward'),'=':()=>zoomAt(1.2),'+':()=>zoomAt(1.2),'-':()=>zoomAt(1/1.2),'0':()=>fit(),'1':()=>setZoom(1),e:actions.exportPng,b:()=>actions.bold(),i:()=>actions.italic()};
     if(map[k]){e.preventDefault();map[k]();return}if(['c','x','v'].includes(k))return;return}
   if(e.code==='Space'){e.preventDefault();if(!S.space){S.space=true;$('canvas').style.cursor='grab'}return}
+  if(k==='tab'&&!mod&&!e.altKey){e.preventDefault();Select.tab(e.shiftKey);return}
   if(k==='escape'&&document.body.classList.contains('ribbonPeek')){document.body.classList.remove('ribbonPeek');renderRibbon();return}
   if(k==='escape'){if(S.drag&&S.history.length&&!['box','pan','zone','textbox'].includes(S.drag.kind)){const s=S.history.pop();S.drag=null;restore(s)}S.drag=null;hideMenus();if(S.analysis||S.highlights.size||S.filter){S.analysis=null;S.highlights.clear();setFilter(null);render();return}setMode('select');S.selected.clear();S.activeLabel=null;S.painter=false;$('printPreview').hidden=true;render();return}
   if(S.mode==='connect'&&S.trace&&k==='backspace'){e.preventDefault();if(S.trace.steps.length)S.trace.points.splice(S.trace.steps.pop());else S.trace=null;render('overlay');return}
@@ -300,3 +321,6 @@ function onKey(e){
 
 // Double-click on a legend row: restyle every link / device of that type.
 function openLegendRow(n,key){Quick.openLegendStyle(n.id,key)}
+
+// Inside a zone, away from its border and heading: where a drag should draw a selection window, not move the zone.
+function zoneInterior(z,p){const b=8/S.view.zoom,head=Math.max(26,z.labels?.[0]?z.labels[0].y-z.y+10:26);return p[0]>z.x+b&&p[0]<z.x+z.w-b&&p[1]>z.y+head&&p[1]<z.y+z.h-b}

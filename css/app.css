@@ -381,3 +381,7 @@ dialog.inventory{width:min(1200px,97vw)}
 .checks.cols2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;max-height:50vh;overflow:auto}
 .submenu .ck{display:inline-block;width:12px}.submenu em{margin-left:auto;padding-left:10px;font-style:normal;color:var(--muted);font-size:10.5px}
 @media (max-width:860px){.invGrid{grid-template-columns:1fr}.checks.cols2{grid-template-columns:1fr}}
+
+/* select by type */
+.byType{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 18px;max-height:55vh;overflow:auto}
+.byType label.check{margin:3px 0}.byType em{margin-left:auto;font-style:normal}.allSec{margin-left:auto;font-size:10.5px;text-transform:none;letter-spacing:0;display:flex;gap:4px;align-items:center;cursor:pointer}
