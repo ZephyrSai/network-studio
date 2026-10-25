@@ -51,7 +51,7 @@ const RIBBON=[
     {name:'Zoom',items:[B('fit','Fit page','fit','Shift+1'),B('fitSelection','Selection','fitpage','Shift+2'),B('zoom100','100%','hundred','Ctrl+1'),B('zoomIn','Zoom in','zoomIn','Ctrl+='),B('zoomOut','Zoom out','zoomOut','Ctrl+-')]},
     {name:'Layout',items:[B('fullscreen','Full screen','fullscreen','The whole editor full screen — ribbon, panels and all (Ctrl+Shift+F)',true),B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('resetLayout','Reset layout','reroute','Restore title bar, ribbon, panels and status bar'),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
     {name:'Window',items:[T('wheelZoom','Wheel zooms','wheel'),B('uiTheme','Light / dark','moon'),B('present','Present','present','Full-screen; arrows change page; Esc exits',true)]},
-    {name:'Help',items:[B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
+    {name:'Help',items:[B('tour','Tour','tour','A quick tour of the editor (6 steps)'),B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
 ];
 function renderRibbon(){const tab=RIBBON.find(r=>r.id===(S.ribbonTab||'home'))||RIBBON[0];
   const cls=document.body.classList,peekOn=cls.contains('ribbonPeek'),collapsed=!!S.prefs.ribbonCollapsed;

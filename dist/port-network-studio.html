@@ -415,6 +415,18 @@ dialog.inventory{width:min(1200px,97vw)}
 .ptBtns{display:grid;grid-template-columns:1fr 1fr;gap:3px}.ptBtns button{font-size:11px;padding:3px 5px;text-align:left}
 @media (max-width:860px){.rgroup .rname{display:none}}
 
+/* first-run tour: the spotlight dims everything but one area */
+.tour{position:fixed;inset:0;z-index:200;pointer-events:auto}
+.tourHole{position:fixed;border-radius:10px;box-shadow:0 0 0 2px var(--blue),0 0 0 200vmax rgba(8,14,26,.66);transition:left .35s ease,top .35s ease,width .35s ease,height .35s ease;pointer-events:none}
+.tourCard{position:fixed;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.35);padding:12px 16px 12px;opacity:0;transform:translateY(6px);transition:opacity .25s ease,transform .25s ease,left .35s ease,top .35s ease}
+.tour.on .tourCard{opacity:1;transform:none}
+.tourTop{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted)}
+.tourSkip{border:0;background:none;color:var(--muted);font-size:11.5px;padding:2px 4px;text-decoration:underline}.tourSkip:hover{color:var(--text)}
+.tourCard h3{margin:6px 0 4px;font-size:15px;color:var(--strong)}.tourCard p{margin:0 0 12px;font-size:12.5px;line-height:1.55}
+.tourFoot{display:flex;align-items:center;gap:6px}.tourFoot .primary{min-width:84px}
+.tourDots{display:flex;gap:5px;margin-right:auto}.tourDots i{width:6px;height:6px;border-radius:50%;background:var(--border)}.tourDots i.on{background:var(--blue);width:16px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){.tourHole,.tourCard{transition:none}}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -1058,7 +1070,7 @@ data:'M4 4c0-1 12-1 12 0v12c0 1-12 1-12 0zM4 4c0 1 12 1 12 0M4 10c0 1 12 1 12 0'
 check:'M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5zM7 10l2 2 4-4',spof:'M10 3l8 14H2zM10 8v4M10 14v.5',trace:'M4 4a2 2 0 1 0 0-.1M16 16a2 2 0 1 0 0-.1M6 4h6a3 3 0 0 1 0 6H8a3 3 0 0 0 0 6h6',traffic:'M2 15l4-5 4 3 4-7 4 4',poe:'M11 2 5 11h5l-1 7 6-9h-5z',storage:'M4 4h12v4H4zM4 10h12v4H4zM6 6h.1M6 12h.1',filter:'M3 4h14l-5 6v6l-4-2v-4z',clear:'M5 5l10 10M15 5 5 15',ip:'M3 5h14v10H3zM6 8v4M9 8v4h1.5a1.5 1.5 0 0 0 0-3H9',
 align0:'M3 2v16M6 5h10v3H6zM6 12h6v3H6z',align1:'M10 2v16M5 5h10v3H5zM7 12h6v3H7z',align2:'M17 2v16M4 5h10v3H4zM8 12h6v3H8z',align3:'M2 3h16M5 6v10h3V6zM12 6v6h3V6z',align4:'M2 10h16M5 5v10h3V5zM12 7v6h3V7z',align5:'M2 17h16M5 4v10h3V4zM12 8v6h3V8z',distH:'M2 3v14M18 3v14M7 6h6v8H7z',distV:'M3 2h14M3 18h14M6 7h8v6H6z',samew:'M3 6h14v3H3zM6 12h8v3H6zM3 17h14',front:'M7 7h10v10H7zM3 3h10v4M3 3v10h4',back:'M3 3h10v10H3zM13 7h4v10H7v-4',forward:'M10 3v10M6 9l4 4 4-4M4 17h12',backward:'M10 17V7M6 11l4-4 4 4M4 3h12',group:'M2 2h4v4H2zM14 2h4v4h-4zM2 14h4v4H2zM14 14h4v4h-4zM6 4h8M6 16h8M4 6v8M16 6v8',ungroup:'M2 2h6v6H2zM12 12h6v6h-6z',rotate:'M15 4v4h-4M15 8a6 6 0 1 0 1 5',flipH:'M10 2v16M8 5 3 15h5zM12 5l5 10h-5z',lock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6 0v3',unlock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6-1',layers:'M10 2 2 6l8 4 8-4zM2 10l8 4 8-4M2 14l8 4 8-4',
 gridOn:'M3 3h14v14H3zM3 8h14M3 12h14M8 3v14M12 3v14',ruler:'M2 7h16v6H2zM5 7v3M8 7v2M11 7v3M14 7v2',guide:'M7 2v16M2 13h16',ports:'M4 10a2 2 0 1 0 0-.1M16 10a2 2 0 1 0 0-.1M10 4a2 2 0 1 0 0-.1M6 10h8',map:'M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2zM7 2v14M13 4v14',zoomIn:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4M8 6v4',zoomOut:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4',fit:'M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5',hundred:'M4 7l2-1v9M9 6h3v9H9zM14 6h3v9h-3z',present:'M2 3h16v10H2zM10 13v4M6 17h8',moon:'M15 13a7 7 0 0 1-8-10 7 7 0 1 0 8 10z',magnet:'M5 3v7a5 5 0 0 0 10 0V3h-3v7a2 2 0 0 1-4 0V3z',arrows:'M10 3l3 3h-6zM10 17l3-3H7zM3 10l3-3v6zM17 10l-3-3v6z',wheel:'M7 2h6a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zM10 5v3',panels:'M2 3h16v14H2zM6 3v14M14 3v14',
-file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',fullscreen:'M3 7V3h4M3 3l5 5M17 7V3h-4M17 3l-5 5M3 13v4h4M3 17l5-5M17 13v4h-4M17 17l-5-5',lasso:'M10 3.5c4.1 0 7.5 2 7.5 4.6S14.1 12.7 10 12.7 2.5 10.7 2.5 8.1 5.9 3.5 10 3.5zM5.4 11.6c-1.3 1-1.7 2.4-1.1 3.4.7 1.2 2.6 1.3 3.6.2',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
+file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',tour:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM13.5 6.5l-2 5-5 2 2-5zM10 9.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6',fullscreen:'M3 7V3h4M3 3l5 5M17 7V3h-4M17 3l-5 5M3 13v4h4M3 17l5-5M17 13v4h-4M17 17l-5-5',lasso:'M10 3.5c4.1 0 7.5 2 7.5 4.6S14.1 12.7 10 12.7 2.5 10.7 2.5 8.1 5.9 3.5 10 3.5zM5.4 11.6c-1.3 1-1.7 2.4-1.1 3.4.7 1.2 2.6 1.3 3.6.2',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
 };
 function icon(name,size=18){const d=Icons[name];return d?`<svg class="ico" viewBox="0 0 20 20" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`:''}
 
@@ -5368,7 +5380,7 @@ function assignIps(){const z=picked()[0];if(!z||z.kind!=='zone')return;const c=C
 function traceInteractive(fromId){const from=fromId||picked().find(n=>n.kind==='node')?.id;if(!from)return notify('Select the start device, then choose Trace path.');S.traceFrom=from;notify('Now click the destination device…',6000);S.pickHandler=id=>{const p=Analysis.path(pg(),from,id);if(!p){notify('No path between these devices.');S.analysis=null}else{const G=Analysis.graph(pg()),alt=Analysis.allPaths(G,from,id,3);S.analysis={kind:'path',nodes:new Set(p.nodes),edges:new Set(p.edges),color:'#16a34a'};notify(`Path: ${p.nodes.map(i=>Analysis.nameOf(find(i))).join(' → ')} (${p.edges.length} hop${p.edges.length===1?'':'s'})${alt.length>1?` · ${alt.length} alternative routes`:' · no alternative route'}`,9000)}render()}}
 const actions={
   // file
-  new:()=>openTemplates(),fullscreen:()=>{if(document.fullscreenElement)document.exitFullscreen?.();else(document.documentElement.requestFullscreen?.()||Promise.reject()).catch(()=>notify('This browser blocked full screen — try F11 (Windows) or ⌃⌘F (Mac).'))},moveLinks:()=>{const n=picked().find(x=>x.kind==='node'&&Shapes.isDevice(x));if(!n)return notify('Select a device first.');Quick.openMoveLinks(n.id,picked().filter(e=>e.kind==='edge').map(e=>e.id))},selectAll:()=>Select.all(),selectByType:()=>Select.openByType(),invertSel:()=>Select.invert(),selectNone:()=>{select([]);render()},newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
+  new:()=>openTemplates(),tour:()=>Tour.start(),fullscreen:()=>{if(document.fullscreenElement)document.exitFullscreen?.();else(document.documentElement.requestFullscreen?.()||Promise.reject()).catch(()=>notify('This browser blocked full screen — try F11 (Windows) or ⌃⌘F (Mac).'))},moveLinks:()=>{const n=picked().find(x=>x.kind==='node'&&Shapes.isDevice(x));if(!n)return notify('Select a device first.');Quick.openMoveLinks(n.id,picked().filter(e=>e.kind==='edge').map(e=>e.id))},selectAll:()=>Select.all(),selectByType:()=>Select.openByType(),invertSel:()=>Select.invert(),selectNone:()=>{select([]);render()},newRevision:()=>Quick.openRevisions(),revCloud:()=>Quick.markupAt('cloud'),revDelta:()=>Quick.markupAt('delta'),scaleSel:()=>Quick.openScale(),insertTemplate:()=>openTemplates('add'),saveTemplate:()=>TplLib.openSave(),newBlank:()=>{loadDocument(C.newDoc());notify('New blank drawing. Your previous drawing is kept in File ▸ My drawings.')},open:()=>openFile(),save:()=>save(),saveAs:()=>saveAs(),
   exportSvg:()=>exportSvg(),exportPng:()=>exportPng(2),exportPng4:()=>exportPng(4),exportPngT:()=>exportPng(2,true),copyPng:()=>copyPng(),exportDrawio:()=>exportDrawio(),exportVsdx:()=>exportVsdx(),exportCsv:()=>showReport(Analysis.inventory(S.doc)),
   print:()=>previewPrint(),printAll:()=>previewPrint(true),closePrint:()=>$('printPreview').hidden=true,printNow:()=>window.print(),share:()=>shareLink(),docProps:()=>{S.selected.clear();S.tab='doc';Ins.invalidate();render()},
   // edit
@@ -5492,7 +5504,7 @@ const RIBBON=[
     {name:'Zoom',items:[B('fit','Fit page','fit','Shift+1'),B('fitSelection','Selection','fitpage','Shift+2'),B('zoom100','100%','hundred','Ctrl+1'),B('zoomIn','Zoom in','zoomIn','Ctrl+='),B('zoomOut','Zoom out','zoomOut','Ctrl+-')]},
     {name:'Layout',items:[B('fullscreen','Full screen','fullscreen','The whole editor full screen — ribbon, panels and all (Ctrl+Shift+F)',true),B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('resetLayout','Reset layout','reroute','Restore title bar, ribbon, panels and status bar'),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
     {name:'Window',items:[T('wheelZoom','Wheel zooms','wheel'),B('uiTheme','Light / dark','moon'),B('present','Present','present','Full-screen; arrows change page; Esc exits',true)]},
-    {name:'Help',items:[B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
+    {name:'Help',items:[B('tour','Tour','tour','A quick tour of the editor (6 steps)'),B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
 ];
 function renderRibbon(){const tab=RIBBON.find(r=>r.id===(S.ribbonTab||'home'))||RIBBON[0];
   const cls=document.body.classList,peekOn=cls.contains('ribbonPeek'),collapsed=!!S.prefs.ribbonCollapsed;
@@ -6324,6 +6336,56 @@ return{windowSelect,lassoSelect,stackAt,cycleAt,tab,invert,all,openByType,descri
 
 </script>
 <script>
+// First-run tour: a few steps that spotlight one area of the editor at a time and dim the rest.
+// Shown once (prefs.tourDone); Skip at any time; replay from View ▸ Help ▸ Tour. Areas that are hidden right now
+// (a collapsed panel, a phone layout) are left out, so the count always matches what is on screen.
+const Tour=(()=>{
+const MOD=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent)?'⌘':'Ctrl';
+const STEPS=[
+  {at:['.ribbonTabs','#ribbon'],title:'Welcome — the ribbon',text:'Tools are grouped by tab: Home, Insert, Design, Data, Analyze, Arrange and View. <b>File</b> opens, saves and exports (Visio, draw.io, PDF).'},
+  {at:['aside.left'],title:'Shapes, icons & templates',text:'Drag devices onto the page, search 360+ shapes or online icons, or drop a whole template — or just one zone of it — into this drawing.'},
+  {at:['#workarea'],title:'The page',text:'Drag from a device’s blue points to connect it. Drag on empty space to select what is fully inside. <b>Right-click</b> anything to change it — even many at once.',inside:true},
+  {at:['aside.right'],title:'Inspector',text:'Properties, data and style of the selection. With nothing selected: the page — paper, border, background and revisions.'},
+  {at:['footer.status'],title:'Status bar',text:'Live design check, revision status, page tabs and zoom. <b>Fit page</b> sizes the page and its border to the drawing.'},
+  {at:['.chromeBtns'],title:'Make room',text:`Hide panels, the ribbon or the title bar, or go full screen. <b>${MOD}+K</b> finds any command and <b>?</b> lists shortcuts. Replay this tour from View ▸ Help.`},
+];
+let el=null,steps=[],i=0,onKey=null,onResize=null;
+const visible=s=>{const els=s.at.map(q=>document.querySelector(q)).filter(e=>e&&e.offsetWidth>8&&e.offsetHeight>8&&getComputedStyle(e).visibility!=='hidden');return els.length?els:null};
+const union=els=>{const rs=els.map(e=>e.getBoundingClientRect()),x=Math.min(...rs.map(r=>r.left)),y=Math.min(...rs.map(r=>r.top));return{x,y,w:Math.max(...rs.map(r=>r.right))-x,h:Math.max(...rs.map(r=>r.bottom))-y}};
+function place(){const s=steps[i],els=visible(s);if(!els){next();return}
+  const pad=6,r0=union(els),r={x:Math.max(4,r0.x-pad),y:Math.max(4,r0.y-pad),w:Math.min(innerWidth-8,r0.w+2*pad),h:Math.min(innerHeight-8,r0.h+2*pad)},hole=el.querySelector('.tourHole'),card=el.querySelector('.tourCard');
+  Object.assign(hole.style,{left:r.x+'px',top:r.y+'px',width:r.w+'px',height:r.h+'px'});
+  card.querySelector('h3').innerHTML=s.title;card.querySelector('p').innerHTML=s.text;
+  card.querySelector('.tourCount').textContent=`${i+1} / ${steps.length}`;card.querySelector('[data-tour="back"]').hidden=i===0;
+  const nx=card.querySelector('[data-tour="next"]');nx.textContent=i===steps.length-1?'Get started':'Next';
+  card.querySelector('.tourDots').innerHTML=steps.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('');
+  // the card goes beside the spotlight where there is room, else inside it
+  const cw=Math.min(340,innerWidth-24),ch=card.offsetHeight||170,gap=14;card.style.width=cw+'px';let x,y;
+  if(!s.inside&&r.y+r.h+gap+ch<innerHeight-8){y=r.y+r.h+gap;x=r.x+Math.min(r.w,cw)/2-cw/2+(r.w>cw?0:0)}
+  else if(!s.inside&&r.y-gap-ch>8){y=r.y-gap-ch;x=r.x+r.w/2-cw/2}
+  else if(!s.inside&&r.x+r.w+gap+cw<innerWidth-8){x=r.x+r.w+gap;y=r.y+Math.min(r.h,ch)/2-ch/2+20}
+  else if(!s.inside&&r.x-gap-cw>8){x=r.x-gap-cw;y=r.y+20}
+  else{x=r.x+r.w/2-cw/2;y=r.y+Math.min(r.h/2-ch/2,r.h-ch-16)}
+  card.style.left=Math.max(8,Math.min(x,innerWidth-cw-8))+'px';card.style.top=Math.max(8,Math.min(y,innerHeight-ch-8))+'px';nx.focus({preventScroll:true})}
+function go(k){i=k;if(i<0)i=0;if(i>=steps.length)return end(true);place()}
+const next=()=>go(i+1),back=()=>go(i-1);
+function end(done){if(!el)return;el.remove();el=null;document.removeEventListener('keydown',onKey,true);removeEventListener('resize',onResize);S.prefs.tourDone=true;savePrefs();if(done)notify('You’re set. View ▸ Help ▸ Tour shows this again.',3200)}
+function start(){if(el)return;hideMenus?.();closeDialog?.();steps=STEPS.filter(visible);if(!steps.length)return;i=0;
+  el=document.createElement('div');el.className='tour';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Quick tour');
+  el.innerHTML=`<div class="tourHole"></div><div class="tourCard" aria-live="polite"><div class="tourTop"><span class="tourCount"></span><button class="tourSkip" data-tour="skip">Skip tour</button></div><h3></h3><p></p><div class="tourFoot"><span class="tourDots"></span><button data-tour="back">Back</button><button class="primary" data-tour="next">Next</button></div></div>`;
+  document.body.append(el);
+  el.addEventListener('click',e=>{const a=e.target.closest('[data-tour]')?.dataset.tour;if(a==='next')next();else if(a==='back')back();else if(a==='skip')end(false)});
+  // while the tour is open it owns the keyboard: → / Enter next, ← back, Esc skip; nothing reaches the drawing
+  onKey=e=>{if(!el)return;const k=e.key;if(k==='ArrowRight'||k==='Enter'){e.preventDefault();next()}else if(k==='ArrowLeft'){e.preventDefault();back()}else if(k==='Escape'){e.preventDefault();end(false)}else if(k==='Tab')return;else{e.preventDefault()}e.stopPropagation()};
+  document.addEventListener('keydown',onKey,true);onResize=()=>{if(el)place()};addEventListener('resize',onResize);
+  requestAnimationFrame(()=>{place();el.classList.add('on')})}
+// First visit only, and never on top of a shared link or a dialog.
+function maybe(){if(S.prefs.tourDone||location.hash.startsWith('#doc=')||document.querySelector('dialog[open]'))return false;setTimeout(start,700);return true}
+return{start,maybe,end,isOpen:()=>!!el,steps:()=>steps.length};
+})();
+
+</script>
+<script>
 // Event wiring and start-up.
 function insertLibrary(id,x,y){const entry=S.library.find(e=>e.id===id);if(!entry)return;mutate(()=>{const a=C.duplicate(entry.items,0,0),b=C.bounds(a);a.forEach(n=>{n.locked=false;n.layer=S.activeLayer;C.move(n,grid(x-b.w/2)-b.x,grid(y-b.h/2)-b.y)});items().push(...a);a.forEach(e=>e.kind==='edge'&&Conn.markDirty(e.id));select(a.map(n=>n.id))})}
 function wire(){
@@ -6460,7 +6522,7 @@ async function boot(){
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
   scheduleCheck();Quick.revInfo();
   if(location.hash.startsWith('#doc='))await loadFromHash();
-  else if(!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
+  else if(!Tour.maybe()&&!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
   // make the router/layout modules optional: degrade gracefully when missing
   if(typeof Router==='undefined')console.warn('Router module missing — falling back to simple elbows.');
 }

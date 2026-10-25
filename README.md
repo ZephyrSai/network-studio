@@ -61,6 +61,9 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 
 ---
 
+### First-run tour
+On the first visit, a short tour spotlights one area at a time (ribbon, shapes panel, page, inspector, status bar, layout buttons) and dims the rest. It has Back / Next (or ← →), and Skip at any time (or Esc). It shows once; replay it from *View ▸ Help ▸ Tour*. Areas hidden at the moment, such as the side panels on a phone, are left out.
+
 ### Ribbon, full screen, links and connection points
 * **The ribbon always fits, with no scrolling.** When a tab's groups don't fit the window, they shrink from the right one step at a time: buttons stack three rows high, then big buttons turn small, then icons only (names in tooltips), and finally a group folds into one button that opens it as a popup.
 * **Full screen** (button at the top right, *View ▸ Layout*, or Ctrl/⌘+Shift+F) makes the whole editor full screen: ribbon, panels and all. *Present* still shows just the drawing.
@@ -145,6 +148,7 @@ js/quick.js         right-click quick configure, legend restyle, Scale dialog, r
 js/inventory.js     inventory builder and per-device fields on the drawing
 js/select.js        window / lasso / Alt-click / Tab selection, select by type
 js/ports.js         arrange connection points (pure)
+js/tour.js          first-run spotlight tour
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
 tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions, ports)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview

@@ -134,7 +134,7 @@ async function boot(){
   requestAnimationFrame(()=>{fit();if(recovered)setSaveState('Restored from this browser · File ▸ My drawings');else{setSaveState('Example drawing — File ▸ New for templates');S.dirty=false}});
   scheduleCheck();Quick.revInfo();
   if(location.hash.startsWith('#doc='))await loadFromHash();
-  else if(!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
+  else if(!Tour.maybe()&&!recovered)setTimeout(()=>notify('Welcome! This is an example campus network. Try dragging devices, Analyze ▸ Check diagram, or File ▸ New from template.',7000),600);
   // make the router/layout modules optional: degrade gracefully when missing
   if(typeof Router==='undefined')console.warn('Router module missing — falling back to simple elbows.');
 }
