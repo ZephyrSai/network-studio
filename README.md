@@ -57,7 +57,7 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 
   A live preview shows what will be added and what will change.
 * **Merging is network-aware.** Layers merge by name, custom fields by key, and embedded shapes come along. Only the VLANs the copied items use are added. Clashing subnets move to the next free one in the same private block; nested subnets move with their parent, and device IPs and gateways follow. Devices whose address is already taken get the next free host address. Clashing hostnames get `-2`, and a name prefix also prefixes hostnames. The page grows to fit, the legend updates, and links re-route around what was there. One Ctrl+Z undoes it.
-* **My templates:** save this page, the selection or the whole drawing as a template, and download or import one as `.json`. **My drawings** lists the other drawings saved in this browser, ready to drop in. Dropping a drawing file on the canvas asks whether to add it or open it.
+* **My templates:** save this page, the selection or the whole drawing as a template, from *Insert ▸ Save as template*, *File ▸ Save as template…*, the right-click menu or the Templates tab. You can rename, describe or duplicate one (✎), and download or import it as `.json`. To update one, open it (*Open* on its card), edit, then *Save as template* — it offers to replace that template. Templates live in this browser and are included in *File ▸ My drawings ▸ Back up all* and its restore. **My drawings** lists the other drawings saved in this browser, ready to drop in. Dropping a drawing file on the canvas asks whether to add it or open it.
 
 ---
 

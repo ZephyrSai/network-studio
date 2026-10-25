@@ -41,7 +41,7 @@ function card(key,m,mine=false,thumb=null){const doc=kindOf(key)==='d'?null:(kin
   return`<div class="tcard" draggable="true" data-tsrc="${key}" title="Drag onto the page to add it to this drawing">
   <div class="tthumb" data-tthumb="${key}">${thumb?`<img alt="" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(thumb)}">`:''}</div>
   <b>${html(m.name)}</b><span class="tmeta" data-tmeta="${key}">${html(doc?stat(doc):m.description)}</span>
-  <div class="tact"><button data-tadd="${key}" title="Choose what to add and where">＋ Add…</button><button data-topen="${key}" title="Open as a new drawing">Open</button>${mine?`<button data-texport="${key}" title="Download this template (.json)">⤓</button><button data-tdel="${key}" title="Delete this template">×</button>`:''}</div>
+  <div class="tact"><button data-tadd="${key}" title="Choose what to add and where">＋ Add…</button><button data-topen="${key}" title="Open as a new drawing">Open</button>${mine?`<button data-tedit="${idOf(key)}" title="Rename, describe or duplicate">✎</button><button data-texport="${key}" title="Download this template (.json)">⤓</button><button data-tdel="${key}" title="Delete this template">×</button>`:''}</div>
   <details class="tparts" data-tparts="${key}"><summary>Pages &amp; blocks</summary><div class="tchips"></div></details></div>`}
 let thumbJob=0;
 function thumbs(){const job=++thumbJob,hosts=[...document.querySelectorAll('[data-tthumb]')].filter(h=>!h.firstChild);let i=0;
@@ -119,18 +119,32 @@ async function openAdd(spec){const src=await docOf(spec.src),m=meta(spec.src);if
     if(e.target.closest('[data-add-go]')){const{r,s}=read();S.prefs.tplInsert={place,legend:r.legend,layers:r.layers,avoidClash:r.avoidClash,uniqueHosts:r.uniqueHosts,wrap:r.wrap,group:r.group};savePrefs();closeDialog();add(s,s.all?{...r,mode:'pages'}:r)}}}
 
 // ---------- save / import / export ----------
-function openSave(){const sel=picked().filter(n=>!n.pin),p=pg();
-  const d=openDialog('Save as template',`<p class="muted">Templates are kept in this browser and listed under <b>Templates ▸ My templates</b>. Drag them into any drawing; ⤓ downloads one to share.</p>
-  <label class="fld"><span>Name</span><input id="tplName" value="${html(sel.length?'My block':p.name)}"></label>
-  <label class="fld"><span>Description</span><input id="tplDesc" placeholder="What it is for"></label>
-  <div class="fld"><span>Save</span><div class="seg"><button data-tpl-what="page" class="${sel.length?'':'active'}">This page</button><button data-tpl-what="sel" class="${sel.length?'active':''}" ${sel.length?'':'disabled'}>Selection (${sel.length})</button><button data-tpl-what="doc">Whole drawing</button></div></div>
+function openSave(){const sel=picked().filter(n=>!n.pin),p=pg(),from=user.find(t=>t.id===S.fromTemplate);
+  const d=openDialog('Save as template',`<p class="muted">Templates are kept in this browser and listed under <b>Templates ▸ My templates</b>. Drag them into any drawing; ⤓ downloads one to share; ✎ renames.</p>
+  <label class="fld"><span>Save to</span><select id="tplTarget"><option value="">New template</option>${user.map(t=>`<option value="${t.id}" ${from===t?'selected':''}>Replace “${html(t.name)}”</option>`).join('')}</select></label>
+  <label class="fld"><span>Name</span><input id="tplName" value="${html(from?from.name:sel.length?'My block':p.name)}"></label>
+  <label class="fld"><span>Description</span><input id="tplDesc" placeholder="What it is for" value="${html(from?.description||'')}"></label>
+  <div class="fld"><span>Save</span><div class="seg"><button data-tpl-what="page">This page</button><button data-tpl-what="sel" ${sel.length?'':'disabled'}>Selection (${sel.length})</button><button data-tpl-what="doc">Whole drawing (${S.doc.pages.filter(x=>!x.isBackground).length} page${S.doc.pages.filter(x=>!x.isBackground).length===1?'':'s'})</button></div></div>
   <footer><button data-close>Cancel</button><button class="primary" data-tpl-go>Save template</button></footer>`);
-  let what=sel.length?'sel':'page';setTimeout(()=>$('tplName').select(),20);
-  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const w=e.target.closest('[data-tpl-what]');if(w&&!w.disabled){what=w.dataset.tplWhat;d.querySelectorAll('[data-tpl-what]').forEach(b=>b.classList.toggle('active',b===w));if(what!=='sel'&&$('tplName').value==='My block')$('tplName').value=what==='doc'?S.doc.name:p.name;return}
-    if(!e.target.closest('[data-tpl-go]'))return;const name=$('tplName').value.trim()||'Template';let doc;
+  let what=sel.length?'sel':from?'doc':'page';const mark=()=>d.querySelectorAll('[data-tpl-what]').forEach(b=>b.classList.toggle('active',b.dataset.tplWhat===what));mark();
+  const label=()=>{const t=$('tplTarget').value;d.querySelector('[data-tpl-go]').textContent=t?'Replace template':'Save template'};label();setTimeout(()=>$('tplName').select(),20);
+  d.onchange=e=>{if(e.target.id!=='tplTarget')return;const t=user.find(x=>x.id===e.target.value);if(t){$('tplName').value=t.name;$('tplDesc').value=t.description||''}label()};
+  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const w=e.target.closest('[data-tpl-what]');if(w&&!w.disabled){what=w.dataset.tplWhat;mark();if(what!=='sel'&&$('tplName').value==='My block')$('tplName').value=what==='doc'?S.doc.name:p.name;return}
+    if(!e.target.closest('[data-tpl-go]'))return;const name=$('tplName').value.trim()||'Template',target=$('tplTarget').value;let doc;
     if(what==='sel'){const ids=new Set(sel.map(n=>n.id)),its=[...sel,...items().filter(e=>e.kind==='edge'&&!ids.has(e.id)&&e.from&&e.to&&ids.has(e.from.node)&&ids.has(e.to.node))];doc=Merge.docFrom(S.doc,its,name)}
     else{doc=C.copy(Packs.embedUsed(S.doc));doc.name=name;if(what==='page'){const keep=new Set([p.id,p.background].filter(Boolean));doc.pages=doc.pages.filter(x=>keep.has(x.id))}}
-    Packs.embedUsed(doc);await store({name,description:$('tplDesc').value.trim(),doc});closeDialog();S.ltab='templates';renderLeft();notify(`Saved template “${name}”. Drag it from Templates ▸ My templates into any drawing.`,4500)}}
+    Packs.embedUsed(doc);const description=$('tplDesc').value.trim();
+    if(target){const t=user.find(x=>x.id===target);if(t&&!confirm(`Replace the contents of “${t.name}” with ${what==='sel'?'the selection':what==='doc'?'this whole drawing':'this page'}?`))return;await replace(target,{name,description,doc})}else await store({name,description,doc});
+    closeDialog();S.ltab='templates';renderLeft();notify(target?`Updated template “${name}”.`:`Saved template “${name}”. Drag it from Templates ▸ My templates into any drawing.`,4500)}}
+// Rename / describe / duplicate one of my templates.
+function openDetails(id){const t=user.find(x=>x.id===id);if(!t)return;
+  const d=openDialog('Template details',`<label class="fld"><span>Name</span><input id="tdName" value="${html(t.name)}"></label><label class="fld"><span>Description</span><input id="tdDesc" value="${html(t.description||'')}" placeholder="What it is for"></label>
+  <p class="muted">${Merge.parts(C.migrate(C.copy(t.doc))).map(p=>`${html(p.name)} · ${p.devices} devices`).join('<br>')}<br>Saved ${new Date(t.updated||t.created).toLocaleString()}</p>
+  <footer><button data-td="dup">Duplicate</button><span class="spacer"></span><button data-close>Cancel</button><button class="primary" data-td="save">Save</button></footer>`);setTimeout(()=>$('tdName').select(),20);
+  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const b=e.target.closest('[data-td]');if(!b)return;
+    if(b.dataset.td==='dup'){const c=await store({name:t.name+' (copy)',description:t.description,doc:t.doc});closeDialog();notify(`Duplicated as “${c.name}”.`);return}
+    t.name=$('tdName').value.trim()||t.name;t.description=$('tdDesc').value.trim();await saveUser();closeDialog();render();notify(`Template renamed to “${t.name}”.`)}}
+async function replace(id,{name,description='',doc}){if(!loaded)await load();const t=user.find(x=>x.id===id);if(!t)return store({name,description,doc});Object.assign(t,{name,description,updated:new Date().toISOString(),doc:JSON.parse(JSON.stringify(doc))});cache.delete('u:'+id);await saveUser();render();return t}
 async function store({name,description='',doc}){if(!loaded)await load();const t={id:C.uid(),name,description,created:new Date().toISOString(),doc:JSON.parse(JSON.stringify(doc))};user.unshift(t);await saveUser();render();return t}
 function importFile(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=async()=>{try{const t=await importData(JSON.parse(await inp.files[0].text()),inp.files[0].name);notify(`Imported template “${t.name}”.`)}catch(err){notify(err.message||'Not a template or drawing file.')}};inp.click()}
 async function importData(data,file=''){const doc=C.migrate(data.portTemplate?data.doc:data);return store({name:data.name||doc.name||file.replace(/\.json$/i,'')||'Template',description:data.description||doc.meta?.description||'',doc})}
@@ -146,7 +160,8 @@ async function fileDropped(data,file,at){if(data.portTemplate){const t=await imp
 function onClick(e){const t=e.target;
   if(t.closest('[data-tpl-save]'))return openSave();if(t.closest('[data-tpl-import]'))return importFile();
   const a=t.closest('[data-tadd]');if(a)return openAdd({src:a.dataset.tadd});
-  const o=t.closest('[data-topen]');if(o){docOf(o.dataset.topen).then(doc=>{if(!doc)return;if(S.dirty&&!confirm('Open it as a new drawing? Unsaved changes stay recoverable with Undo.'))return;loadDocument(C.copy(doc),{name:'template'});if(kindOf(o.dataset.topen)==='b')built.delete(idOf(o.dataset.topen))});return}
+  const o=t.closest('[data-topen]');if(o){docOf(o.dataset.topen).then(doc=>{if(!doc)return;if(S.dirty&&!confirm('Open it as a new drawing? Unsaved changes stay recoverable with Undo.'))return;loadDocument(C.copy(doc),{name:'template'});if(kindOf(o.dataset.topen)==='u'){S.fromTemplate=idOf(o.dataset.topen);notify('Opened your template as a drawing. Edit it, then Save as template ▸ Replace to update it.',5000)}});return}
+  const ed=t.closest('[data-tedit]');if(ed)return openDetails(ed.dataset.tedit);
   const x=t.closest('[data-texport]');if(x){const u=user.find(v=>'u:'+v.id===x.dataset.texport);if(u)download(safeName(u.name)+'.template.json',JSON.stringify({portTemplate:1,name:u.name,description:u.description,doc:u.doc}),'application/json');return}
   const del=t.closest('[data-tdel]');if(del){const u=user.find(v=>'u:'+v.id===del.dataset.tdel);if(u&&confirm(`Delete the template “${u.name}”?`)){user=user.filter(v=>v!==u);cache.delete(del.dataset.tdel);saveUser();render()}return}
   const chip=t.closest('.tchip');if(chip)return openAdd(specOf(chip))}
@@ -156,5 +171,8 @@ function init(){const pane=$('templatesPane');if(!pane)return;pane.addEventListe
 // Reload the lists (e.g. after another drawing is saved) the next time the panel is shown.
 function invalidate(){loaded=false;for(const k of[...cache.keys()])if(kindOf(k)==='d')cache.delete(k)}
 
-return{init,render,invalidate,openAdd,openSave,add,drop,dragOver,dragEnd,fileDropped,importData,list:()=>user,docOf,meta};
+// Backup / restore (File ▸ My drawings ▸ Back up everything).
+async function exportAll(){if(!loaded)await load();return user.map(({id,name,description,created,updated,doc})=>({id,name,description,created,updated,doc}))}
+async function restore(list){if(!loaded)await load();let n=0;for(const t of list||[]){if(!t?.doc||user.some(u=>u.id===t.id||u.name===t.name&&u.created===t.created))continue;const doc=C.migrate(t.doc);user.push({id:t.id||C.uid(),name:t.name||doc.name||'Template',description:t.description||'',created:t.created||new Date().toISOString(),updated:t.updated,doc:JSON.parse(JSON.stringify(doc))});n++}if(n){await saveUser();render()}return n}
+return{init,render,invalidate,openAdd,openSave,openDetails,add,drop,dragOver,dragEnd,fileDropped,importData,exportAll,restore,list:()=>user,docOf,meta};
 })();

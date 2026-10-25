@@ -345,3 +345,5 @@ body.focus .focusExit{display:block}
 label.check input.inline{flex:1;min-width:80px;padding:2px 6px;font-size:12px}
 label.check>input[type=checkbox]{flex:none}
 @media (max-width:860px){.addGrid{grid-template-columns:1fr}.addGrid .row{grid-template-columns:1fr}.tthumb.big{height:160px}}
+
+::selection{background:var(--blue);color:#fff}
