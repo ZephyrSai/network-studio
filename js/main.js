@@ -7,15 +7,18 @@ function wire(){
   cv.addEventListener('pointerleave',()=>{if(!S.drag&&S.hoverId){S.hoverId=null;render('overlay')}S.cursor=null;renderRulers()});
   // Wheel / trackpad: pinch (ctrl+wheel) zooms around the fingers, two-finger scroll pans. Events are folded
   // into one update per frame so fast trackpads stay smooth.
-  let wz=0,wx=0,wy=0,wAt=null,wFrame=0;
-  const flushWheel=()=>{wFrame=0;if(wz){zoomAt(Math.exp(-wz),wAt);wz=0}if(wx||wy){S.view.x+=wx/S.view.zoom;S.view.y+=wy/S.view.zoom;wx=wy=0;render('overlay')}};
-  cv.addEventListener('wheel',e=>{e.preventDefault();const k=e.deltaMode===1?16:e.deltaMode===2?400:1,dx=e.deltaX*k,dy=e.deltaY*k;
+  let wz=0,wx=0,wy=0,wAt=null,wFrame=0,gz=null,gAt=null,cursor=null;
+  const flushWheel=()=>{wFrame=0;if(wz){zoomAt(Math.exp(-wz),wAt);wz=0}if(wx||wy){S.view.x+=wx/S.view.zoom;S.view.y+=wy/S.view.zoom;wx=wy=0;clampView();render('overlay')}};
+  cv.addEventListener('wheel',e=>{e.preventDefault();cursor=[e.clientX,e.clientY];if(gz&&e.ctrlKey)return;const k=e.deltaMode===1?16:e.deltaMode===2?400:1,dx=e.deltaX*k,dy=e.deltaY*k;
     if(e.ctrlKey||e.metaKey||S.prefs.wheelZoom&&!e.shiftKey){const pinch=e.ctrlKey&&!e.metaKey&&Math.abs(dy)<50;wz+=dy*(pinch?.011:.0018);wAt=point(e)}
     else{wx+=e.shiftKey&&!dx?dy:dx;wy+=e.shiftKey&&!dx?0:dy}
     if(!wFrame)wFrame=requestAnimationFrame(flushWheel)},{passive:false});
-  let gz=null;// Safari sends GestureEvents for pinch instead of ctrl+wheel
-  cv.addEventListener('gesturestart',e=>{e.preventDefault();gz=S.view.zoom});
-  cv.addEventListener('gesturechange',e=>{e.preventDefault();if(gz)zoomAt(gz*e.scale/S.view.zoom,point(e))});
+  // Safari reports a trackpad pinch as GestureEvents (scale since the pinch began) instead of ctrl+wheel. They carry no
+  // clientX/Y, so the zoom centres on the pointer, as Mac apps do.
+  cv.addEventListener('pointermove',e=>{cursor=[e.clientX,e.clientY]});
+  cv.addEventListener('gesturestart',e=>{e.preventDefault();const r=cv.getBoundingClientRect(),c=Number.isFinite(e.clientX)?[e.clientX,e.clientY]:cursor;
+    gz=S.view.zoom;gAt=c&&c[0]>=r.left&&c[0]<=r.right&&c[1]>=r.top&&c[1]<=r.bottom?c:[r.left+r.width/2,r.top+r.height/2]});
+  cv.addEventListener('gesturechange',e=>{e.preventDefault();if(gz&&e.scale>0)zoomAt(gz*e.scale/S.view.zoom,point({clientX:gAt[0],clientY:gAt[1]}))});
   cv.addEventListener('gestureend',e=>{e.preventDefault();gz=null});
   document.addEventListener('gesturestart',e=>e.preventDefault());
   cv.addEventListener('contextmenu',canvasMenu);
@@ -89,7 +92,7 @@ function wire(){
   $('zoomRange').addEventListener('input',e=>setZoom(2**(+e.target.value/100)));
   $('layerSel').addEventListener('change',e=>{S.activeLayer=e.target.value;if(S.ltab==='layers')renderLayers();notify('New shapes go on layer “'+S.doc.layers.find(l=>l.id===S.activeLayer)?.name+'”.',1800)});
   // minimap
-  const mm=$('minimap');let mmDrag=false;const mmMove=e=>{const svg=$('miniSvg'),vb=JSON.parse(svg.dataset.vb||'[0,0,1,1]'),r=svg.getBoundingClientRect(),k=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width-vb[2]/k)/2,oy=(r.height-vb[3]/k)/2,x=vb[0]+(e.clientX-r.left-ox)*k,y=vb[1]+(e.clientY-r.top-oy)*k,c=$('canvas');S.view.x=x-c.clientWidth/2/S.view.zoom;S.view.y=y-c.clientHeight/2/S.view.zoom;render('overlay')};
+  const mm=$('minimap');let mmDrag=false;const mmMove=e=>{const svg=$('miniSvg'),vb=JSON.parse(svg.dataset.vb||'[0,0,1,1]'),r=svg.getBoundingClientRect(),k=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width-vb[2]/k)/2,oy=(r.height-vb[3]/k)/2,x=vb[0]+(e.clientX-r.left-ox)*k,y=vb[1]+(e.clientY-r.top-oy)*k,c=$('canvas');S.view.x=x-c.clientWidth/2/S.view.zoom;S.view.y=y-c.clientHeight/2/S.view.zoom;clampView();render('overlay')};
   mm.addEventListener('pointerdown',e=>{if(e.target.closest('.miniClose'))return;mmDrag=true;mm.setPointerCapture(e.pointerId);mmMove(e)});mm.addEventListener('pointermove',e=>{if(mmDrag)mmMove(e)});mm.addEventListener('pointerup',()=>mmDrag=false);
   // keyboard & clipboard
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('dialog[open]')&&!document.querySelector('dialog[open]').matches(':modal')){closeDialog();S.highlights.clear();render('overlay');return}onKey(e)});

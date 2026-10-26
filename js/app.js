@@ -116,7 +116,7 @@ function startConnect(c,p,e){
   S.drag={kind:'connect',from:c.ref,fromP:c.p,start:p,startClient:[e.clientX,e.clientY],preview:[c.p,c.p],stroke:lt.stroke,width:lt.width,dash:lt.dash}}
 
 let panTimer=null;
-function autoPan(e){const d=S.drag;if(!d||['pan','guide','autoconn'].includes(d.kind)){clearInterval(panTimer);panTimer=null;return}const r=$('canvas').getBoundingClientRect(),edge=28,vx=e.clientX<r.left+edge?-1:e.clientX>r.right-edge?1:0,vy=e.clientY<r.top+edge?-1:e.clientY>r.bottom-edge?1:0;S.lastMove=e;if(!vx&&!vy){clearInterval(panTimer);panTimer=null;return}S.panVec=[vx,vy];if(!panTimer)panTimer=setInterval(()=>{if(!S.drag){clearInterval(panTimer);panTimer=null;return}S.view.x+=S.panVec[0]*12/S.view.zoom;S.view.y+=S.panVec[1]*12/S.view.zoom;pointerMove(S.lastMove,true)},16)}
+function autoPan(e){const d=S.drag;if(!d||['pan','guide','autoconn'].includes(d.kind)){clearInterval(panTimer);panTimer=null;return}const r=$('canvas').getBoundingClientRect(),edge=28,vx=e.clientX<r.left+edge?-1:e.clientX>r.right-edge?1:0,vy=e.clientY<r.top+edge?-1:e.clientY>r.bottom-edge?1:0;S.lastMove=e;if(!vx&&!vy){clearInterval(panTimer);panTimer=null;return}S.panVec=[vx,vy];if(!panTimer)panTimer=setInterval(()=>{if(!S.drag){clearInterval(panTimer);panTimer=null;return}S.view.x+=S.panVec[0]*12/S.view.zoom;S.view.y+=S.panVec[1]*12/S.view.zoom;clampView();pointerMove(S.lastMove,true)},16)}
 function pointerMove(e,fromPan=false){
   if(!fromPan)autoPan(e);const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
   if(!d){
@@ -125,7 +125,7 @@ function pointerMove(e,fromPan=false){
     else render('overlay');
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
-  if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;render('overlay');return}
+  if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;clampView();render('overlay');return}
   if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;if(d.kind==='box')d.touch=e.altKey;render('overlay');return}
   if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
@@ -290,8 +290,15 @@ function followLink(url){if(url.startsWith('#page:')){const i=S.doc.pages.findIn
 function gotoPage(i){S.pageIndex=i;clearTransient();S.analysis=null;Constraints.sync(pg(),S.doc);fit();render()}
 
 // ---------- view ----------
-function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const all=items();let b=selection&&S.selected.size?C.bounds(picked(),true):{x:0,y:0,...C.pageSize(pg())};if(!selection&&all.length){const e=C.bounds(all,true);if(e.x<0||e.y<0||e.x+e.w>b.w||e.y+e.h>b.h){const x=Math.min(0,e.x),y=Math.min(0,e.y);b={x,y,w:Math.max(b.w,e.x+e.w)-x,h:Math.max(b.h,e.y+e.h)-y}}}const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(.05,Math.min(8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
-function zoomAt(factor,p=null){const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight;p=p||[S.view.x+cw/2/S.view.zoom,S.view.y+ch/2/S.view.zoom];const z=Math.max(.05,Math.min(8,S.view.zoom*factor)),k=S.view.zoom/z;S.view.x=p[0]-(p[0]-S.view.x)*k;S.view.y=p[1]-(p[1]-S.view.y)*k;S.view.zoom=z;render('page');render('overlay')}
+// The page plus everything on it (some drawings spill past the sheet).
+function drawingBounds(){const ps=C.pageSize(pg()),all=items();if(!all.length)return{x:0,y:0,...ps};const e=C.bounds(all,true),x=Math.min(0,e.x),y=Math.min(0,e.y);return{x,y,w:Math.max(ps.w,e.x+e.w)-x,h:Math.max(ps.h,e.y+e.h)-y}}
+function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const b=selection&&S.selected.size?C.bounds(picked(),true):drawingBounds();const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(.05,Math.min(8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
+function zoomAt(factor,p=null){if(!(factor>0)||!Number.isFinite(factor))return;const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight;if(!p?.every(Number.isFinite))p=[S.view.x+cw/2/S.view.zoom,S.view.y+ch/2/S.view.zoom];const z=Math.max(.05,Math.min(8,S.view.zoom*factor)),k=S.view.zoom/z;S.view.x=p[0]-(p[0]-S.view.x)*k;S.view.y=p[1]-(p[1]-S.view.y)*k;S.view.zoom=z;clampView();showZoom();render('page');render('overlay')}
+// Panning stays near the drawing. While all of it fits in the window it can move about but not leave; zoomed in,
+// scrolling stops a margin (up to 300 px) past its edges, so nobody gets lost in empty canvas.
+function clampView(){const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight,z=S.view.zoom;if(!cw||!ch||!(z>0))return;const b=drawingBounds(),
+  lim=(v,lo,len,size,m)=>{const a=lo-m,c=lo+len+m-size;return Number.isFinite(v)?Math.min(Math.max(a,c),Math.max(Math.min(a,c),v)):(a+c)/2};
+  S.view.x=lim(S.view.x,b.x,b.w,cw/z,Math.min(300,cw*.3)/z);S.view.y=lim(S.view.y,b.y,b.h,ch/z,Math.min(300,ch*.3)/z)}
 function setZoom(z){zoomAt(z/S.view.zoom)}
 function updateCursorReadout(p){const e=$('cursorPos');if(e)e.textContent=`${(p[0]/C.PX).toFixed(1)} , ${(p[1]/C.PX).toFixed(1)} mm`}
 

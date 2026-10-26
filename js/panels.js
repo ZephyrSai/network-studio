@@ -92,11 +92,12 @@ function renderExplorer(){const q=($('explorerSearch')?.value||'').toLowerCase()
 function edgeName(e,p){const n=id=>p.items.find(i=>i.id===id);return`${e.from?Analysis.nameOf(n(e.from.node)):'·'} ↔ ${e.to?Analysis.nameOf(n(e.to.node)):'·'}`}
 
 // ---------- page tabs, status, chrome ----------
+function showZoom(){$('zoomValue').textContent=Math.round(S.view.zoom*100)+'%';$('zoomRange').value=Math.round(Math.log2(S.view.zoom)*100)}
 function renderChrome(){
   $('pageTabs').innerHTML=S.doc.pages.map((p,i)=>`<button data-page="${i}" draggable="true" class="${i===S.pageIndex?'active':''} ${p.isBackground?'bgTab':''}" title="${p.isBackground?'Background page':'Double-click to rename · right-click for options'}">${p.isBackground?'▧ ':''}${html(p.name)}</button>`).join('')+'<button data-action="addPage" title="Add page" class="addTab">＋</button>';
   if(document.activeElement!==$('docName'))$('docName').value=S.doc.name;document.title=S.doc.name+' · Port Network Studio';
   const sel=picked();$('selectionCount').textContent=sel.length?`${sel.length} selected${sel.length===1&&sel[0].kind!=='edge'?` · ${Math.round(sel[0].w/C.PX)}×${Math.round(sel[0].h/C.PX)} mm`:''}`:`${items().length} objects`;
-  $('pageInfo').textContent=`${pg().paper==='Custom'?pg().customW+'×'+pg().customH+' mm':pg().paper} · ${pg().orientation}`;$('zoomValue').textContent=Math.round(S.view.zoom*100)+'%';$('zoomRange').value=Math.round(Math.log2(S.view.zoom)*100);
+  $('pageInfo').textContent=`${pg().paper==='Custom'?pg().customW+'×'+pg().customH+' mm':pg().paper} · ${pg().orientation}`;showZoom();
   $('layerSel').innerHTML=S.doc.layers.map(l=>`<option value="${l.id}" ${S.activeLayer===l.id?'selected':''}>${html(l.name)}</option>`).join('');
   $('undoBtn')?.toggleAttribute('disabled',!S.history.length);
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===S.mode));

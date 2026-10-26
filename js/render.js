@@ -212,7 +212,7 @@ const need={scene:true,page:true,overlay:true,panel:true};let frame=0,frameTimer
 // rAF pauses in background tabs, so a timer backs it up
 function render(part){if(part)need[part]=true;else{need.scene=need.page=need.overlay=need.panel=true}if(!frame){frame=requestAnimationFrame(renderNow);frameTimer=setTimeout(renderNow,150)}}
 function renderNow(){
-  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
+  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;if(!Number.isFinite(S.view.x+S.view.y+S.view.zoom)){if(!(S.view.zoom>0&&S.view.zoom<=8))S.view.zoom=1;clampView()}const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
   svg.setAttribute('viewBox',`${S.view.x} ${S.view.y} ${cw/z} ${ch/z}`);
   // zooming only needs the page sheet (grid density, hairlines) and the overlay — not every shape
   if(need.scene||need.page)drawPageLayer(z);
@@ -306,17 +306,20 @@ function renderRulers(){
     // selection band
     const sel=picked();if(sel.length){const b=Core.bounds(sel),a0=((axis==='x'?b.x:b.y)-origin)*z,a1=a0+(axis==='x'?b.w:b.h)*z;g.fillStyle='#3774e833';if(axis==='x')g.fillRect(a0,0,a1-a0,h);else g.fillRect(0,a0,w,a1-a0);g.fillStyle=css.getPropertyValue('--muted').trim()||'#7c8da4'}
     const startMM=Math.floor(origin/Core.PX/minor)*minor;g.beginPath();
-    for(let mm=startMM;;mm+=minor){const pos=(mm*Core.PX-origin)*z;if(pos>len)break;if(pos<0)continue;const major=Math.abs(mm/step-Math.round(mm/step))<1e-6,tk=major?(axis==='x'?h:w)*.55:(axis==='x'?h:w)*.25;if(axis==='x'){g.moveTo(pos+.5,h);g.lineTo(pos+.5,h-tk)}else{g.moveTo(w,pos+.5);g.lineTo(w-tk,pos+.5)}
+    for(let mm=startMM;;mm+=minor){const pos=(mm*Core.PX-origin)*z;if(!(pos<=len))break;if(pos<0)continue;const major=Math.abs(mm/step-Math.round(mm/step))<1e-6,tk=major?(axis==='x'?h:w)*.55:(axis==='x'?h:w)*.25;if(axis==='x'){g.moveTo(pos+.5,h);g.lineTo(pos+.5,h-tk)}else{g.moveTo(w,pos+.5);g.lineTo(w-tk,pos+.5)}
       if(major){const label=String(Math.round(mm));if(axis==='x')g.fillText(label,pos+3,9);else{g.save();g.translate(9,pos+3);g.rotate(-Math.PI/2);g.textAlign='right';g.fillText(label,0,0);g.restore()}}}
     g.stroke();if(S.cursor){const pos=((axis==='x'?S.cursor[0]:S.cursor[1])-origin)*z;g.strokeStyle='#e0559b';g.beginPath();if(axis==='x'){g.moveTo(pos,0);g.lineTo(pos,h)}else{g.moveTo(0,pos);g.lineTo(w,pos)}g.stroke()}}}
 
 // ---------- minimap ----------
 let miniTimer=null;
 function scheduleMinimap(){clearTimeout(miniTimer);miniTimer=setTimeout(drawMinimap,180)}
-function drawMinimap(){const m=$('minimap');if(!m||!S.prefs.minimap){if(m)m.hidden=true;return}m.hidden=false;const svg=$('miniSvg'),b=Core.pageSize(pg()),all=items(),ext=all.length?Core.bounds(all):{x:0,y:0,w:b.w,h:b.h},x0=Math.min(0,ext.x)-40,y0=Math.min(0,ext.y)-40,x1=Math.max(b.w,ext.x+ext.w)+40,y1=Math.max(b.h,ext.y+ext.h)+40;
+let miniBounds=null;
+function drawMinimap(){const m=$('minimap');if(!m||!S.prefs.minimap){if(m)m.hidden=true;return}m.hidden=false;const svg=$('miniSvg'),b=Core.pageSize(pg()),all=items(),ext=miniBounds=drawingBounds(),x0=ext.x-40,y0=ext.y-40,x1=ext.x+ext.w+40,y1=ext.y+ext.h+40;
   svg.setAttribute('viewBox',`${x0} ${y0} ${x1-x0} ${y1-y0}`);svg.dataset.vb=JSON.stringify([x0,y0,x1-x0,y1-y0]);const g=$('miniScene');g.replaceChildren();el('rect',{x:0,y:0,width:b.w,height:b.h,fill:pg().bg||'#fff',stroke:'#94a3b8','stroke-width':4},g);
   for(const n of all){if(!itemVisible(n,{doc:S.doc}))continue;if(n.kind==='zone')el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:n.fill||'#eef4fb',stroke:n.stroke,'stroke-width':3},g);else if(n.kind==='edge')el('polyline',{points:n.points.map(p=>p.join(',')).join(' '),fill:'none',stroke:n.stroke,'stroke-width':4},g);else if(n.kind==='node')el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.display==='tile'||n.display==='circle'?n.stroke:'#fff',stroke:n.stroke,'stroke-width':4},g);else el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'#94a3b833'},g)}updateMinimapView()}
-function updateMinimapView(){const r=$('miniView'),svg=$('canvas');if(!r||!S.prefs.minimap)return;const z=S.view.zoom;r.setAttribute('x',S.view.x);r.setAttribute('y',S.view.y);r.setAttribute('width',svg.clientWidth/z);r.setAttribute('height',svg.clientHeight/z);r.setAttribute('stroke-width',Math.max(3,(svg.clientWidth/z)/90))}
+function updateMinimapView(){const r=$('miniView'),svg=$('canvas');if(!r||!S.prefs.minimap)return;const z=S.view.zoom,vw=svg.clientWidth/z,vh=svg.clientHeight/z;r.setAttribute('x',S.view.x);r.setAttribute('y',S.view.y);r.setAttribute('width',vw);r.setAttribute('height',vh);r.setAttribute('stroke-width',Math.max(3,vw/90));
+  // only worth showing once part of the drawing is out of view
+  const b=miniBounds||drawingBounds(),t=2/z;$('minimap').classList.toggle('away',b.x>=S.view.x-t&&b.y>=S.view.y-t&&b.x+b.w<=S.view.x+vw+t&&b.y+b.h<=S.view.y+vh+t)}
 
 // ---------- thumbnails ----------
 function thumbnail(doc,page,w=260,h=170){const svg=sceneSvg(page,{doc,print:true,pad:20});svg.setAttribute('width',w);svg.setAttribute('height',h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');return svg}

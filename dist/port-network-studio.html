@@ -118,6 +118,7 @@ details.cat>summary em{font-style:normal;font-weight:500;letter-spacing:0;margin
 #inlineText{position:absolute;min-height:64px;z-index:25;box-shadow:var(--shadow);border:2px solid var(--blue);padding:8px;font-size:13px;background:var(--input)}
 #minimap{position:absolute;right:12px;bottom:12px;width:190px;height:130px;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);overflow:hidden;z-index:5;cursor:crosshair}
 #minimap svg{width:100%;height:100%;display:block}
+#minimap{transition:opacity .18s,transform .18s,visibility 0s}#minimap.away{opacity:0;transform:translateY(8px);visibility:hidden;pointer-events:none;transition:opacity .18s,transform .18s,visibility 0s .18s}
 .presentBar{display:none}
 
 /* status bar & page tabs */
@@ -4477,7 +4478,7 @@ const need={scene:true,page:true,overlay:true,panel:true};let frame=0,frameTimer
 // rAF pauses in background tabs, so a timer backs it up
 function render(part){if(part)need[part]=true;else{need.scene=need.page=need.overlay=need.panel=true}if(!frame){frame=requestAnimationFrame(renderNow);frameTimer=setTimeout(renderNow,150)}}
 function renderNow(){
-  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
+  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;if(!Number.isFinite(S.view.x+S.view.y+S.view.zoom)){if(!(S.view.zoom>0&&S.view.zoom<=8))S.view.zoom=1;clampView()}const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
   svg.setAttribute('viewBox',`${S.view.x} ${S.view.y} ${cw/z} ${ch/z}`);
   // zooming only needs the page sheet (grid density, hairlines) and the overlay — not every shape
   if(need.scene||need.page)drawPageLayer(z);
@@ -4571,17 +4572,20 @@ function renderRulers(){
     // selection band
     const sel=picked();if(sel.length){const b=Core.bounds(sel),a0=((axis==='x'?b.x:b.y)-origin)*z,a1=a0+(axis==='x'?b.w:b.h)*z;g.fillStyle='#3774e833';if(axis==='x')g.fillRect(a0,0,a1-a0,h);else g.fillRect(0,a0,w,a1-a0);g.fillStyle=css.getPropertyValue('--muted').trim()||'#7c8da4'}
     const startMM=Math.floor(origin/Core.PX/minor)*minor;g.beginPath();
-    for(let mm=startMM;;mm+=minor){const pos=(mm*Core.PX-origin)*z;if(pos>len)break;if(pos<0)continue;const major=Math.abs(mm/step-Math.round(mm/step))<1e-6,tk=major?(axis==='x'?h:w)*.55:(axis==='x'?h:w)*.25;if(axis==='x'){g.moveTo(pos+.5,h);g.lineTo(pos+.5,h-tk)}else{g.moveTo(w,pos+.5);g.lineTo(w-tk,pos+.5)}
+    for(let mm=startMM;;mm+=minor){const pos=(mm*Core.PX-origin)*z;if(!(pos<=len))break;if(pos<0)continue;const major=Math.abs(mm/step-Math.round(mm/step))<1e-6,tk=major?(axis==='x'?h:w)*.55:(axis==='x'?h:w)*.25;if(axis==='x'){g.moveTo(pos+.5,h);g.lineTo(pos+.5,h-tk)}else{g.moveTo(w,pos+.5);g.lineTo(w-tk,pos+.5)}
       if(major){const label=String(Math.round(mm));if(axis==='x')g.fillText(label,pos+3,9);else{g.save();g.translate(9,pos+3);g.rotate(-Math.PI/2);g.textAlign='right';g.fillText(label,0,0);g.restore()}}}
     g.stroke();if(S.cursor){const pos=((axis==='x'?S.cursor[0]:S.cursor[1])-origin)*z;g.strokeStyle='#e0559b';g.beginPath();if(axis==='x'){g.moveTo(pos,0);g.lineTo(pos,h)}else{g.moveTo(0,pos);g.lineTo(w,pos)}g.stroke()}}}
 
 // ---------- minimap ----------
 let miniTimer=null;
 function scheduleMinimap(){clearTimeout(miniTimer);miniTimer=setTimeout(drawMinimap,180)}
-function drawMinimap(){const m=$('minimap');if(!m||!S.prefs.minimap){if(m)m.hidden=true;return}m.hidden=false;const svg=$('miniSvg'),b=Core.pageSize(pg()),all=items(),ext=all.length?Core.bounds(all):{x:0,y:0,w:b.w,h:b.h},x0=Math.min(0,ext.x)-40,y0=Math.min(0,ext.y)-40,x1=Math.max(b.w,ext.x+ext.w)+40,y1=Math.max(b.h,ext.y+ext.h)+40;
+let miniBounds=null;
+function drawMinimap(){const m=$('minimap');if(!m||!S.prefs.minimap){if(m)m.hidden=true;return}m.hidden=false;const svg=$('miniSvg'),b=Core.pageSize(pg()),all=items(),ext=miniBounds=drawingBounds(),x0=ext.x-40,y0=ext.y-40,x1=ext.x+ext.w+40,y1=ext.y+ext.h+40;
   svg.setAttribute('viewBox',`${x0} ${y0} ${x1-x0} ${y1-y0}`);svg.dataset.vb=JSON.stringify([x0,y0,x1-x0,y1-y0]);const g=$('miniScene');g.replaceChildren();el('rect',{x:0,y:0,width:b.w,height:b.h,fill:pg().bg||'#fff',stroke:'#94a3b8','stroke-width':4},g);
   for(const n of all){if(!itemVisible(n,{doc:S.doc}))continue;if(n.kind==='zone')el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:n.fill||'#eef4fb',stroke:n.stroke,'stroke-width':3},g);else if(n.kind==='edge')el('polyline',{points:n.points.map(p=>p.join(',')).join(' '),fill:'none',stroke:n.stroke,'stroke-width':4},g);else if(n.kind==='node')el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.display==='tile'||n.display==='circle'?n.stroke:'#fff',stroke:n.stroke,'stroke-width':4},g);else el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'#94a3b833'},g)}updateMinimapView()}
-function updateMinimapView(){const r=$('miniView'),svg=$('canvas');if(!r||!S.prefs.minimap)return;const z=S.view.zoom;r.setAttribute('x',S.view.x);r.setAttribute('y',S.view.y);r.setAttribute('width',svg.clientWidth/z);r.setAttribute('height',svg.clientHeight/z);r.setAttribute('stroke-width',Math.max(3,(svg.clientWidth/z)/90))}
+function updateMinimapView(){const r=$('miniView'),svg=$('canvas');if(!r||!S.prefs.minimap)return;const z=S.view.zoom,vw=svg.clientWidth/z,vh=svg.clientHeight/z;r.setAttribute('x',S.view.x);r.setAttribute('y',S.view.y);r.setAttribute('width',vw);r.setAttribute('height',vh);r.setAttribute('stroke-width',Math.max(3,vw/90));
+  // only worth showing once part of the drawing is out of view
+  const b=miniBounds||drawingBounds(),t=2/z;$('minimap').classList.toggle('away',b.x>=S.view.x-t&&b.y>=S.view.y-t&&b.x+b.w<=S.view.x+vw+t&&b.y+b.h<=S.view.y+vh+t)}
 
 // ---------- thumbnails ----------
 function thumbnail(doc,page,w=260,h=170){const svg=sceneSvg(page,{doc,print:true,pad:20});svg.setAttribute('width',w);svg.setAttribute('height',h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');return svg}
@@ -5337,7 +5341,7 @@ function startConnect(c,p,e){
   S.drag={kind:'connect',from:c.ref,fromP:c.p,start:p,startClient:[e.clientX,e.clientY],preview:[c.p,c.p],stroke:lt.stroke,width:lt.width,dash:lt.dash}}
 
 let panTimer=null;
-function autoPan(e){const d=S.drag;if(!d||['pan','guide','autoconn'].includes(d.kind)){clearInterval(panTimer);panTimer=null;return}const r=$('canvas').getBoundingClientRect(),edge=28,vx=e.clientX<r.left+edge?-1:e.clientX>r.right-edge?1:0,vy=e.clientY<r.top+edge?-1:e.clientY>r.bottom-edge?1:0;S.lastMove=e;if(!vx&&!vy){clearInterval(panTimer);panTimer=null;return}S.panVec=[vx,vy];if(!panTimer)panTimer=setInterval(()=>{if(!S.drag){clearInterval(panTimer);panTimer=null;return}S.view.x+=S.panVec[0]*12/S.view.zoom;S.view.y+=S.panVec[1]*12/S.view.zoom;pointerMove(S.lastMove,true)},16)}
+function autoPan(e){const d=S.drag;if(!d||['pan','guide','autoconn'].includes(d.kind)){clearInterval(panTimer);panTimer=null;return}const r=$('canvas').getBoundingClientRect(),edge=28,vx=e.clientX<r.left+edge?-1:e.clientX>r.right-edge?1:0,vy=e.clientY<r.top+edge?-1:e.clientY>r.bottom-edge?1:0;S.lastMove=e;if(!vx&&!vy){clearInterval(panTimer);panTimer=null;return}S.panVec=[vx,vy];if(!panTimer)panTimer=setInterval(()=>{if(!S.drag){clearInterval(panTimer);panTimer=null;return}S.view.x+=S.panVec[0]*12/S.view.zoom;S.view.y+=S.panVec[1]*12/S.view.zoom;clampView();pointerMove(S.lastMove,true)},16)}
 function pointerMove(e,fromPan=false){
   if(!fromPan)autoPan(e);const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
   if(!d){
@@ -5346,7 +5350,7 @@ function pointerMove(e,fromPan=false){
     else render('overlay');
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
-  if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;render('overlay');return}
+  if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;clampView();render('overlay');return}
   if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;if(d.kind==='box')d.touch=e.altKey;render('overlay');return}
   if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
@@ -5511,8 +5515,15 @@ function followLink(url){if(url.startsWith('#page:')){const i=S.doc.pages.findIn
 function gotoPage(i){S.pageIndex=i;clearTransient();S.analysis=null;Constraints.sync(pg(),S.doc);fit();render()}
 
 // ---------- view ----------
-function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const all=items();let b=selection&&S.selected.size?C.bounds(picked(),true):{x:0,y:0,...C.pageSize(pg())};if(!selection&&all.length){const e=C.bounds(all,true);if(e.x<0||e.y<0||e.x+e.w>b.w||e.y+e.h>b.h){const x=Math.min(0,e.x),y=Math.min(0,e.y);b={x,y,w:Math.max(b.w,e.x+e.w)-x,h:Math.max(b.h,e.y+e.h)-y}}}const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(.05,Math.min(8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
-function zoomAt(factor,p=null){const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight;p=p||[S.view.x+cw/2/S.view.zoom,S.view.y+ch/2/S.view.zoom];const z=Math.max(.05,Math.min(8,S.view.zoom*factor)),k=S.view.zoom/z;S.view.x=p[0]-(p[0]-S.view.x)*k;S.view.y=p[1]-(p[1]-S.view.y)*k;S.view.zoom=z;render('page');render('overlay')}
+// The page plus everything on it (some drawings spill past the sheet).
+function drawingBounds(){const ps=C.pageSize(pg()),all=items();if(!all.length)return{x:0,y:0,...ps};const e=C.bounds(all,true),x=Math.min(0,e.x),y=Math.min(0,e.y);return{x,y,w:Math.max(ps.w,e.x+e.w)-x,h:Math.max(ps.h,e.y+e.h)-y}}
+function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const b=selection&&S.selected.size?C.bounds(picked(),true):drawingBounds();const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(.05,Math.min(8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
+function zoomAt(factor,p=null){if(!(factor>0)||!Number.isFinite(factor))return;const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight;if(!p?.every(Number.isFinite))p=[S.view.x+cw/2/S.view.zoom,S.view.y+ch/2/S.view.zoom];const z=Math.max(.05,Math.min(8,S.view.zoom*factor)),k=S.view.zoom/z;S.view.x=p[0]-(p[0]-S.view.x)*k;S.view.y=p[1]-(p[1]-S.view.y)*k;S.view.zoom=z;clampView();showZoom();render('page');render('overlay')}
+// Panning stays near the drawing. While all of it fits in the window it can move about but not leave; zoomed in,
+// scrolling stops a margin (up to 300 px) past its edges, so nobody gets lost in empty canvas.
+function clampView(){const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight,z=S.view.zoom;if(!cw||!ch||!(z>0))return;const b=drawingBounds(),
+  lim=(v,lo,len,size,m)=>{const a=lo-m,c=lo+len+m-size;return Number.isFinite(v)?Math.min(Math.max(a,c),Math.max(Math.min(a,c),v)):(a+c)/2};
+  S.view.x=lim(S.view.x,b.x,b.w,cw/z,Math.min(300,cw*.3)/z);S.view.y=lim(S.view.y,b.y,b.h,ch/z,Math.min(300,ch*.3)/z)}
 function setZoom(z){zoomAt(z/S.view.zoom)}
 function updateCursorReadout(p){const e=$('cursorPos');if(e)e.textContent=`${(p[0]/C.PX).toFixed(1)} , ${(p[1]/C.PX).toFixed(1)} mm`}
 
@@ -5927,11 +5938,12 @@ function renderExplorer(){const q=($('explorerSearch')?.value||'').toLowerCase()
 function edgeName(e,p){const n=id=>p.items.find(i=>i.id===id);return`${e.from?Analysis.nameOf(n(e.from.node)):'·'} ↔ ${e.to?Analysis.nameOf(n(e.to.node)):'·'}`}
 
 // ---------- page tabs, status, chrome ----------
+function showZoom(){$('zoomValue').textContent=Math.round(S.view.zoom*100)+'%';$('zoomRange').value=Math.round(Math.log2(S.view.zoom)*100)}
 function renderChrome(){
   $('pageTabs').innerHTML=S.doc.pages.map((p,i)=>`<button data-page="${i}" draggable="true" class="${i===S.pageIndex?'active':''} ${p.isBackground?'bgTab':''}" title="${p.isBackground?'Background page':'Double-click to rename · right-click for options'}">${p.isBackground?'▧ ':''}${html(p.name)}</button>`).join('')+'<button data-action="addPage" title="Add page" class="addTab">＋</button>';
   if(document.activeElement!==$('docName'))$('docName').value=S.doc.name;document.title=S.doc.name+' · Port Network Studio';
   const sel=picked();$('selectionCount').textContent=sel.length?`${sel.length} selected${sel.length===1&&sel[0].kind!=='edge'?` · ${Math.round(sel[0].w/C.PX)}×${Math.round(sel[0].h/C.PX)} mm`:''}`:`${items().length} objects`;
-  $('pageInfo').textContent=`${pg().paper==='Custom'?pg().customW+'×'+pg().customH+' mm':pg().paper} · ${pg().orientation}`;$('zoomValue').textContent=Math.round(S.view.zoom*100)+'%';$('zoomRange').value=Math.round(Math.log2(S.view.zoom)*100);
+  $('pageInfo').textContent=`${pg().paper==='Custom'?pg().customW+'×'+pg().customH+' mm':pg().paper} · ${pg().orientation}`;showZoom();
   $('layerSel').innerHTML=S.doc.layers.map(l=>`<option value="${l.id}" ${S.activeLayer===l.id?'selected':''}>${html(l.name)}</option>`).join('');
   $('undoBtn')?.toggleAttribute('disabled',!S.history.length);
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===S.mode));
@@ -6878,15 +6890,18 @@ function wire(){
   cv.addEventListener('pointerleave',()=>{if(!S.drag&&S.hoverId){S.hoverId=null;render('overlay')}S.cursor=null;renderRulers()});
   // Wheel / trackpad: pinch (ctrl+wheel) zooms around the fingers, two-finger scroll pans. Events are folded
   // into one update per frame so fast trackpads stay smooth.
-  let wz=0,wx=0,wy=0,wAt=null,wFrame=0;
-  const flushWheel=()=>{wFrame=0;if(wz){zoomAt(Math.exp(-wz),wAt);wz=0}if(wx||wy){S.view.x+=wx/S.view.zoom;S.view.y+=wy/S.view.zoom;wx=wy=0;render('overlay')}};
-  cv.addEventListener('wheel',e=>{e.preventDefault();const k=e.deltaMode===1?16:e.deltaMode===2?400:1,dx=e.deltaX*k,dy=e.deltaY*k;
+  let wz=0,wx=0,wy=0,wAt=null,wFrame=0,gz=null,gAt=null,cursor=null;
+  const flushWheel=()=>{wFrame=0;if(wz){zoomAt(Math.exp(-wz),wAt);wz=0}if(wx||wy){S.view.x+=wx/S.view.zoom;S.view.y+=wy/S.view.zoom;wx=wy=0;clampView();render('overlay')}};
+  cv.addEventListener('wheel',e=>{e.preventDefault();cursor=[e.clientX,e.clientY];if(gz&&e.ctrlKey)return;const k=e.deltaMode===1?16:e.deltaMode===2?400:1,dx=e.deltaX*k,dy=e.deltaY*k;
     if(e.ctrlKey||e.metaKey||S.prefs.wheelZoom&&!e.shiftKey){const pinch=e.ctrlKey&&!e.metaKey&&Math.abs(dy)<50;wz+=dy*(pinch?.011:.0018);wAt=point(e)}
     else{wx+=e.shiftKey&&!dx?dy:dx;wy+=e.shiftKey&&!dx?0:dy}
     if(!wFrame)wFrame=requestAnimationFrame(flushWheel)},{passive:false});
-  let gz=null;// Safari sends GestureEvents for pinch instead of ctrl+wheel
-  cv.addEventListener('gesturestart',e=>{e.preventDefault();gz=S.view.zoom});
-  cv.addEventListener('gesturechange',e=>{e.preventDefault();if(gz)zoomAt(gz*e.scale/S.view.zoom,point(e))});
+  // Safari reports a trackpad pinch as GestureEvents (scale since the pinch began) instead of ctrl+wheel. They carry no
+  // clientX/Y, so the zoom centres on the pointer, as Mac apps do.
+  cv.addEventListener('pointermove',e=>{cursor=[e.clientX,e.clientY]});
+  cv.addEventListener('gesturestart',e=>{e.preventDefault();const r=cv.getBoundingClientRect(),c=Number.isFinite(e.clientX)?[e.clientX,e.clientY]:cursor;
+    gz=S.view.zoom;gAt=c&&c[0]>=r.left&&c[0]<=r.right&&c[1]>=r.top&&c[1]<=r.bottom?c:[r.left+r.width/2,r.top+r.height/2]});
+  cv.addEventListener('gesturechange',e=>{e.preventDefault();if(gz&&e.scale>0)zoomAt(gz*e.scale/S.view.zoom,point({clientX:gAt[0],clientY:gAt[1]}))});
   cv.addEventListener('gestureend',e=>{e.preventDefault();gz=null});
   document.addEventListener('gesturestart',e=>e.preventDefault());
   cv.addEventListener('contextmenu',canvasMenu);
@@ -6960,7 +6975,7 @@ function wire(){
   $('zoomRange').addEventListener('input',e=>setZoom(2**(+e.target.value/100)));
   $('layerSel').addEventListener('change',e=>{S.activeLayer=e.target.value;if(S.ltab==='layers')renderLayers();notify('New shapes go on layer “'+S.doc.layers.find(l=>l.id===S.activeLayer)?.name+'”.',1800)});
   // minimap
-  const mm=$('minimap');let mmDrag=false;const mmMove=e=>{const svg=$('miniSvg'),vb=JSON.parse(svg.dataset.vb||'[0,0,1,1]'),r=svg.getBoundingClientRect(),k=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width-vb[2]/k)/2,oy=(r.height-vb[3]/k)/2,x=vb[0]+(e.clientX-r.left-ox)*k,y=vb[1]+(e.clientY-r.top-oy)*k,c=$('canvas');S.view.x=x-c.clientWidth/2/S.view.zoom;S.view.y=y-c.clientHeight/2/S.view.zoom;render('overlay')};
+  const mm=$('minimap');let mmDrag=false;const mmMove=e=>{const svg=$('miniSvg'),vb=JSON.parse(svg.dataset.vb||'[0,0,1,1]'),r=svg.getBoundingClientRect(),k=Math.max(vb[2]/r.width,vb[3]/r.height),ox=(r.width-vb[2]/k)/2,oy=(r.height-vb[3]/k)/2,x=vb[0]+(e.clientX-r.left-ox)*k,y=vb[1]+(e.clientY-r.top-oy)*k,c=$('canvas');S.view.x=x-c.clientWidth/2/S.view.zoom;S.view.y=y-c.clientHeight/2/S.view.zoom;clampView();render('overlay')};
   mm.addEventListener('pointerdown',e=>{if(e.target.closest('.miniClose'))return;mmDrag=true;mm.setPointerCapture(e.pointerId);mmMove(e)});mm.addEventListener('pointermove',e=>{if(mmDrag)mmMove(e)});mm.addEventListener('pointerup',()=>mmDrag=false);
   // keyboard & clipboard
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.querySelector('dialog[open]')&&!document.querySelector('dialog[open]').matches(':modal')){closeDialog();S.highlights.clear();render('overlay');return}onKey(e)});
