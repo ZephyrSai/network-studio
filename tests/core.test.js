@@ -62,6 +62,28 @@ test('pinned title block follows the page corner; background pages re-anchor per
   return{gap0,gap1,paper:p.paper,frameW:Math.round(v[0].w),a3W:Math.round(Constraints.area(Core.page('x')).w)}})()`,ctx);
   assert.equal(r.paper,'A2');assert.deepEqual(r.gap0.map(Math.round),r.gap1.map(Math.round));assert.equal(r.frameW,r.a3W)});
 
+// A legend that wraps taller on narrow sheets, as the real one (render.js) does next to a title block.
+const LEGEND_STUB="var RCTX=null;function makeCtx(p,o){return{doc:o.doc}}function legendMeasure(n,page,ctx){const wide=Constraints.availableWidth(page,ctx.doc,n)>=1200;n.w=wide?886:540;n.h=wide?156:244}";
+const PIN_PAGE=`const p=Core.page('t'),a=Core.node('router',60,60,'A'),b=Core.node('router',1440,800,'B'),c=Core.node('router',400,800,'C');p.items.push(a,b,c);const cb=Core.bounds([a,b,c],true);
+  const lg={id:'lg',kind:'legend',x:50,y:cb.y+cb.h+15,w:886,h:156,labels:[],pin:'bl'};p.items.push(lg);
+  const gap=()=>{const A=Constraints.area(p);return Math.round(A.y+A.h-lg.y-lg.h)},covers=()=>[a,b,c].some(n=>Core.overlaps(Core.box(lg),Core.bounds([n],true)));Constraints.sync(p);`;
+
+test('choosing a smaller paper: the page grows only as far as the drawing needs, pinned blocks keep their gaps',()=>{const ctx=sandbox();vm.runInContext(LEGEND_STUB,ctx);const r=vm.runInContext(`(()=>{${PIN_PAGE}const out={start:p.paper,gap0:gap()};
+  p.paper='A4';p.minPaper='A4';Constraints.sync(p);Object.assign(out,{a4:p.paper,gap:gap(),size:lg.w+'x'+lg.h,covers:covers()});
+  Core.move(c,600,0);p.margin=20;Constraints.sync(p);out.marginGap=gap();p.margin=10;p.autoSize=false;p.paper='A2';Constraints.sync(p);out.keepGap=gap();return out})()`,ctx);
+  assert.equal(r.start,'A3');assert.ok(r.gap0>10,'the legend starts above the border');
+  assert.equal(r.a4,'A3','A4 is too small, A3 is enough (the legend wrapped for A4 must not push it to A2)');assert.equal(r.gap,r.gap0);assert.equal(r.size,'886x156');assert.equal(r.covers,false);
+  assert.equal(r.marginGap,r.gap0,'with nothing under it, a wider margin keeps the gap from the border');assert.equal(r.keepGap,r.gap0,'"Keep this size" keeps it too')});
+
+test('pinned blocks tighten towards their edge only when the sheet changes; custom sheets grow around them',()=>{const ctx=sandbox();vm.runInContext(LEGEND_STUB,ctx);const r=vm.runInContext(`(()=>{${PIN_PAGE}const out={};
+  p.paper='A2';p.minPaper='A2';Constraints.sync(p);Core.move(lg,0,-250);Constraints.sync(p);out.bigGap=gap();
+  p.paper='A3';p.minPaper='A3';Constraints.sync(p);Object.assign(out,{a3:p.paper,tight:gap(),covers:covers()});
+  Core.move(c,0,40);Constraints.sync(p);Object.assign(out,{grown:p.paper,grownGap:gap(),grownCovers:covers()});
+  Core.move(c,0,-40);p.paper='Tabloid';p.minPaper='Tabloid';Core.move(c,0,120);Constraints.sync(p);Object.assign(out,{us:p.paper,usCovers:covers(),usGap:gap()});return out})()`,ctx);
+  assert.ok(r.bigGap>200);assert.equal(r.a3,'A3','the legend moves down rather than forcing A2');assert.equal(r.covers,false);assert.ok(r.tight<r.bigGap&&r.tight>=0);
+  assert.equal(r.grown,'A2','on an unchanged sheet the page grows and the legend keeps its gap');assert.equal(r.grownGap,r.tight);assert.equal(r.grownCovers,false);
+  assert.equal(r.us,'Custom');assert.equal(r.usCovers,false,'a grown custom sheet leaves room for the legend');assert.equal(r.usGap,r.tight)});
+
 test('zones grow to keep members inside',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const p=Core.page('t'),z=Core.zone('Z',100,100,300,200),n=Core.node('server',300,180,'S'),o=Core.node('server',600,180,'Out');p.items.push(z,n,o);Core.move(n,50,0);Constraints.sync(p);const w=z.w;Core.move(o,0,0);return{inside:Core.inside(Core.box(n),Core.box(z)),w,outsideStays:!Core.overlaps(Core.box(o),Core.box(z))}})()`,ctx);assert.ok(r.inside);assert.ok(r.w>300);assert.ok(r.outsideStays,'a device whose centre is outside is not pulled in')});
 
 test('drawings saved before pinning get their border, title block and legend anchored',()=>{const ctx=sandbox();const r=vm.runInContext(`(()=>{const d=Core.newDoc('old');delete d.meta.pinsUpgraded;const fg=d.pages[0],bg=Core.page('bg');bg.isBackground=true;d.pages.push(bg);fg.background=bg.id;
