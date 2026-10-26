@@ -416,3 +416,9 @@ dialog.inventory{width:min(1200px,97vw)}
 .tourFoot{display:flex;align-items:center;gap:6px}.tourFoot .primary{min-width:84px}
 .tourDots{display:flex;gap:5px;margin-right:auto}.tourDots i{width:6px;height:6px;border-radius:50%;background:var(--border)}.tourDots i.on{background:var(--blue);width:16px;border-radius:3px}
 @media (prefers-reduced-motion:reduce){.tourHole,.tourCard{transition:none}}
+
+/* racks */
+.rkTable{max-height:34vh}.rkTable select{font-size:12px;padding:2px 4px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0 10px}.kpis div{border:1px solid var(--border);border-radius:8px;padding:8px 10px}.kpis b{display:block;font-size:15px;color:var(--strong)}.kpis span{font-size:11px;color:var(--muted)}
+.rkWarn{margin:0 0 10px;padding-left:18px;color:#c2410c;font-size:12px}.okTxt{color:#16a34a;font-size:12.5px;margin:0 0 10px}
+@media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}}

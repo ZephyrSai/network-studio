@@ -16,6 +16,7 @@ const isMarkup=n=>Revisions.MARKUP.has(n.type);
 // ---------- right-click quick configure ----------
 function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x=>x.kind==='node'&&!isMarkup(x)&&x.type!=='rack'&&!Shapes.rackItems[x.type]),devs=nodes.filter(x=>Shapes.isDevice(x)),zones=sel.filter(x=>x.kind==='zone'),texty=sel.filter(x=>x.labels?.length||x.kind==='table');let h='';
   if(sel.length>1){const parts=[[devs.length,'device'],[nodes.length-devs.length,'shape'],[edges.length,'connector'],[zones.length,'zone'],[sel.length-nodes.length-edges.length-zones.length,'other']].filter(([n])=>n>0).map(([n,w])=>plural(n,w));h+=`<div class="ctxHead">${parts.join(' · ')}</div>`}
+  h+=RackUI.menu(sel);
   if(edges.length){const cur=new Set(edges.map(e=>e.linkType));
     h+=sub('Link type',Object.entries(Shapes.linkTypes).map(([k,v])=>`<button data-ctx="lt:${k}"><span class="sw" style="background:${S.doc.linkStyles?.[k]?.stroke||v.stroke}"></span>${v.name}${cur.size===1&&cur.has(k)?' ✓':''}</button>`).join(''))
       +sub('Routing',[['auto','Auto-route'],['hv','Right angle · H'],['vh','Right angle · V'],['straight','Straight'],['free','Free']].map(([k,v])=>`<button data-ctx="rt:${k}">${v}</button>`).join(''))
@@ -35,6 +36,7 @@ function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x
   return h}
 function setColor(prefix,v){apply(prefix+v)}
 function apply(c){const[,op,...rest]=c.split(':'),v=rest.join(':');
+  if(op==='rk'){RackUI.apply(c);return true}
   if(op==='scale'){openScale();return true}if(op==='sim'){selectSimilar(v);return true}
   if(op==='mv'){const sel=picked(),dev=sel.find(n=>n.kind==='node'&&Shapes.isDevice(n));if(dev)openMoveLinks(dev.id,sel.filter(e=>e.kind==='edge'&&(e.from?.node===dev.id||e.to?.node===dev.id)).map(e=>e.id));return true}
   if(op==='pt'){arrangePorts(v);return true}
@@ -195,7 +197,9 @@ function openMoveLinks(srcId,pre=[]){const src=find(srcId);if(!src)return;const 
     if(t.closest('[data-mv-pick]')){if(!ids.length)return notify('Tick at least one link.');closeDialog();S.pickCancel='Moving links cancelled.';S.pickHandler=id=>{if(id===src.id)return notify('That is the device the links come from — pick another one.');apply(id,ids,keepIf)};notify(`Click the device the ${plural(ids.length,'link')} should move to · Esc cancels.`,6000);return}
     if(t.closest('[data-mv-go]')){if(!ids.length)return;closeDialog();apply(dest==='existing'?$('mvTarget').value:null,ids,keepIf)}}}
 
-function init(){const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
+function init(){document.addEventListener('click',e=>{const b=e.target.closest?.('[data-ctx-btn]');if(b)apply(b.dataset.ctxBtn)});
+  document.addEventListener('change',e=>{const t=e.target;if(t.matches?.('[data-rk-lock]'))RackUI.toggleLock(picked().filter(Racks.isItem));if(t.matches?.('[data-rk-acc]')&&t.value){const r=picked().find(Racks.isRack);if(r)RackUI.addAccessory(r,t.value);t.value=''}});
+  const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
   document.addEventListener('click',e=>{const b=e.target.closest?.('[data-legend-style]');if(b){const[id,...k]=b.dataset.legendStyle.split('|');openLegendStyle(id,k.join('|'))}})}
 return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow,arrangePorts,openMoveLinks};
 })();

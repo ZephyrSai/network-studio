@@ -427,6 +427,12 @@ dialog.inventory{width:min(1200px,97vw)}
 .tourDots{display:flex;gap:5px;margin-right:auto}.tourDots i{width:6px;height:6px;border-radius:50%;background:var(--border)}.tourDots i.on{background:var(--blue);width:16px;border-radius:3px}
 @media (prefers-reduced-motion:reduce){.tourHole,.tourCard{transition:none}}
 
+/* racks */
+.rkTable{max-height:34vh}.rkTable select{font-size:12px;padding:2px 4px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:4px 0 10px}.kpis div{border:1px solid var(--border);border-radius:8px;padding:8px 10px}.kpis b{display:block;font-size:15px;color:var(--strong)}.kpis span{font-size:11px;color:var(--muted)}
+.rkWarn{margin:0 0 10px;padding-left:18px;color:#c2410c;font-size:12px}.okTxt{color:#16a34a;font-size:12.5px;margin:0 0 10px}
+@media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -939,21 +945,52 @@ const rackItems={
   'rk-switch':{name:'Switch 1U · 48p',u:1,face:'switch'},'rk-switch24':{name:'Switch 1U · 24p',u:1,face:'switch24'},'rk-router':{name:'Router 2U',u:2,face:'router'},'rk-firewall':{name:'Firewall 1U',u:1,face:'firewall'},
   'rk-patch':{name:'Patch panel 1U',u:1,face:'patch'},'rk-fiber':{name:'Fibre panel 1U',u:1,face:'fiber'},'rk-cable':{name:'Cable manager 1U',u:1,face:'cable'},
   'rk-ups':{name:'UPS 2U',u:2,face:'ups'},'rk-pdu':{name:'PDU 1U',u:1,face:'pdu'},'rk-kvm':{name:'KVM console 1U',u:1,face:'kvm'},'rk-shelf':{name:'Shelf 2U',u:2,face:'shelf'},'rk-blank':{name:'Blanking panel 1U',u:1,face:'blank'},
+  // accessories
+  'rk-blank2':{name:'Blanking panel 2U',u:2,face:'blank'},'rk-cable2':{name:'Cable manager 2U',u:2,face:'cable'},'rk-brush':{name:'Brush panel 1U',u:1,face:'brush'},'rk-tray':{name:'Vented cable tray 1U',u:1,face:'tray'},'rk-fan':{name:'Fan tray 1U',u:1,face:'fan'},
+  'rk-ats':{name:'Transfer switch (ATS) 1U',u:1,face:'ats'},'rk-drawer':{name:'Drawer 2U',u:2,face:'drawer'},'rk-monitor':{name:'LCD monitor 1U',u:1,face:'monitor'},'rk-kvmsw':{name:'KVM switch 1U',u:1,face:'kvmsw'},
 };
 const rackSize=units=>({w:RACK.inner+2*RACK.rail,h:units*RU+RACK.top+RACK.bottom});
+// A rack can show its front, rear and top (plan) views side by side; the front stays at the left, where equipment sits.
+const RGAP=28,MM=RACK.inner/483;
+function rackDims(n){const f=rackSize(n.units||42),v=n.views||{},depth=+n.data?.depth||1000,topH=Math.round(depth*MM)+44;let x=f.w+RGAP;const rear=v.rear?x:null;if(v.rear)x+=f.w+RGAP;const top=v.top?x:null;if(v.top)x+=f.w+RGAP;
+  return{front:f,rear,top,topH,w:x-RGAP,h:Math.max(f.h,v.top?topH:0)}}
 const rackInner=r=>({x:r.x+RACK.rail,y:r.y+RACK.top,w:RACK.inner,h:(r.units||42)*RU});
 // U position (1 = bottom) of an equipment box inside a rack.
 const rackU=(r,n)=>{const i=rackInner(r);return Math.round((i.y+i.h-(n.y+n.h))/RU)+1};
-function drawRack(n,g){
-  const units=n.units||42,s=n.stroke||'#475569',i={x:RACK.rail,y:RACK.top,w:RACK.inner,h:units*RU};
-  el('rect',{x:0,y:0,width:n.w,height:n.h,rx:5,fill:n.fill||'#f1f5f9',stroke:s,'stroke-width':2},g);
+// items: the rack's equipment (page items inside it) — drawn again, seen from the back, in the rear view; nameOf resolves labels
+function drawRack(n,g,items=[],nameOf=x=>x.labels?.[0]?.text||''){const D=rackDims(n);drawRackFrame(n,g,0,'FRONT');
+  if(D.rear!=null){const rg=el('g',{transform:`translate(${D.rear} 0)`},g);drawRackFrame(n,rg,0,'REAR');for(const it of items){const t=el('g',{transform:`translate(${f(it.x-n.x)} ${f(it.y-n.y)})`},rg);drawRear(it,t,nameOf(it),(+it.data?.depth||RACK_DEPTH[it.type]||400)<(+n.data?.depth||1000)*.4)}}
+  if(D.top!=null)drawRackTop(n,el('g',{transform:`translate(${D.top} 0)`},g),items,D)}
+const RACK_DEPTH={'rk-patch':120,'rk-fiber':250,'rk-cable':90,'rk-cable2':90,'rk-blank':20,'rk-blank2':20,'rk-brush':40,'rk-pdu':60,'rk-switch':350,'rk-switch24':300,'rk-firewall':350,'rk-router':450,'rk-server':700,'rk-server2':750,'rk-blade':800,'rk-storage':650,'rk-nvr':500,'rk-ups':650,'rk-kvm':650,'rk-monitor':650,'rk-kvmsw':250,'rk-shelf':500,'rk-tray':600,'rk-fan':350,'rk-ats':300,'rk-drawer':500};
+function drawRackFrame(n,g,_,caption){const units=n.units||42,s=n.stroke||'#475569',W=rackSize(units).w,H=rackSize(units).h,i={x:RACK.rail,y:RACK.top,w:RACK.inner,h:units*RU};
+  el('rect',{x:0,y:0,width:W,height:H,rx:5,fill:n.fill||'#f1f5f9',stroke:s,'stroke-width':2},g);
   el('rect',{x:i.x,y:i.y,width:i.w,height:i.h,fill:'#ffffff',stroke:s,'stroke-width':.8,'stroke-opacity':.6},g);
   const lines=[];for(let u=1;u<units;u++)lines.push(`M${i.x} ${f(i.y+u*RU)}H${i.x+i.w}`);el('path',{d:lines.join(''),stroke:s,'stroke-opacity':.13,'stroke-width':.8},g);
-  for(const x of[3,n.w-RACK.rail+3])el('rect',{x,y:i.y,width:RACK.rail-6,height:i.h,fill:s,'fill-opacity':.12},g);
-  for(let u=1;u<=units;u++){const y=i.y+(units-u)*RU+RU/2+3,t=el('text',{x:RACK.rail/2,y,'text-anchor':'middle','font-size':7.5,fill:s,'font-family':C.FONT},g);t.textContent=u;const t2=el('text',{x:n.w-RACK.rail/2,y,'text-anchor':'middle','font-size':7.5,fill:s,'font-family':C.FONT},g);t2.textContent=u}
-  el('rect',{x:8,y:6,width:n.w-16,height:RACK.top-12,rx:3,fill:s,'fill-opacity':.85},g);
-  for(const x of[10,n.w-30])el('rect',{x,y:n.h-RACK.bottom+4,width:20,height:RACK.bottom-6,rx:2,fill:s,'fill-opacity':.6},g);
+  for(const x of[3,W-RACK.rail+3])el('rect',{x,y:i.y,width:RACK.rail-6,height:i.h,fill:s,'fill-opacity':.12},g);
+  for(let u=1;u<=units;u++){const y=i.y+(units-u)*RU+RU/2+3,t=el('text',{x:RACK.rail/2,y,'text-anchor':'middle','font-size':7.5,fill:s,'font-family':C.FONT},g);t.textContent=u;const t2=el('text',{x:W-RACK.rail/2,y,'text-anchor':'middle','font-size':7.5,fill:s,'font-family':C.FONT},g);t2.textContent=u}
+  el('rect',{x:8,y:6,width:W-16,height:RACK.top-12,rx:3,fill:s,'fill-opacity':.85},g);
+  if(caption&&(n.views?.rear||n.views?.top)){const t=el('text',{x:W/2,y:RACK.top/2+3.5,'text-anchor':'middle','font-size':9,'font-weight':700,'letter-spacing':1.5,fill:'#fff','font-family':C.FONT},g);t.textContent=caption}
+  for(const x of[10,W-30])el('rect',{x,y:H-RACK.bottom+4,width:20,height:RACK.bottom-6,rx:2,fill:s,'fill-opacity':.6},g);
 }
+// Rear of a unit: fans, power supplies and a few ports on active gear; shallow front-mounted panels are shown faded.
+function drawRear(n,g,name,shallow){const w=n.w,h=n.h,s=n.stroke||'#475569',face=rackItems[n.type]?.face||'blank',dark='#334155';
+  el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:shallow?'none':n.fill||'#e2e8f0',stroke:s,'stroke-width':1,'stroke-dasharray':shallow?'3 2':null,opacity:shallow?.55:1},g);
+  const passive=['patch','fiber','cable','blank','brush','shelf','tray','drawer'].includes(face);
+  if(!passive&&!shallow){const fans=Math.max(2,Math.round(w/45)),fy=h/2,r=Math.min(h/2-2.5,6);for(let k=0;k<fans;k++)el('circle',{cx:f(10+k*14),cy:f(fy),r:f(r),fill:'none',stroke:dark,'stroke-width':.8},g);
+    for(let k=0;k<2;k++){const px=w-34-k*30;el('rect',{x:px,y:2.5,width:26,height:h-5,rx:1.5,fill:'#cbd5e1',stroke:s,'stroke-width':.6},g);el('rect',{x:px+19,y:h/2-2,width:4,height:4,fill:dark},g)}
+    let d='';for(let k=0;k<4;k++)d+=`M${f(w*.42+k*7)} ${f(h/2-1.6)}h4.5v3.2h-4.5z`;el('path',{d,fill:dark},g)}
+  else if(!shallow){el('path',{d:`M6 ${f(h/2)}H${w-6}`,stroke:dark,'stroke-width':1.2,'stroke-dasharray':'2 3'},g)}
+  if(name&&h>=RU){const t=el('text',{x:w/2,y:h/2+3,'text-anchor':'middle','font-size':Math.min(8.5,h*.5),fill:dark,'fill-opacity':shallow?.5:.85,'font-family':C.FONT},g);t.textContent=name}}
+// Plan view: cabinet outline, doors, mounting rails and each unit's depth from the front rail, deepest called out.
+function drawRackTop(n,g,items,D){const s=n.stroke||'#475569',W=rackSize(n.units||42).w,depth=+n.data?.depth||1000,usable=depth-150,k=MM,y0=22,Hd=Math.round(depth*k);
+  el('rect',{x:0,y:0,width:W,height:Hd+y0*2,rx:5,fill:n.fill||'#f1f5f9',stroke:s,'stroke-width':2},g);
+  const cap=(t,y)=>{const e=el('text',{x:W/2,y,'text-anchor':'middle','font-size':8.5,'font-weight':700,'letter-spacing':1.2,fill:s,'font-family':C.FONT},g);e.textContent=t};cap('FRONT · TOP VIEW',14);cap(`REAR · ${+n.data?.width||600} × ${depth} mm`,y0*2+Hd-8);
+  el('rect',{x:RACK.rail,y:y0,width:RACK.inner,height:Hd,fill:'#ffffff',stroke:s,'stroke-width':.8,'stroke-opacity':.6},g);
+  const fr=y0+Math.round(40*k),rr=fr+Math.round(usable*k);for(const y of[fr,rr])el('path',{d:`M${RACK.rail-4} ${y}H${W-RACK.rail+4}`,stroke:s,'stroke-width':2.2},g);
+  const eq=items.map(it=>({it,d:+it.data?.depth||RACK_DEPTH[it.type]||400})).sort((a,b)=>b.d-a.d);
+  for(const{it,d}of eq){const over=d>usable;el('rect',{x:RACK.rail+3,y:fr,width:RACK.inner-6,height:Math.round(Math.min(d,depth-40)*k),fill:over?'#dc2626':it.fill||'#94a3b8','fill-opacity':.08,stroke:over?'#dc2626':s,'stroke-width':.6,'stroke-opacity':.5},g)}
+  if(eq.length){const top=eq[0],y=fr+Math.round(Math.min(top.d,depth-40)*k),t=el('text',{x:W/2,y:y-4,'text-anchor':'middle','font-size':8,fill:top.d>usable?'#dc2626':s,'font-family':C.FONT},g);t.textContent=`deepest ${top.d} mm${top.d>usable?' — too deep':''} · ${eq.length} units`}
+  let a='';for(const x of[10,W-10])a+=`M${x} ${y0+10}V${y0+Hd-10}M${x-3} ${y0+Hd-15}l3 5 3-5`;el('path',{d:a,stroke:'#0ea5e9','stroke-width':1.2,fill:'none'},g)}
 function drawFace(n,g){
   const w=n.w,h=n.h,face=rackItems[n.type]?.face||'blank',s=n.stroke||'#475569',body=n.fill||'#e2e8f0',dark='#334155',led='#22c55e';
   el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:body,stroke:s,'stroke-width':1},g);
@@ -974,6 +1011,13 @@ function drawFace(n,g){
   else if(face==='pdu'){let d='';for(let k=0;k<8;k++)d+=`M${f(x0+k*bw/8)} ${f(mid-3)}h7v6h-7z`;el('path',{d,fill:dark},g);leds(x0-12,['#f59e0b'])}
   else if(face==='kvm'){el('rect',{x:x0,y:3,width:bw,height:h-6,rx:2,fill:'#0f172a'},g);let d='';for(let k=0;k<14;k++)d+=`M${f(x0+4+k*(bw-8)/14)} ${f(mid)}h4`;el('path',{d,stroke:'#94a3b8','stroke-width':1.4},g)}
   else if(face==='shelf'){el('path',{d:`M${x0} ${h-5}H${x1}`,stroke:dark,'stroke-width':1.5},g)}
+  else if(face==='brush'){let d='';for(let x=x0-40;x<x1;x+=2.2)d+=`M${f(x)} ${f(mid-3)}V${f(mid+3)}`;el('path',{d,stroke:dark,'stroke-width':.6,'stroke-opacity':.7},g)}
+  else if(face==='tray'){let d='';for(let x=x0-40;x<x1;x+=6)d+=`M${f(x)} 4h3v${h-8}h-3z`;el('path',{d,fill:dark,'fill-opacity':.35},g)}
+  else if(face==='fan'){for(let k=0;k<4;k++){const cx=x0-20+k*(bw+20)/4+12;el('circle',{cx:f(cx),cy:f(mid),r:f(Math.min(h/2-2,7)),fill:'none',stroke:dark,'stroke-width':1},g);el('circle',{cx:f(cx),cy:f(mid),r:1.5,fill:dark},g)}leds(x0-30,[led])}
+  else if(face==='ats'){ports(4,1,x0,bw*.5,5,4);el('rect',{x:x0+bw*.6,y:3,width:bw*.3,height:h-6,rx:1.5,fill:'#0f172a'},g);leds(x0-12,[led,'#f59e0b'])}
+  else if(face==='drawer'){el('rect',{x:x0-40,y:3,width:bw+40,height:h-6,rx:2,fill:'none',stroke:dark,'stroke-width':.9},g);el('rect',{x:w/2-14,y:mid-2,width:28,height:4,rx:2,fill:dark},g)}
+  else if(face==='monitor'){el('rect',{x:x0-30,y:3,width:bw*.5,height:h-6,rx:1.5,fill:'#1e3a8a'},g);el('rect',{x:x0+bw*.3,y:mid-1.5,width:bw*.5,height:3,rx:1.5,fill:dark},g)}
+  else if(face==='kvmsw'){ports(8,1,x0,bw*.7,4,3.6);leds(x0-12,[led,'#38bdf8'])}
 }
 
 // ---------- link (connector) types ----------
@@ -1055,7 +1099,7 @@ function iconSvg(type,{display='symbol',accent='#2f5ea8',fill='#ffffff',size=40}
   const inner=`<svg x="${s.w*inset}" y="${s.h*inset}" width="${s.w*(1-2*inset)}" height="${s.h*(1-2*inset)}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" overflow="visible"><g fill="${bg?accent:fill}" stroke="currentColor" color="${bg?'#ffffff':accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.svg}</g></svg>`;
   return`<svg viewBox="-2 -2 ${s.w+4} ${s.h+4}" width="${size}" height="${size*.8}">${bg}${inner}</svg>`}
 
-return{basic,RU,RACK,rackItems,rackSize,rackInner,rackU,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,make,iconSvg};
+return{basic,RU,RACK,rackItems,rackSize,rackDims,rackInner,rackU,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,make,iconSvg};
 })();
 
 </script>
@@ -2675,6 +2719,56 @@ if(typeof module!=='undefined')module.exports=Ports;
 
 </script>
 <script>
+// Rack engine: which equipment sits in which rack and U, free space, placing / resizing / moving by U (never on top of
+// something else), U locks, rack units linked to drawing devices, and power / heat / depth checks.
+const Racks=(()=>{
+const C=Core;
+const RU=()=>Shapes.RU,inner=r=>Shapes.rackInner(r);
+const isRack=n=>n?.type==='rack',isItem=n=>n?.kind==='node'&&!!Shapes.rackItems[n.type];
+const heightU=n=>Math.max(1,Math.round(n.h/RU()));
+const units=r=>r.units||42;
+function contents(r,items){const i=inner(r);return items.filter(n=>isItem(n)&&C.inside(C.box(n),{x:i.x-1,y:i.y-1,w:i.w+2,h:i.h+2}))}
+function rackOf(n,items){const c=C.center(n);return items.find(r=>isRack(r)&&(()=>{const i=inner(r);return c[0]>=i.x-1&&c[0]<=i.x+i.w+1&&c[1]>=i.y-1&&c[1]<=i.y+i.h+1})())||null}
+const uOf=(r,n)=>Shapes.rackU(r,n);// lowest U the item occupies (1 = bottom)
+function occupied(r,items,except){const set=new Map();for(const n of contents(r,items)){if(except?.has(n.id))continue;const u=uOf(r,n);for(let k=0;k<heightU(n);k++)set.set(u+k,n)}return set}
+function fits(r,items,u,h,except){if(u<1||u+h-1>units(r))return false;const occ=occupied(r,items,except);for(let k=0;k<h;k++)if(occ.has(u+k))return false;return true}
+// A free run of h U: from the top (default), the bottom, or nearest to a U.
+function findSlot(r,items,h,{order='top',near=null,except}={}){const c=[];for(let u=1;u+h-1<=units(r);u++)if(fits(r,items,u,h,except))c.push(u);if(!c.length)return null;if(near!=null)return c.sort((a,b)=>Math.abs(a-near)-Math.abs(b-near)||b-a)[0];return order==='top'?c.at(-1):c[0]}
+function freeU(r,items){return units(r)-[...occupied(r,items).keys()].length}
+// Put n so its lowest U is u.
+function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU();n.h=h;n.w=i.w;C.move(n,i.x-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.[0];if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36}}
+// New height, keeping the top U where it was if there is room, else the bottom U, else the nearest free run.
+function setHeight(r,n,hU,items){const cur=uOf(r,n),top=cur+heightU(n)-1,exc=new Set([n.id]);let u=[top-hU+1,cur].find(x=>fits(r,items,x,hU,exc));if(u==null)u=findSlot(r,items,hU,{near:cur,except:exc});if(u==null)return null;n.h=hU*RU();placeAt(r,n,u);return u}
+function moveTo(r,n,u,items){if(!fits(r,items,u,heightU(n),new Set([n.id])))return false;placeAt(r,n,u);return true}
+const isLocked=(n,r)=>!!(n.uLock||r?.lockItems);
+
+// Which rack unit stands for a drawing device: [type pattern, rack item, U].
+const MAP=[[/firewall|utm|ngfw|waf/,'rk-firewall',1],[/router|sdwan|wan|vpn/,'rk-router',2],[/l3switch|coreswitch|core|switch|hub/,'rk-switch',1],
+  [/nvr|vms|recorder/,'rk-nvr',2],[/san|storage|nas|backup|tape/,'rk-storage',2],[/hypervisor|esx|blade/,'rk-server2',2],[/server|dns|dhcp|ad|mail|web|app|db|sql|proxy|ids|ips|siem|nms|syslog|controller|wlc|load|lb|scada|historian/,'rk-server',1],
+  [/ups/,'rk-ups',2],[/pdu|power/,'rk-pdu',1],[/patch/,'rk-patch',1],[/fib|odf/,'rk-fiber',1],[/kvm|console/,'rk-kvm',1],[/media|converter/,'rk-shelf',2]];
+function rackTypeFor(n){const t=(n.type+' '+(n.labels?.[0]?.text||'')).toLowerCase();if(Shapes.rackItems[n.type])return[n.type,Shapes.rackItems[n.type].u];
+  for(const[re,rt,u]of MAP)if(re.test(t))return[/24/.test(t)&&rt==='rk-switch'?'rk-switch24':rt,u];return['rk-server',1]}
+
+// Typical draw (W) and depth (mm) when the device does not say; marked as estimates in reports.
+const TYPICAL={'rk-server':[350,700],'rk-server2':[550,750],'rk-blade':[3000,800],'rk-storage':[600,650],'rk-nvr':[180,500],'rk-switch':[150,350],'rk-switch24':[70,300],'rk-router':[250,450],'rk-firewall':[90,350],'rk-patch':[0,120],'rk-fiber':[0,250],'rk-cable':[0,90],'rk-ups':[0,650],'rk-pdu':[0,60],'rk-kvm':[35,650],'rk-shelf':[0,500],'rk-blank':[0,20],'rk-brush':[0,40],'rk-fan':[60,350],'rk-ats':[10,300],'rk-drawer':[0,500],'rk-monitor':[40,650],'rk-kvmsw':[20,250],'rk-tray':[0,600]};
+function specs(n,find){const a=n.ref&&find?.(n.ref),own=+n.data?.power,ref=+a?.data?.power,tp=TYPICAL[n.type]||[0,400];
+  return{power:own||ref||tp[0],estimated:!own&&!ref&&tp[0]>0,depth:+n.data?.depth||+a?.data?.depth||tp[1],capacity:+n.data?.capacityVA||+a?.data?.capacityVA||0,asset:a}}
+// Space, power, heat and depth for one rack.
+function summary(r,items,find){const eq=contents(r,items).sort((a,b)=>uOf(r,b)-uOf(r,a)),rows=eq.map(n=>({n,u:uOf(r,n),h:heightU(n),...specs(n,find)}));
+  const power=rows.reduce((s,x)=>s+x.power,0),v=+r.data?.voltage||230,budget=+r.data?.powerBudget||0,depth=+r.data?.depth||1000,usable=depth-150,ups=rows.filter(x=>x.n.type==='rk-ups').reduce((s,x)=>s+x.capacity*.9,0);
+  const used=rows.reduce((s,x)=>s+x.h,0),deep=rows.filter(x=>x.depth>usable),warn=[];
+  if(budget&&power>budget)warn.push(`Power ${power} W is over the ${budget} W budget.`);else if(budget&&power>budget*.8)warn.push(`Power is at ${Math.round(power/budget*100)}% of the budget (keep under 80%).`);
+  if(ups&&power>ups)warn.push(`Load ${power} W is more than the UPS can carry (${Math.round(ups)} W).`);
+  for(const x of deep)warn.push(`${x.asset?.labels?.[0]?.text||x.n.labels?.[0]?.text||x.n.type} is ${x.depth} mm deep — more than the ${usable} mm usable in a ${depth} mm rack.`);
+  if(rows.some(x=>x.estimated))warn.push('Some power figures are typical values — enter Power draw (W) on the device for exact numbers.');
+  return{rack:r,rows,units:units(r),used,free:units(r)-used,power,amps:+(power/v).toFixed(1),volts:v,btu:Math.round(power*3.412),budget,ups:Math.round(ups),depth,usable,deepest:Math.max(0,...rows.map(x=>x.depth)),warn}}
+
+return{isRack,isItem,heightU,contents,rackOf,uOf,occupied,fits,findSlot,freeU,placeAt,setHeight,moveTo,isLocked,rackTypeFor,specs,summary,TYPICAL};
+})();
+if(typeof module!=='undefined')module.exports=Racks;
+
+</script>
+<script>
 // Revisions: the revision log (doc.revisions), revision tables that fill themselves from it, revision clouds and
 // deltas, and change tracking against the last issued revision so the app can ask (or bump automatically) on save.
 const Revisions=(()=>{
@@ -3931,7 +4025,10 @@ function resolveLabel(owner,l,ctx=RCTX){
     if(k.startsWith('page.')){const key=k.slice(5);return key==='name'?p.name:key==='number'?ctx.pageNumber:key==='count'?ctx.pageCount:p[key]}
     if(!owner)return null;if(k==='type')return Shapes.nameOf(owner.type);if(k==='name')return owner.labels?.[0]&&owner.labels[0]!==l?resolveLabel(owner,owner.labels[0],ctx):owner.data?.hostname??'';
     if(k==='rackU'){const r=rackOf(owner,ctx.page);return r?'U'+Shapes.rackU(r,owner):''}
-    return owner.data?.[k]??''})}
+    // rack units linked to a drawing device: {{asset}} is its name, {{asset.ip}} its data; plain {{ip}} falls back to it
+    const asset=owner.ref&&d.pages.flatMap(x=>x.items).find(x=>x.id===owner.ref);
+    if(k==='asset')return asset?(asset.labels?.[0]?.text||asset.data?.hostname||Shapes.nameOf(asset.type)).split('\n')[0]:'(device removed)';if(k.startsWith('asset.'))return asset?.data?.[k.slice(6)]??'';
+    return owner.data?.[k]??asset?.data?.[k]??''})}
 Core.setResolver((owner,l)=>resolveLabel(owner,l,RCTX));
 // data lines shown under device names count as part of the label when routing around it
 Conn.setLabelExtra(n=>{const d=(RCTX?.doc||S.doc)?.display,keys=shownFields(n,d);if(!keys.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type])return 0;const k=keys.filter(f=>n.data?.[f]!==undefined&&String(n.data[f]).trim()!=='').length;return k?k*(n.labels[0].size*.84*1.22)+2:0});
@@ -3992,7 +4089,7 @@ function drawNode(n,g,ctx){
   const kind=Shapes.kindOf(n.type),accent=colorFor(n,ctx)||n.stroke||'#2f5ea8',w=n.w,h=n.h;
   if(n.image){if(n.display==='card')el('rect',{x:0,y:0,width:w,height:h,rx:8,fill:n.fill||'#fff',stroke:accent,'stroke-width':1},t);el('image',{href:n.image,x:n.display==='card'?6:0,y:n.display==='card'?6:0,width:n.display==='card'?w-12:w,height:n.display==='card'?h-12:h,preserveAspectRatio:'xMidYMid meet'},t)}
   else if(kind==='basic'){const b=Shapes.basic[n.type];for(const p of b.paths(w,h))el('path',{d:p.d,fill:p.open||n.fill==='none'?'none':n.fill||'#fff',stroke:accent,'stroke-width':n.strokeWidth??1.75,'stroke-dasharray':n.dash||null,'stroke-linejoin':'round'},t)}
-  else if(kind==='rack')Shapes.drawRack(n,t);
+  else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.[0]||{text:''},ctx));
   else if(kind==='rackitem')Shapes.drawFace({...n,stroke:colorFor(n,ctx)||n.stroke},t);
   else{
     const s=Stencils?.shapes?.[n.type],mode=n.display||'symbol';
@@ -4180,7 +4277,8 @@ function renderOverlay(){
     if(sel.length>1){const prim=[...S.selected][0];for(const n of sel){const pr=n.id===prim;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+(pr?5:3)/z,'stroke-opacity':pr?.5:.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-(pr?2:0)/z,y:b.y-(pr?2:0)/z,width:b.w+(pr?4:0)/z,height:b.h+(pr?4:0)/z,fill:'none',stroke:pr?'#c026d3':blue,'stroke-opacity':pr?.85:.6,'stroke-width':(pr?2:1)*sw,'pointer-events':'none'},o)}}}
     if(sel.length===1&&sel[0].kind==='edge')drawEdgeHandles(sel[0],o,z);
     else{const b=Core.bounds(sel);el('rect',{x:b.x-4/z,y:b.y-4/z,width:b.w+8/z,height:b.h+8/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o);
-      const ed=editable();if(ed.length===sel.length&&!S.drag){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
+      // racks and rack units take their size from U counts (inspector / right-click), never from handles
+      const ed=editable(),rackish=sel.some(x=>x.type==='rack'||Shapes.rackItems[x.type]);if(ed.length===sel.length&&!S.drag&&!rackish){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
         if(sel.length===1&&sel[0].kind==='node'&&sel[0].type!=='rack'&&!Shapes.rackItems[sel[0].type]){const cx=b.x+b.w/2,cy=b.y-24/z;el('line',{x1:cx,y1:b.y-4/z,x2:cx,y2:cy,stroke:blue,'stroke-width':sw,'pointer-events':'none'},o);el('circle',{cx,cy,r:5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'rotate',cursor:'grab'},o)}}
       if(sel.some(isLocked)){const t=el('text',{x:b.x,y:b.y-9/z,fill:'#8c97a8','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none'},o);t.textContent='🔒 Locked'}}
     if(S.prefs.showPorts&&sel.length===1&&sel[0].kind==='node')drawPorts(sel[0],o,z,true)}
@@ -4327,7 +4425,7 @@ function cables(doc,opt){const cols=['Cable ID','Page','From device','From port'
 function bom(doc,opt){const map=new Map();for(const{n}of allDevices(doc,opt)){const key=[Shapes.nameOf(n.type),n.data?.vendor||'',n.data?.model||''].join('|');const r=map.get(key)||{type:Shapes.nameOf(n.type),vendor:n.data?.vendor||'',model:n.data?.model||'',qty:0,price:+n.data?.unitPrice||0};r.qty++;if(+n.data?.unitPrice)r.price=+n.data.unitPrice;map.set(key,r)}
   const rows=[...map.values()].sort((a,b)=>a.type.localeCompare(b.type)).map(r=>[r.type,r.vendor,r.model,r.qty,r.price?r.price.toFixed(2):'',r.price?(r.price*r.qty).toFixed(2):'']);const total=[...map.values()].reduce((s,r)=>s+r.price*r.qty,0);if(total)rows.push(['Total','','',[...map.values()].reduce((s,r)=>s+r.qty,0),'',total.toFixed(2)]);return{title:'Bill of materials',columns:['Item','Vendor','Model','Qty','Unit price','Extended'],rows}}
 function ipReport(doc){const rows=ipPlan(doc).map(r=>[r.page.name,zoneName(r.zone),r.vlan,r.cidr.text,r.cidr.maskText,r.zone.data.gateway||'',r.cidr.hosts,r.used,(r.used/Math.max(1,r.cidr.hosts)*100).toFixed(1)+'%',r.next||'(full)']);for(const v of doc.vlans||[])if(!rows.some(r=>String(r[2])===String(v.id)))rows.push(['','(VLAN registry) '+(v.name||''),v.id,v.subnet||'','','',v.subnet&&C.cidr(v.subnet)?C.cidr(v.subnet).hosts:'','','','']);return{title:'IP address plan',columns:['Page','Zone','VLAN','Subnet','Mask','Gateway','Usable','Used','Utilisation','Next free'],rows}}
-function rackReport(doc){const rows=[];for(const p of doc.pages)for(const r of racks(p)){rows.push([p.name,nameOf(r.rack),'','',`${r.used}/${r.units} U used`,r.power?r.power+' W':'']);for(const n of r.eq)rows.push([p.name,nameOf(r.rack),'U'+Shapes.rackU(r.rack,n)+(n.h>Shapes.RU*1.5?'–'+(Shapes.rackU(r.rack,n)+Math.round(n.h/Shapes.RU)-1):''),nameOf(n),Shapes.nameOf(n.type)+' · '+Math.round(n.h/Shapes.RU)+'U',n.data?.power?n.data.power+' W':''])}return{title:'Rack elevations',columns:['Page','Rack','U','Equipment','Type','Power'],rows}}
+function rackReport(doc){const rows=[],find=id=>doc.pages.flatMap(p=>p.items).find(x=>x.id===id);for(const p of doc.pages)for(const r of racks(p)){const sm=Racks.summary(r.rack,p.items,find);rows.push([p.name,nameOf(r.rack),'','',`${sm.used}/${sm.units} U used`,`${sm.power} W · ${sm.amps} A · ${sm.btu} BTU/h${sm.warn.length?' · '+sm.warn.length+' warning(s)':''}`]);for(const n of r.eq)rows.push([p.name,nameOf(r.rack),'U'+Shapes.rackU(r.rack,n)+(n.h>Shapes.RU*1.5?'–'+(Shapes.rackU(r.rack,n)+Math.round(n.h/Shapes.RU)-1):''),nameOf(n),Shapes.nameOf(n.type)+' · '+Math.round(n.h/Shapes.RU)+'U',n.data?.power?n.data.power+' W':''])}return{title:'Rack elevations',columns:['Page','Rack','U','Equipment','Type','Power'],rows}}
 function poeReport(doc){const rows=[];for(const p of doc.pages)for(const r of poe(p))rows.push([p.name,nameOf(r.sw),r.count,r.draw.toFixed(1)+' W',r.budget?r.budget+' W':'(not set)',r.pct!=null?Math.round(r.pct)+'%':'',r.budget&&r.draw>r.budget?'OVER BUDGET':'OK']);return{title:'PoE budget',columns:['Page','Switch','Powered devices','Estimated draw','Budget','Utilisation','Status'],rows}}
 function cctvReport(doc){const rows=[];for(const p of doc.pages){const t=traffic(p);for(const r of t.recorders){const days=+r.rec.data?.retention||30,need=storageTB(r.mbps,days),have=+r.rec.data?.storageTB||null;rows.push([p.name,nameOf(r.rec),r.cams,r.mbps.toFixed(1)+' Mb/s',days,need.toFixed(1)+' TB',have?have+' TB':'(not set)',have?(have>=need?'OK':'SHORT by '+(need-have).toFixed(1)+' TB'):''])}}return{title:'CCTV recording & storage',columns:['Page','Recorder','Cameras','Ingest','Retention (days)','Storage required','Storage available','Status'],rows}}
 function vlanReport(doc){return{title:'VLAN registry',columns:['VLAN','Name','Subnet','Gateway','Zones','Devices'],rows:(doc.vlans||[]).map(v=>{const zones=doc.pages.flatMap(p=>p.items.filter(z=>z.kind==='zone'&&String(z.data?.vlan)===String(v.id)).map(zoneName));const devs=doc.pages.flatMap(p=>p.items).filter(n=>n.kind==='node'&&String(n.data?.vlan||'').split(/[,\s]+/).includes(String(v.id))).length;return[v.id,v.name||'',v.subnet||'',v.gateway||'',zones.join(', '),devs]})}}
@@ -4914,6 +5012,7 @@ function moveSet(ids){
   while(grew){grew=false;for(const z of all.filter(n=>set.has(n.id)&&(n.kind==='zone'&&n.contain!==false||n.type==='rack'))){const zb=C.box(z);for(const n of all)if(!set.has(n.id)&&!isLocked(n)&&n.kind!=='edge'&&C.inside(C.box(n),zb,1)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h)){set.add(n.id);grew=true}}}
   const nodes=new Set(all.filter(n=>set.has(n.id)&&n.kind!=='edge').map(n=>n.id)),zones=all.filter(n=>set.has(n.id)&&(n.kind==='zone'||n.type==='rack')).map(C.box);
   for(const e of all.filter(n=>n.kind==='edge')){const endOk=k=>e[k]?nodes.has(e[k].node):zones.some(b=>C.inside({x:(k==='from'?e.points[0]:e.points.at(-1))[0],y:(k==='from'?e.points[0]:e.points.at(-1))[1],w:0,h:0},b));const inner=endOk('from')&&endOk('to');if(set.has(e.id)&&!inner&&(e.from&&!nodes.has(e.from.node)||e.to&&!nodes.has(e.to.node)))set.delete(e.id);else if(!set.has(e.id)&&inner&&(e.from||e.to||zones.length))set.add(e.id)}
+  for(const n of all)if(set.has(n.id)&&Racks.isItem(n)){const r=Racks.rackOf(n,all);if(r&&Racks.isLocked(n,r)&&!set.has(r.id))set.delete(n.id)}
   return all.filter(n=>set.has(n.id)&&!isLocked(n))}
 
 // ---------- pointer ----------
@@ -4938,7 +5037,7 @@ function beginPointer(e){
   if(S.mode==='zone'){S.drag={kind:'zone',start:[grid(p[0]),grid(p[1])]};S.drag.current=S.drag.start;capture();return}
   if(S.mode==='text'){S.drag={kind:'textbox',start:p,current:p};capture();return}
   if(S.mode==='port'&&n?.kind==='node'&&!isLocked(n)){if(role==='port'){remember();S.drag={kind:'port',id:n.id,port:t.dataset.port};capture()}else{const c=edgeCandidate(n,p);mutate(()=>n.ports.push({id:C.uid(),name:'Port '+(n.ports.length+1),x:c.candidate.x,y:c.candidate.y}))}return}
-  if(role==='resize'){if(!editable().length)return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
+  if(role==='resize'){if(!editable().length||picked().some(x=>x.type==='rack'||Shapes.rackItems[x.type]))return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
   if(n){
     if(n.kind==='node'&&n.url&&(e.ctrlKey||e.metaKey)){followLink(n.url);return}
     const mod=e.ctrlKey||e.metaKey;
@@ -4954,6 +5053,7 @@ function beginPointer(e){
     S.activeLabel=kind==='label'?{owner:id,id:t.dataset.label}:null;S.segment=kind==='segment'?{id,index:+t.dataset.index}:null;S.bend=kind==='bend'?{id,index:+t.dataset.index}:null;
     remember();
     const set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
+    if(kind==='move'&&Racks.isItem(n)&&!set.some(x=>x.id===n.id)){const r=Racks.rackOf(n,items());notify(`${Analysis.nameOf(n)} is locked at U${Racks.uOf(r,n)} — right-click ▸ Unlock U position to move it.`,2600)}
     // Ctrl- or Alt-drag duplicates (once the pointer really moves); Alt-click reaches what is underneath; clicking a
     // member of an already selected group picks just that member
     S.drag={kind,start:p,startClient:[e.clientX,e.clientY],id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set),
@@ -5006,7 +5106,10 @@ function snapMove(d,dx,dy,e){
   if(!free&&S.prefs.snap){dx=grid(b.x+dx)-b.x;dy=grid(b.y+dy)-b.y}
   // rack equipment snaps into U slots
   const movers=d.original.filter(x=>x.kind==='node');
-  if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy,rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack);let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h};return[dx,dy]}}
+  if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy,rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack);let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));
+    // a single unit takes the nearest free U run instead of overlapping another one
+    if(movers.length===1){const hU=Math.max(1,Math.round(b.h/Shapes.RU)),want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return[dx,dy];ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
+    dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h};return[dx,dy]}}
   if(S.prefs.guides&&!free){const th=6/z,others=items().filter(t=>!d.original.some(o=>o.id===t.id)&&t.kind!=='edge'&&itemVisible(t,{doc:S.doc})),ps=C.pageSize(pg());const xs=[],ys=[];
     for(const t of others){if(t.kind==='zone')continue;const tb=C.box(t);xs.push(tb.x,tb.x+tb.w/2,tb.x+tb.w);ys.push(tb.y,tb.y+tb.h/2,tb.y+tb.h)}xs.push(ps.w/2);ys.push(ps.h/2);for(const g of pg().guideLines||[])(g.axis==='x'?xs:ys).push(g.pos);
     let bx=null,by=null;for(const v of[b.x,b.x+b.w/2,b.x+b.w])for(const x of xs){const off=x-v-dx;if(Math.abs(off)<th&&(bx===null||Math.abs(off)<Math.abs(bx.off)))bx={off,x}}
@@ -5102,7 +5205,7 @@ function addNode(type,x,y,opts={}){
   if(type.startsWith('ann:'))return insertAnnotation(type.slice(4),x,y);
   const n=mutate(()=>{const n=Shapes.make(type,0,0);C.move(n,grid(x-n.w/2)-n.x,grid(y-n.h/2)-n.y);if(Shapes.kindOf(type)==='device'&&S.prefs.newDisplay!=='symbol')n.display=S.prefs.newDisplay;if(opts.image)n.image=opts.image;n.layer=S.activeLayer;applyThemeToNew(n);
     // dropped into a rack → snap to the slot under the pointer
-    if(Shapes.rackItems[type]){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Shapes.rackInner(r)));if(r){const i=Shapes.rackInner(r);let ny=i.y+Math.round((n.y-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-n.h,ny));C.move(n,i.x-n.x,ny-n.y)}}
+    if(Shapes.rackItems[type]){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Shapes.rackInner(r)));if(r){const i=Shapes.rackInner(r),hU=Racks.heightU(n),want=Math.round((i.y+i.h-(n.y+n.h))/Shapes.RU)+1,u=Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u!=null)Racks.placeAt(r,n,u)}}
     // dropped onto a connector → split it (Visio "drop on connector")
     const target=opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
     items().push(n);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
@@ -5227,10 +5330,19 @@ function labelsList(n){return section('Text',`${n.labels?.[0]?field(n.kind==='zo
   <div class="chips">${(n.labels||[]).slice(1).map(l=>`<button data-label-select="${l.id}" title="Edit label">${h(l.text.slice(0,28)||'Empty label')}</button>`).join('')}${btn('addLabel','＋ Label')}</div><p class="muted">Use {{hostname}}, {{ip}} or any data field in text to show live values.</p>`,'text')}
 function nodePanel(n){
   const kind=Shapes.kindOf(n.type),dev=kind==='device'||n.image;let out='';
-  out+=`<div class="typeHead">${n.image?'':Shapes.iconSvg(n.type,{size:34,display:n.display==='card'?'symbol':n.display,accent:n.stroke})}<div>${field('Shape type',sel('type',typeOptions(),n.type,n.image?'disabled':''))}</div></div>`;
+  // racks and rack units have their own sections; the device-type picker does not apply to them
+  if(kind!=='rack'&&kind!=='rackitem')out+=`<div class="typeHead">${n.image?'':Shapes.iconSvg(n.type,{size:34,display:n.display==='card'?'symbol':n.display,accent:n.stroke})}<div>${field('Shape type',sel('type',typeOptions(),n.type,n.image?'disabled':''))}</div></div>`;
   out+=labelsList(n);
-  if(kind==='rack'){const r=Analysis.racks(pg()).find(x=>x.rack===n);out+=section('Rack',`${row(field('Height (U)',sel('units',[[12,'12U'],[18,'18U'],[24,'24U'],[42,'42U'],[45,'45U'],[47,'47U'],[48,'48U']],n.units||42)),field('Frame colour',color('stroke',n.stroke)))}<p class="muted">${r?`${r.used} of ${r.units} U used · ${r.free} U free${r.power?' · '+r.power+' W':''}`:''}</p>${r?.eq.length?`<div class="list">${r.eq.map(e=>`<button data-select="${e.id}"><b>U${Shapes.rackU(n,e)}</b> ${h(Analysis.nameOf(e))}</button>`).join('')}</div>`:'<p class="muted">Drag rack equipment from the Racks stencil into the rack — it snaps to U slots.</p>'}`,'rack')}
-  else if(kind==='rackitem'){const r=rackOf(n,pg());out+=section('Rack equipment',`${row(field('Height (U)',inp('ru',Math.round(n.h/Shapes.RU),'number','min="1" max="20"')),r?field('Position (U, bottom)',inp('rackPos',Shapes.rackU(r,n),'number','min="1"')):'<div class="fld"><span>Rack</span><em class="muted">not in a rack</em></div>')}${row(field('Face colour',color('fill',n.fill)),field('Detail colour',color('stroke',n.stroke)))}`,'rackitem')}
+  if(kind==='rack'){const sm=Racks.summary(n,items(),id=>S.doc.pages.flatMap(p=>p.items).find(x=>x.id===id)),v=n.views||{};out+=section('Rack',`${row(field('Height (U)',sel('units',[[12,'12U'],[18,'18U'],[24,'24U'],[42,'42U'],[45,'45U'],[47,'47U'],[48,'48U']],n.units||42)),field('Frame colour',color('stroke',n.stroke)))}
+    <p class="muted">${sm.used} of ${sm.units} U used · ${sm.free} U free · ${sm.power.toLocaleString()} W · ${sm.btu.toLocaleString()} BTU/h${sm.warn.length?` · <span class="warnTxt">${sm.warn.length} warning${sm.warn.length>1?'s':''}</span>`:''}</p>
+    <div class="fld"><span>Views</span><div class="ptBtns"><button data-ctx-btn="q:rk:v:rear" class="${v.rear?'active':''}">Rear view</button><button data-ctx-btn="q:rk:v:top" class="${v.top?'active':''}">Top view</button></div></div>
+    <div class="ptBtns"><button data-ctx-btn="q:rk:lockall" class="${n.lockItems?'active':''}">${n.lockItems?'Equipment locked':'Lock equipment in its U'}</button><button data-ctx-btn="q:rk:power">Space & power…</button></div>
+    ${sm.rows.length?`<div class="list">${sm.rows.map(x=>`<button data-select="${x.n.id}"><b>U${x.u}${x.h>1?'–'+(x.u+x.h-1):''}</b> ${h(Analysis.nameOf(x.n))}${x.n.uLock||n.lockItems?' 🔒':''}</button>`).join('')}</div>`:'<p class="muted">Select devices in the drawing ▸ right-click ▸ Add to rack… — or drag rack equipment in; it snaps to free U slots.</p>'}
+    <div class="fld"><span>Add accessory</span><select data-rk-acc><option value="">Choose…</option>${RackUI.ACCESSORIES.map(t=>`<option value="${t}">${h(Shapes.rackItems[t].name)}</option>`).join('')}</select></div>`,'rack')}
+  else if(kind==='rackitem'){const r=rackOf(n,pg()),a=n.ref&&S.doc.pages.flatMap(p=>p.items).find(x=>x.id===n.ref),sp=Racks.specs(n,id=>S.doc.pages.flatMap(p=>p.items).find(x=>x.id===id));out+=section('Rack equipment',`${row(field('Height (U)',sel('ru',[1,2,3,4,5,6,7,8,10,12].map(u=>[u,u+'U']),Math.round(n.h/Shapes.RU))),r?field('Position (U, bottom)',inp('rackPos',Shapes.rackU(r,n),'number','min="1"')):'<div class="fld"><span>Rack</span><em class="muted">not in a rack</em></div>')}
+    ${r?`<label class="check"><input type="checkbox" data-rk-lock ${n.uLock?'checked':''} ${r.lockItems?'disabled':''}>Lock in this U${r.lockItems?' (the whole rack is locked)':''}</label>`:''}
+    ${row(field('Power draw (W)',`<input data-bind="data.power" type="number" value="${h(n.data?.power??'')}" placeholder="${sp.power||''}${sp.estimated?' (typical)':''}">`),field('Depth (mm)',`<input data-bind="data.depth" type="number" value="${h(n.data?.depth??'')}" placeholder="${sp.depth}">`))}
+    ${a?`<div class="fld"><span>Linked device</span><button data-ctx-btn="q:rk:asset">${h(Analysis.nameOf(a))} — show in the drawing</button></div>`:''}${row(field('Face colour',color('fill',n.fill)),field('Detail colour',color('stroke',n.stroke)))}`,'rackitem')}
   else{
     if(dev)out+=section('Appearance',`${n.image?'':seg('display',[['symbol','Symbol'],['card','Card'],['tile','Tile'],['circle','Circle']],n.display||'symbol')}${row(field('Accent',color('stroke',n.stroke)),field('Fill',color('fill',n.fill)))}${row(field('Line weight',inp('strokeWidth',n.strokeWidth??2,'number','min="0.5" max="6" step="0.25"')),field('Opacity',inp('opacity',n.opacity??1,'number','min="0.1" max="1" step="0.05"')))}`,'appearance');
     else out+=section('Appearance',`${row(field('Line',color('stroke',n.stroke)),field('Fill',color('fill',n.fill==='none'?'':n.fill)))}${row(field('Line weight',inp('strokeWidth',n.strokeWidth??1.75,'number','min="0" max="12" step="0.25"')),field('Line style',sel('dash',DASH,n.dash||'')))}${chk('fillNone',n.fill==='none','No fill')}`,'appearance')}
@@ -5304,9 +5416,9 @@ function apply(bind,v){
     if(bind==='linkType'){if(n.kind==='edge'&&v)Shapes.applyLinkType(n,v,S.doc);continue}
     if(bind==='routing'){if(n.kind!=='edge'||!v)continue;n.routing=v;n.curve=v==='free'&&n.curve==='smooth'?'smooth':'straight';if(['hv','vh'].includes(v))Conn.orthogonalize(n);Conn.markDirty(n.id);continue}
     if(bind==='curve'){if(n.kind!=='edge')continue;n.curve=v;if(v==='smooth'){if(n.routing==='auto'||n.routing==='straight'||n.routing==='hv'||n.routing==='vh')n.routing='free';if(n.points.length===2){const[a,b]=n.points,dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;n.points.splice(1,0,[(a[0]+b[0])/2-dy/l*35,(a[1]+b[1])/2+dx/l*35])}}else Conn.orthogonalize(n);continue}
-    if(bind==='units'){const s=Shapes.rackSize(+v),dy=n.h-s.h;n.units=+v;n.h=s.h;n.y+=dy;(n.labels||[]).forEach(l=>l.y+=dy);continue}
-    if(bind==='ru'){const r=rackOf(n,pg()),bottom=n.y+n.h;n.h=Math.max(1,Math.round(v))*Shapes.RU;if(r)n.y=bottom-n.h;n.labels.forEach(l=>{l.y=n.y+n.h/2+l.size*.36});continue}
-    if(bind==='rackPos'){const r=rackOf(n,pg());if(!r)continue;const i=Shapes.rackInner(r),y=i.y+i.h-(Math.round(v)-1)*Shapes.RU-n.h;C.move(n,0,Math.max(i.y,Math.min(i.y+i.h-n.h,y))-n.y);continue}
+    if(bind==='units'){n.units=+v;const D=Shapes.rackDims(n),dy=n.h-D.h;n.h=D.h;n.w=D.w;n.y+=dy;(n.labels||[]).forEach(l=>l.y+=dy);continue}
+    if(bind==='ru'){const r=rackOf(n,pg()),hU=Math.max(1,Math.round(v));if(!r){n.h=hU*Shapes.RU;n.labels.forEach(l=>{l.y=n.y+n.h/2+l.size*.36});continue}if(Racks.isLocked(n,r)){notify('This unit is locked in its U — unlock it first.');continue}if(Racks.setHeight(r,n,hU,items())==null)notify(`No room for a ${hU}U unit here.`);continue}
+    if(bind==='rackPos'){const r=rackOf(n,pg());if(!r)continue;if(Racks.isLocked(n,r)){notify('This unit is locked in its U — unlock it first.');continue}if(!Racks.moveTo(r,n,Math.round(v),items()))notify(`U${Math.round(v)} is taken or outside the rack — the unit stays at U${Racks.uOf(r,n)}.`);continue}
     if(['x','y','w','h'].includes(bind)&&n.kind!=='edge'){if(bind==='x'||bind==='y'){C.move(n,bind==='x'?v-n.x:0,bind==='y'?v-n.y:0)}else if(v>=4){const b=C.box(n),sx=bind==='w'?v/n.w:1,sy=bind==='h'?v/n.h:1;n.w*=sx;n.h*=sy;for(const l of n.labels||[]){if(n.kind==='node'){l.x=b.x+(l.x-b.x)*sx;if(l.y>b.y+b.h)l.y+=n.h-b.h}}}continue}
     if(bind==='fillNone'){n.fill=v?'none':'#ffffff';continue}
     if(bind==='display'&&n.kind!=='node')continue;
@@ -5675,7 +5787,8 @@ function bumpRecent(type){const r=(S.prefs.recent||[]).filter(t=>t!==type);r.uns
 
 // ---------- context menus ----------
 function canvasMenu(e){
-  e.preventDefault();const t=e.target.closest('[data-id]'),id=t?.dataset.id,n=id&&find(id);if(n&&!S.selected.has(id))selection(id);if(!n){S.selected.clear()}render('overlay');render('panel');S.menuPoint=point(e);
+  // a right-click on a selection handle keeps the selection
+  e.preventDefault();const t=e.target.closest('[data-id]'),id=t?.dataset.id,n=id&&find(id),onHandle=!!e.target.closest?.('[data-role="resize"],[data-role="rotate"]');if(n&&!S.selected.has(id))selection(id);if(!n&&!onHandle){S.selected.clear()}render('overlay');render('panel');S.menuPoint=point(e);
   const sel=picked(),one=sel.length===1?sel[0]:null,B2=(a,l,k='')=>`<button data-action="${a}">${l}${k?`<kbd>${k}</kbd>`:''}</button>`,sep='<hr>';let h='';
   if(!sel.length)h=B2('paste','Paste','Ctrl+V')+B2('selectAll','Select all','Ctrl+A')+sep+`<button data-ctx="zoneHere">Add zone here</button><button data-ctx="textHere">Add text here</button><button data-ctx="rackHere">Add rack here</button>`+sep+B2('layoutHier','Auto-layout page','L')+B2('rerouteAll','Re-route all connectors')+B2('check','Check diagram')+sep+B2('insertTemplate','Add template…')+B2('saveTemplate','Save page as template…')+B2('scaleSel','Scale the page…')+B2('newRevision','New revision…')+sep+B2('fit','Fit page','Shift+1')+B2('docProps','Document properties');
   else{
@@ -6024,6 +6137,7 @@ const isMarkup=n=>Revisions.MARKUP.has(n.type);
 // ---------- right-click quick configure ----------
 function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x=>x.kind==='node'&&!isMarkup(x)&&x.type!=='rack'&&!Shapes.rackItems[x.type]),devs=nodes.filter(x=>Shapes.isDevice(x)),zones=sel.filter(x=>x.kind==='zone'),texty=sel.filter(x=>x.labels?.length||x.kind==='table');let h='';
   if(sel.length>1){const parts=[[devs.length,'device'],[nodes.length-devs.length,'shape'],[edges.length,'connector'],[zones.length,'zone'],[sel.length-nodes.length-edges.length-zones.length,'other']].filter(([n])=>n>0).map(([n,w])=>plural(n,w));h+=`<div class="ctxHead">${parts.join(' · ')}</div>`}
+  h+=RackUI.menu(sel);
   if(edges.length){const cur=new Set(edges.map(e=>e.linkType));
     h+=sub('Link type',Object.entries(Shapes.linkTypes).map(([k,v])=>`<button data-ctx="lt:${k}"><span class="sw" style="background:${S.doc.linkStyles?.[k]?.stroke||v.stroke}"></span>${v.name}${cur.size===1&&cur.has(k)?' ✓':''}</button>`).join(''))
       +sub('Routing',[['auto','Auto-route'],['hv','Right angle · H'],['vh','Right angle · V'],['straight','Straight'],['free','Free']].map(([k,v])=>`<button data-ctx="rt:${k}">${v}</button>`).join(''))
@@ -6043,6 +6157,7 @@ function menu(sel){const edges=sel.filter(x=>x.kind==='edge'),nodes=sel.filter(x
   return h}
 function setColor(prefix,v){apply(prefix+v)}
 function apply(c){const[,op,...rest]=c.split(':'),v=rest.join(':');
+  if(op==='rk'){RackUI.apply(c);return true}
   if(op==='scale'){openScale();return true}if(op==='sim'){selectSimilar(v);return true}
   if(op==='mv'){const sel=picked(),dev=sel.find(n=>n.kind==='node'&&Shapes.isDevice(n));if(dev)openMoveLinks(dev.id,sel.filter(e=>e.kind==='edge'&&(e.from?.node===dev.id||e.to?.node===dev.id)).map(e=>e.id));return true}
   if(op==='pt'){arrangePorts(v);return true}
@@ -6203,9 +6318,100 @@ function openMoveLinks(srcId,pre=[]){const src=find(srcId);if(!src)return;const 
     if(t.closest('[data-mv-pick]')){if(!ids.length)return notify('Tick at least one link.');closeDialog();S.pickCancel='Moving links cancelled.';S.pickHandler=id=>{if(id===src.id)return notify('That is the device the links come from — pick another one.');apply(id,ids,keepIf)};notify(`Click the device the ${plural(ids.length,'link')} should move to · Esc cancels.`,6000);return}
     if(t.closest('[data-mv-go]')){if(!ids.length)return;closeDialog();apply(dest==='existing'?$('mvTarget').value:null,ids,keepIf)}}}
 
-function init(){const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
+function init(){document.addEventListener('click',e=>{const b=e.target.closest?.('[data-ctx-btn]');if(b)apply(b.dataset.ctxBtn)});
+  document.addEventListener('change',e=>{const t=e.target;if(t.matches?.('[data-rk-lock]'))RackUI.toggleLock(picked().filter(Racks.isItem));if(t.matches?.('[data-rk-acc]')&&t.value){const r=picked().find(Racks.isRack);if(r)RackUI.addAccessory(r,t.value);t.value=''}});
+  const m=$('contextMenu');m.addEventListener('input',e=>{const p=e.target.dataset?.ctxColor;if(p){hideMenus();setColor(p,e.target.value)}});
   document.addEventListener('click',e=>{const b=e.target.closest?.('[data-legend-style]');if(b){const[id,...k]=b.dataset.legendStyle.split('|');openLegendStyle(id,k.join('|'))}})}
 return{init,menu,apply,openScale,openLegendStyle,openRevisions,markupAt,addTable,beforeSave,revInfo,prepare,pendingRev,issueNow,arrangePorts,openMoveLinks};
+})();
+
+</script>
+<script>
+// Rack interactions: add drawing devices to a rack as linked rack units, change a unit's height, move it to a U, lock it
+// there, rack views (front / rear / top), accessories, and the power & space dialog.
+const RackUI=(()=>{
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const allItems=()=>S.doc.pages.flatMap(p=>p.items);
+const pageOf=n=>S.doc.pages.find(p=>p.items.includes(n));
+const findAny=id=>allItems().find(x=>x.id===id);
+const name=n=>(Analysis.nameOf(n)||Shapes.nameOf(n.type)).split('\n')[0];
+const ACCESSORIES=['rk-cable','rk-cable2','rk-tray','rk-shelf','rk-drawer','rk-kvm','rk-monitor','rk-kvmsw','rk-patch','rk-fiber','rk-pdu','rk-ats','rk-fan','rk-blank','rk-blank2','rk-brush'];
+const unitOf=dev=>allItems().find(x=>x.ref===dev.id&&Racks.isItem(x));
+function resizeRack(r){const D=Shapes.rackDims(r);r.w=D.w;r.h=D.h}
+
+// ---------- add drawing devices to a rack ----------
+function openAdd(devs=picked().filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&!Racks.isItem(n))){if(!devs.length)return notify('Select the devices to put in a rack.');
+  const racks=S.doc.pages.flatMap(p=>p.items.filter(Racks.isRack).map(r=>({r,p}))),types=Object.entries(Shapes.rackItems);
+  const rows=devs.map(d=>{const[t,u]=Racks.rackTypeFor(d),cur=unitOf(d),cr=cur&&Racks.rackOf(cur,pageOf(cur)?.items||[]);return{d,t,u,cur,where:cur&&cr?`${name(cr)} · U${Racks.uOf(cr,cur)}`:''}});
+  const opt=(v,t,cur)=>`<option value="${v}" ${String(v)===String(cur)?'selected':''}>${t}</option>`;
+  const dlg=openDialog(`Add ${plural(devs.length,'device')} to a rack`,`<p class="muted">Each device becomes a rack unit with its own height. Linked units keep the device's name and data, and the inventory shows where it is mounted.</p>
+    <div class="tableWrap rkTable"><table class="report"><thead><tr><th></th><th>Device</th><th>Mounted as</th><th>Height</th><th></th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td><input type="checkbox" data-rk-on="${i}" ${x.cur?'':'checked'}></td><td>${html(name(x.d))}<br><em class="muted">${html(Shapes.nameOf(x.d.type))}</em></td><td><select data-rk-type="${i}">${types.map(([k,v])=>opt(k,v.name.replace(/ \d+U.*$/,'').replace(/ · .*$/,''),x.t)).join('')}</select></td><td><select data-rk-u="${i}">${[1,2,3,4,5,6,7,8,10].map(u=>opt(u,u+'U',x.u)).join('')}</select></td><td>${x.cur?`<em class="warnTxt">already in ${html(x.where)}</em>`:''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="fld"><span>Rack</span><div class="seg"><button data-rk-dest="existing" class="${racks.length?'active':''}" ${racks.length?'':'disabled'}>Existing rack</button><button data-rk-dest="new" class="${racks.length?'':'active'}">New rack</button></div></div>
+    <div id="rkExisting" ${racks.length?'':'hidden'}><select id="rkRack">${racks.map(({r,p},i)=>opt(i,`${html(name(r))} — ${Racks.freeU(r,p.items)} of ${r.units||42} U free · ${html(p.name)}`)).join('')}</select></div>
+    <div id="rkNew" class="row r3" ${racks.length?'hidden':''}><label class="fld"><span>Name</span><input id="rkName" value="Rack ${racks.length+1}"></label><label class="fld"><span>Height</span><select id="rkUnits">${[12,18,24,42,45,47,48].map(u=>opt(u,u+'U',42)).join('')}</select></label><label class="fld"><span>Put it on</span><select id="rkWhere"><option value="page">a new “Racks” page</option><option value="here">this page, beside the drawing</option></select></label></div>
+    <div class="fld"><span>Fill</span><div class="seg"><button data-rk-fill="top" class="active">From the top</button><button data-rk-fill="bottom">From the bottom</button></div></div>
+    <label class="check"><input type="checkbox" id="rkLink" checked>Keep each unit linked to its device (name and data follow)</label>
+    <footer><button data-close>Cancel</button><button class="primary" data-rk-go>Add to rack</button></footer>`,{wide:true});
+  let dest=racks.length?'existing':'new',fill='top';
+  dlg.onclick=e=>{const t=e.target;if(t.closest('[data-close]'))return closeDialog();const ds=t.closest('[data-rk-dest]');if(ds&&!ds.disabled){dest=ds.dataset.rkDest;dlg.querySelectorAll('[data-rk-dest]').forEach(b=>b.classList.toggle('active',b===ds));$('rkExisting').hidden=dest!=='existing';$('rkNew').hidden=dest!=='new';return}
+    const fl=t.closest('[data-rk-fill]');if(fl){fill=fl.dataset.rkFill;dlg.querySelectorAll('[data-rk-fill]').forEach(b=>b.classList.toggle('active',b===fl));return}
+    if(!t.closest('[data-rk-go]'))return;const chosen=rows.map((x,i)=>({...x,on:dlg.querySelector(`[data-rk-on="${i}"]`).checked,t:dlg.querySelector(`[data-rk-type="${i}"]`).value,u:+dlg.querySelector(`[data-rk-u="${i}"]`).value})).filter(x=>x.on);
+    if(!chosen.length)return notify('Tick at least one device.');const link=$('rkLink').checked;closeDialog();
+    let target,page,made=[],missed=[];
+    mutate(()=>{if(dest==='existing'){({r:target,p:page}=racks[+$('rkRack').value])}
+      else{const where=$('rkWhere').value;if(where==='page'){page=S.doc.pages.find(p=>p.name==='Racks'&&!p.isBackground);if(!page){page=C.page('Racks');const cur=pg();for(const k of['paper','orientation','margin','bg','autoSize'])if(cur[k]!==undefined)page[k]=cur[k];if(cur.background)page.background=cur.background;S.doc.pages.push(page)}}else page=pg();
+        target=Shapes.make('rack'+$('rkUnits').value,0,0,$('rkName').value.trim()||'Rack');target.layer=S.activeLayer;const others=page.items.filter(n=>!n.pin),b=others.length?C.bounds(others):null,m=(page.margin||10)*C.PX+40;
+        C.move(target,(b?b.x+b.w+80:m)-target.x,(b?b.y:m+30)-target.y);page.items.push(target)}
+      for(const x of chosen){const it=Shapes.make(x.t,0,0,link?'{{asset}}':name(x.d));it.layer=target.layer||S.activeLayer;if(link)it.ref=x.d.id;else it.data={...C.copy(x.d.data||{})};it.h=x.u*Shapes.RU;
+        const u=Racks.findSlot(target,page.items,x.u,{order:fill});if(u==null){missed.push(name(x.d));continue}page.items.push(it);Racks.placeAt(target,it,u);made.push(it)}});
+    const pi=S.doc.pages.indexOf(page);if(pi!==S.pageIndex)gotoPage(pi);select(made.map(n=>n.id));fit(true);
+    notify(`Added ${plural(made.length,'unit')} to ${name(target)}${missed.length?` · no room for ${missed.join(', ')} (${Racks.freeU(target,page.items)} U free)`:''}. Right-click a unit to change its height, move it to a U or lock it there.`,6000)}}
+
+// ---------- unit commands ----------
+function rackFor(n){return Racks.rackOf(n,items())}
+function setHeight(n,hU){const r=rackFor(n);if(!r){mutate(()=>{n.h=hU*Shapes.RU});return}if(Racks.isLocked(n,r))return notify('This unit is locked in its U — unlock it first.');
+  let res=null;mutate(()=>{res=Racks.setHeight(r,n,hU,items())});if(res==null)notify(`No room for a ${hU}U unit in ${name(r)} — free some space first.`);else notify(`${name(n)} is now ${hU}U at U${res}${hU>1?'–'+(res+hU-1):''}.`,2200)}
+function openMoveTo(n){const r=rackFor(n);if(!r)return notify('This unit is not in a rack.');if(Racks.isLocked(n,r))return notify('This unit is locked in its U — unlock it first.');
+  const cur=Racks.uOf(r,n),h=Racks.heightU(n),d=openDialog(`Move ${html(name(n))}`,`<div class="row"><label class="fld"><span>To U (lowest U it occupies)</span><input id="rkTo" type="number" min="1" max="${(r.units||42)-h+1}" value="${cur}"></label><div class="fld"><span>&nbsp;</span><label class="check"><input type="checkbox" id="rkLockToo">Lock it there</label></div></div><p class="muted" id="rkMsg">Now at U${cur}${h>1?'–'+(cur+h-1):''} of ${r.units||42}.</p><footer><button data-close>Cancel</button><button class="primary" data-rk-mv>Move</button></footer>`);
+  setTimeout(()=>$('rkTo').select(),20);d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(!e.target.closest('[data-rk-mv]'))return;const u=+$('rkTo').value;
+    if(!Racks.fits(r,items(),u,h,new Set([n.id]))){const who=[...Racks.occupied(r,items(),new Set([n.id]))].filter(([k])=>k>=u&&k<u+h).map(([,x])=>name(x));$('rkMsg').innerHTML=`<span class="warnTxt">U${u}${h>1?'–'+(u+h-1):''} is ${u<1||u+h-1>(r.units||42)?'outside the rack':'taken by '+html([...new Set(who)].join(', '))}.</span>`;return}
+    const lock=$('rkLockToo').checked;closeDialog();mutate(()=>{Racks.moveTo(r,n,u,items());if(lock)n.uLock=true});notify(`${name(n)} moved to U${u}${lock?' and locked there':''}.`,2200)}}
+function toggleLock(list){const on=!list.every(n=>n.uLock);mutate(()=>list.forEach(n=>{if(on)n.uLock=true;else delete n.uLock}));notify(on?`Locked in place — ${plural(list.length,'unit')} stay in their U when dragged (the rack still carries them).`:'Unlocked.',2600)}
+function gotoAsset(n){const a=findAny(n.ref);if(!a)return notify('The linked device is no longer in the drawing.');gotoPage(S.doc.pages.indexOf(pageOf(a)));select([a.id]);fit(true)}
+function gotoUnit(dev){const u=unitOf(dev);if(!u)return;gotoPage(S.doc.pages.indexOf(pageOf(u)));select([u.id]);fit(true)}
+
+// ---------- rack commands ----------
+function setView(r,k){mutate(()=>{r.views={...r.views,[k]:!r.views?.[k]};resizeRack(r)});}
+function addAccessory(r,type){const h=Shapes.rackItems[type].u,u=Racks.findSlot(r,items(),h,{order:'top'});if(u==null)return notify(`No ${h}U space left in ${name(r)}.`);
+  mutate(()=>{const it=Shapes.make(type,0,0);it.layer=r.layer||S.activeLayer;items().push(it);Racks.placeAt(r,it,u);select([it.id])});notify(`${Shapes.rackItems[type].name} added at U${u}.`,1800)}
+function openPower(r){const sm=()=>Racks.summary(r,items(),findAny);let s=sm();
+  const row=x=>`<tr><td>U${x.u}${x.h>1?'–'+(x.u+x.h-1):''}</td><td>${html(name(x.n))}</td><td>${html(Shapes.rackItems[x.n.type]?.name||'')}</td><td class="num">${x.power?x.power+' W':'—'}${x.estimated?' <em class="muted">typ.</em>':''}</td><td class="num">${x.depth} mm</td></tr>`;
+  const body=()=>`<div class="kpis"><div><b>${s.used}/${s.units} U</b><span>${s.free} U free</span></div><div><b>${s.power.toLocaleString()} W</b><span>${s.amps} A at ${s.volts} V</span></div><div><b>${s.btu.toLocaleString()} BTU/h</b><span>heat to remove</span></div><div><b>${s.budget?Math.round(s.power/s.budget*100)+'%':'—'}</b><span>${s.budget?'of '+s.budget+' W budget':'no budget set'}</span></div><div><b>${s.deepest} mm</b><span>deepest · ${s.usable} mm usable</span></div></div>
+    ${s.warn.length?`<ul class="rkWarn">${s.warn.map(w=>`<li>${html(w)}</li>`).join('')}</ul>`:'<p class="okTxt">✓ Fits: space, power and depth are within limits.</p>'}
+    <div class="tableWrap"><table class="report"><thead><tr><th>U</th><th>Unit</th><th>Type</th><th class="num">Power</th><th class="num">Depth</th></tr></thead><tbody>${s.rows.map(row).join('')}</tbody></table></div>`;
+  const d=openDialog(`${html(name(r))} — space & power`,`<div class="row r3"><label class="fld"><span>Power budget (W)</span><input data-rk-p="powerBudget" type="number" min="0" value="${r.data?.powerBudget||''}" placeholder="e.g. 5000"></label><label class="fld"><span>Supply voltage (V)</span><input data-rk-p="voltage" type="number" value="${r.data?.voltage||230}"></label><label class="fld"><span>Rack depth (mm)</span><input data-rk-p="depth" type="number" value="${r.data?.depth||1000}"></label></div><div id="rkBody">${body()}</div>
+    <footer><button data-rk-tbl>Insert as a table</button><span class="spacer"></span><button class="primary" data-close>Done</button></footer>`,{wide:true});
+  d.oninput=e=>{const k=e.target.dataset.rkP;if(!k)return;r.data??={};const v=+e.target.value;if(v)r.data[k]=v;else delete r.data[k];s=sm();$('rkBody').innerHTML=body()};
+  d.onchange=e=>{if(e.target.dataset.rkP){changed();render();if(e.target.dataset.rkP==='depth'){resizeRack(r);render()}}};
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(e.target.closest('[data-rk-tbl]')){closeDialog();insertReportTable({title:`${name(r)} — space & power`,columns:['U','Unit','Type','Power (W)','Depth (mm)'],rows:[...s.rows.map(x=>[`U${x.u}${x.h>1?'–'+(x.u+x.h-1):''}`,name(x.n),Shapes.rackItems[x.n.type]?.name||'',x.power||'',x.depth]),['','Total',`${s.used}/${s.units} U`,s.power,`${s.btu} BTU/h`]]},false)}}}
+
+// ---------- right-click ----------
+function menu(sel){const sub=(l,b)=>`<div class="sub"><button>${l} ▸</button><div class="submenu">${b}</div></div>`;let h='';
+  const devs=sel.filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&!Racks.isItem(n)),units=sel.filter(Racks.isItem),racks=sel.filter(Racks.isRack);
+  if(devs.length){h+=`<button data-ctx="q:rk:add">${devs.some(unitOf)?'Add to rack… (some are racked)':'Add to rack…'}</button>`;if(devs.length===1&&unitOf(devs[0]))h+=`<button data-ctx="q:rk:unit">Show it in its rack</button>`}
+  if(units.length){const cur=units.length===1?Racks.heightU(units[0]):0;h+=sub('Height',[1,2,3,4,5,6,8,10].map(u=>`<button data-ctx="q:rk:h:${u}">${u}U${u===cur?' ✓':''}</button>`).join(''));
+    if(units.length===1)h+=`<button data-ctx="q:rk:to">Move to U…</button>`;h+=`<button data-ctx="q:rk:lock">${units.every(n=>n.uLock)?'Unlock U position':'Lock in this U'}</button>`;if(units.length===1&&units[0].ref)h+=`<button data-ctx="q:rk:asset">Show the device in the drawing</button>`}
+  if(racks.length===1){const r=racks[0],v=r.views||{};h+=sub('Views',`<button data-ctx="q:rk:v:rear">${v.rear?'✓ ':''}Rear view</button><button data-ctx="q:rk:v:top">${v.top?'✓ ':''}Top view (depth)</button>`)
+    +sub('Add accessory',ACCESSORIES.map(t=>`<button data-ctx="q:rk:acc:${t}">${html(Shapes.rackItems[t].name)}</button>`).join(''))
+    +`<button data-ctx="q:rk:lockall">${r.lockItems?'Unlock all equipment':'Lock all equipment in its U'}</button><button data-ctx="q:rk:power">Space & power…</button>`}
+  return h}
+function apply(c){const[, ,op,...rest]=c.split(':'),v=rest.join(':'),sel=picked(),u1=sel.find(Racks.isItem),r1=sel.find(Racks.isRack);
+  if(op==='add')return openAdd();if(op==='unit')return gotoUnit(sel.find(n=>Shapes.isDevice(n)));
+  if(op==='h'){for(const n of sel.filter(Racks.isItem))setHeight(n,+v);return}if(op==='to'&&u1)return openMoveTo(u1);if(op==='lock')return toggleLock(sel.filter(Racks.isItem));if(op==='asset'&&u1)return gotoAsset(u1);
+  if(!r1)return;if(op==='v')return setView(r1,v);if(op==='acc')return addAccessory(r1,v);if(op==='power')return openPower(r1);
+  if(op==='lockall'){mutate(()=>{r1.lockItems=!r1.lockItems});notify(r1.lockItems?'Equipment is locked in its U; moving the rack still carries it.':'Equipment unlocked.',2400)}}
+
+return{openAdd,setHeight,openMoveTo,toggleLock,gotoAsset,gotoUnit,setView,addAccessory,openPower,menu,apply,resizeRack,unitOf,ACCESSORIES};
 })();
 
 </script>
@@ -6224,7 +6430,7 @@ function catalog(){const zone=(n,p)=>Analysis.zoneOf(n,p),cols=[
   {id:'category',label:'Category',get:n=>{const c=Stencils.shapes[n.type]?.cat;return Shapes.catalog().find(x=>x.id===c)?.name||c||''}},
   {id:'zone',label:'Zone',get:(n,p)=>Analysis.zoneName(zone(n,p))},{id:'subnet',label:'Zone subnet',get:(n,p)=>zone(n,p)?.data?.subnet||''},
   {id:'page',label:'Page',get:(n,p)=>p.name},{id:'layer',label:'Layer',get:n=>S.doc.layers.find(l=>l.id===n.layer)?.name||''},
-  {id:'rack',label:'Rack / U',get:(n,p)=>{const r=p.items.find(x=>x.type==='rack'&&C.inside({x:n.x+1,y:n.y+1,w:0,h:0},Shapes.rackInner(x)));return r?Analysis.nameOf(r)+' / U'+Shapes.rackU(r,n):''}},
+  {id:'rack',label:'Rack / U',get:(n,p)=>{let u=n,pp=p;const lu=RackUI.unitOf(n);if(lu){u=lu;pp=S.doc.pages.find(x=>x.items.includes(lu))}const r=pp.items.find(x=>x.type==='rack'&&C.inside({x:u.x+1,y:u.y+1,w:0,h:0},Shapes.rackInner(x)));return r?Analysis.nameOf(r)+' / U'+Shapes.rackU(r,u)+(Racks.heightU(u)>1?'–'+(Shapes.rackU(r,u)+Racks.heightU(u)-1):''):''}},
   {id:'links',label:'Links',get:(n,p)=>p.items.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)).length},
   {id:'peers',label:'Connected to',get:(n,p)=>p.items.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)).map(e=>{const o=p.items.find(x=>x.id===(e.from?.node===n.id?e.to?.node:e.from?.node));return o?Analysis.nameOf(o):''}).filter(Boolean).join(', ')}];
   for(const f of S.doc.fields)if(f.key!=='notes'||true)cols.push({id:'f:'+f.key,label:f.label,get:n=>n.data?.[f.key]??'',edit:f.key,field:f});

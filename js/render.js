@@ -16,7 +16,10 @@ function resolveLabel(owner,l,ctx=RCTX){
     if(k.startsWith('page.')){const key=k.slice(5);return key==='name'?p.name:key==='number'?ctx.pageNumber:key==='count'?ctx.pageCount:p[key]}
     if(!owner)return null;if(k==='type')return Shapes.nameOf(owner.type);if(k==='name')return owner.labels?.[0]&&owner.labels[0]!==l?resolveLabel(owner,owner.labels[0],ctx):owner.data?.hostname??'';
     if(k==='rackU'){const r=rackOf(owner,ctx.page);return r?'U'+Shapes.rackU(r,owner):''}
-    return owner.data?.[k]??''})}
+    // rack units linked to a drawing device: {{asset}} is its name, {{asset.ip}} its data; plain {{ip}} falls back to it
+    const asset=owner.ref&&d.pages.flatMap(x=>x.items).find(x=>x.id===owner.ref);
+    if(k==='asset')return asset?(asset.labels?.[0]?.text||asset.data?.hostname||Shapes.nameOf(asset.type)).split('\n')[0]:'(device removed)';if(k.startsWith('asset.'))return asset?.data?.[k.slice(6)]??'';
+    return owner.data?.[k]??asset?.data?.[k]??''})}
 Core.setResolver((owner,l)=>resolveLabel(owner,l,RCTX));
 // data lines shown under device names count as part of the label when routing around it
 Conn.setLabelExtra(n=>{const d=(RCTX?.doc||S.doc)?.display,keys=shownFields(n,d);if(!keys.length||!Shapes.isDevice(n)||Shapes.rackItems[n.type])return 0;const k=keys.filter(f=>n.data?.[f]!==undefined&&String(n.data[f]).trim()!=='').length;return k?k*(n.labels[0].size*.84*1.22)+2:0});
@@ -77,7 +80,7 @@ function drawNode(n,g,ctx){
   const kind=Shapes.kindOf(n.type),accent=colorFor(n,ctx)||n.stroke||'#2f5ea8',w=n.w,h=n.h;
   if(n.image){if(n.display==='card')el('rect',{x:0,y:0,width:w,height:h,rx:8,fill:n.fill||'#fff',stroke:accent,'stroke-width':1},t);el('image',{href:n.image,x:n.display==='card'?6:0,y:n.display==='card'?6:0,width:n.display==='card'?w-12:w,height:n.display==='card'?h-12:h,preserveAspectRatio:'xMidYMid meet'},t)}
   else if(kind==='basic'){const b=Shapes.basic[n.type];for(const p of b.paths(w,h))el('path',{d:p.d,fill:p.open||n.fill==='none'?'none':n.fill||'#fff',stroke:accent,'stroke-width':n.strokeWidth??1.75,'stroke-dasharray':n.dash||null,'stroke-linejoin':'round'},t)}
-  else if(kind==='rack')Shapes.drawRack(n,t);
+  else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.[0]||{text:''},ctx));
   else if(kind==='rackitem')Shapes.drawFace({...n,stroke:colorFor(n,ctx)||n.stroke},t);
   else{
     const s=Stencils?.shapes?.[n.type],mode=n.display||'symbol';
@@ -265,7 +268,8 @@ function renderOverlay(){
     if(sel.length>1){const prim=[...S.selected][0];for(const n of sel){const pr=n.id===prim;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+(pr?5:3)/z,'stroke-opacity':pr?.5:.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-(pr?2:0)/z,y:b.y-(pr?2:0)/z,width:b.w+(pr?4:0)/z,height:b.h+(pr?4:0)/z,fill:'none',stroke:pr?'#c026d3':blue,'stroke-opacity':pr?.85:.6,'stroke-width':(pr?2:1)*sw,'pointer-events':'none'},o)}}}
     if(sel.length===1&&sel[0].kind==='edge')drawEdgeHandles(sel[0],o,z);
     else{const b=Core.bounds(sel);el('rect',{x:b.x-4/z,y:b.y-4/z,width:b.w+8/z,height:b.h+8/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o);
-      const ed=editable();if(ed.length===sel.length&&!S.drag){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
+      // racks and rack units take their size from U counts (inspector / right-click), never from handles
+      const ed=editable(),rackish=sel.some(x=>x.type==='rack'||Shapes.rackItems[x.type]);if(ed.length===sel.length&&!S.drag&&!rackish){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
         if(sel.length===1&&sel[0].kind==='node'&&sel[0].type!=='rack'&&!Shapes.rackItems[sel[0].type]){const cx=b.x+b.w/2,cy=b.y-24/z;el('line',{x1:cx,y1:b.y-4/z,x2:cx,y2:cy,stroke:blue,'stroke-width':sw,'pointer-events':'none'},o);el('circle',{cx,cy,r:5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'rotate',cursor:'grab'},o)}}
       if(sel.some(isLocked)){const t=el('text',{x:b.x,y:b.y-9/z,fill:'#8c97a8','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none'},o);t.textContent='🔒 Locked'}}
     if(S.prefs.showPorts&&sel.length===1&&sel[0].kind==='node')drawPorts(sel[0],o,z,true)}

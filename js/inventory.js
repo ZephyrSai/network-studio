@@ -12,7 +12,7 @@ function catalog(){const zone=(n,p)=>Analysis.zoneOf(n,p),cols=[
   {id:'category',label:'Category',get:n=>{const c=Stencils.shapes[n.type]?.cat;return Shapes.catalog().find(x=>x.id===c)?.name||c||''}},
   {id:'zone',label:'Zone',get:(n,p)=>Analysis.zoneName(zone(n,p))},{id:'subnet',label:'Zone subnet',get:(n,p)=>zone(n,p)?.data?.subnet||''},
   {id:'page',label:'Page',get:(n,p)=>p.name},{id:'layer',label:'Layer',get:n=>S.doc.layers.find(l=>l.id===n.layer)?.name||''},
-  {id:'rack',label:'Rack / U',get:(n,p)=>{const r=p.items.find(x=>x.type==='rack'&&C.inside({x:n.x+1,y:n.y+1,w:0,h:0},Shapes.rackInner(x)));return r?Analysis.nameOf(r)+' / U'+Shapes.rackU(r,n):''}},
+  {id:'rack',label:'Rack / U',get:(n,p)=>{let u=n,pp=p;const lu=RackUI.unitOf(n);if(lu){u=lu;pp=S.doc.pages.find(x=>x.items.includes(lu))}const r=pp.items.find(x=>x.type==='rack'&&C.inside({x:u.x+1,y:u.y+1,w:0,h:0},Shapes.rackInner(x)));return r?Analysis.nameOf(r)+' / U'+Shapes.rackU(r,u)+(Racks.heightU(u)>1?'–'+(Shapes.rackU(r,u)+Racks.heightU(u)-1):''):''}},
   {id:'links',label:'Links',get:(n,p)=>p.items.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)).length},
   {id:'peers',label:'Connected to',get:(n,p)=>p.items.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)).map(e=>{const o=p.items.find(x=>x.id===(e.from?.node===n.id?e.to?.node:e.from?.node));return o?Analysis.nameOf(o):''}).filter(Boolean).join(', ')}];
   for(const f of S.doc.fields)if(f.key!=='notes'||true)cols.push({id:'f:'+f.key,label:f.label,get:n=>n.data?.[f.key]??'',edit:f.key,field:f});

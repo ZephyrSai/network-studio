@@ -61,6 +61,7 @@ function moveSet(ids){
   while(grew){grew=false;for(const z of all.filter(n=>set.has(n.id)&&(n.kind==='zone'&&n.contain!==false||n.type==='rack'))){const zb=C.box(z);for(const n of all)if(!set.has(n.id)&&!isLocked(n)&&n.kind!=='edge'&&C.inside(C.box(n),zb,1)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h)){set.add(n.id);grew=true}}}
   const nodes=new Set(all.filter(n=>set.has(n.id)&&n.kind!=='edge').map(n=>n.id)),zones=all.filter(n=>set.has(n.id)&&(n.kind==='zone'||n.type==='rack')).map(C.box);
   for(const e of all.filter(n=>n.kind==='edge')){const endOk=k=>e[k]?nodes.has(e[k].node):zones.some(b=>C.inside({x:(k==='from'?e.points[0]:e.points.at(-1))[0],y:(k==='from'?e.points[0]:e.points.at(-1))[1],w:0,h:0},b));const inner=endOk('from')&&endOk('to');if(set.has(e.id)&&!inner&&(e.from&&!nodes.has(e.from.node)||e.to&&!nodes.has(e.to.node)))set.delete(e.id);else if(!set.has(e.id)&&inner&&(e.from||e.to||zones.length))set.add(e.id)}
+  for(const n of all)if(set.has(n.id)&&Racks.isItem(n)){const r=Racks.rackOf(n,all);if(r&&Racks.isLocked(n,r)&&!set.has(r.id))set.delete(n.id)}
   return all.filter(n=>set.has(n.id)&&!isLocked(n))}
 
 // ---------- pointer ----------
@@ -85,7 +86,7 @@ function beginPointer(e){
   if(S.mode==='zone'){S.drag={kind:'zone',start:[grid(p[0]),grid(p[1])]};S.drag.current=S.drag.start;capture();return}
   if(S.mode==='text'){S.drag={kind:'textbox',start:p,current:p};capture();return}
   if(S.mode==='port'&&n?.kind==='node'&&!isLocked(n)){if(role==='port'){remember();S.drag={kind:'port',id:n.id,port:t.dataset.port};capture()}else{const c=edgeCandidate(n,p);mutate(()=>n.ports.push({id:C.uid(),name:'Port '+(n.ports.length+1),x:c.candidate.x,y:c.candidate.y}))}return}
-  if(role==='resize'){if(!editable().length)return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
+  if(role==='resize'){if(!editable().length||picked().some(x=>x.type==='rack'||Shapes.rackItems[x.type]))return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
   if(n){
     if(n.kind==='node'&&n.url&&(e.ctrlKey||e.metaKey)){followLink(n.url);return}
     const mod=e.ctrlKey||e.metaKey;
@@ -101,6 +102,7 @@ function beginPointer(e){
     S.activeLabel=kind==='label'?{owner:id,id:t.dataset.label}:null;S.segment=kind==='segment'?{id,index:+t.dataset.index}:null;S.bend=kind==='bend'?{id,index:+t.dataset.index}:null;
     remember();
     const set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
+    if(kind==='move'&&Racks.isItem(n)&&!set.some(x=>x.id===n.id)){const r=Racks.rackOf(n,items());notify(`${Analysis.nameOf(n)} is locked at U${Racks.uOf(r,n)} — right-click ▸ Unlock U position to move it.`,2600)}
     // Ctrl- or Alt-drag duplicates (once the pointer really moves); Alt-click reaches what is underneath; clicking a
     // member of an already selected group picks just that member
     S.drag={kind,start:p,startClient:[e.clientX,e.clientY],id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set),
@@ -153,7 +155,10 @@ function snapMove(d,dx,dy,e){
   if(!free&&S.prefs.snap){dx=grid(b.x+dx)-b.x;dy=grid(b.y+dy)-b.y}
   // rack equipment snaps into U slots
   const movers=d.original.filter(x=>x.kind==='node');
-  if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy,rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack);let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h};return[dx,dy]}}
+  if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy,rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack);let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));
+    // a single unit takes the nearest free U run instead of overlapping another one
+    if(movers.length===1){const hU=Math.max(1,Math.round(b.h/Shapes.RU)),want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return[dx,dy];ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
+    dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h};return[dx,dy]}}
   if(S.prefs.guides&&!free){const th=6/z,others=items().filter(t=>!d.original.some(o=>o.id===t.id)&&t.kind!=='edge'&&itemVisible(t,{doc:S.doc})),ps=C.pageSize(pg());const xs=[],ys=[];
     for(const t of others){if(t.kind==='zone')continue;const tb=C.box(t);xs.push(tb.x,tb.x+tb.w/2,tb.x+tb.w);ys.push(tb.y,tb.y+tb.h/2,tb.y+tb.h)}xs.push(ps.w/2);ys.push(ps.h/2);for(const g of pg().guideLines||[])(g.axis==='x'?xs:ys).push(g.pos);
     let bx=null,by=null;for(const v of[b.x,b.x+b.w/2,b.x+b.w])for(const x of xs){const off=x-v-dx;if(Math.abs(off)<th&&(bx===null||Math.abs(off)<Math.abs(bx.off)))bx={off,x}}
@@ -249,7 +254,7 @@ function addNode(type,x,y,opts={}){
   if(type.startsWith('ann:'))return insertAnnotation(type.slice(4),x,y);
   const n=mutate(()=>{const n=Shapes.make(type,0,0);C.move(n,grid(x-n.w/2)-n.x,grid(y-n.h/2)-n.y);if(Shapes.kindOf(type)==='device'&&S.prefs.newDisplay!=='symbol')n.display=S.prefs.newDisplay;if(opts.image)n.image=opts.image;n.layer=S.activeLayer;applyThemeToNew(n);
     // dropped into a rack → snap to the slot under the pointer
-    if(Shapes.rackItems[type]){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Shapes.rackInner(r)));if(r){const i=Shapes.rackInner(r);let ny=i.y+Math.round((n.y-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-n.h,ny));C.move(n,i.x-n.x,ny-n.y)}}
+    if(Shapes.rackItems[type]){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Shapes.rackInner(r)));if(r){const i=Shapes.rackInner(r),hU=Racks.heightU(n),want=Math.round((i.y+i.h-(n.y+n.h))/Shapes.RU)+1,u=Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u!=null)Racks.placeAt(r,n,u)}}
     // dropped onto a connector → split it (Visio "drop on connector")
     const target=opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
     items().push(n);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}

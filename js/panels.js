@@ -222,7 +222,8 @@ function bumpRecent(type){const r=(S.prefs.recent||[]).filter(t=>t!==type);r.uns
 
 // ---------- context menus ----------
 function canvasMenu(e){
-  e.preventDefault();const t=e.target.closest('[data-id]'),id=t?.dataset.id,n=id&&find(id);if(n&&!S.selected.has(id))selection(id);if(!n){S.selected.clear()}render('overlay');render('panel');S.menuPoint=point(e);
+  // a right-click on a selection handle keeps the selection
+  e.preventDefault();const t=e.target.closest('[data-id]'),id=t?.dataset.id,n=id&&find(id),onHandle=!!e.target.closest?.('[data-role="resize"],[data-role="rotate"]');if(n&&!S.selected.has(id))selection(id);if(!n&&!onHandle){S.selected.clear()}render('overlay');render('panel');S.menuPoint=point(e);
   const sel=picked(),one=sel.length===1?sel[0]:null,B2=(a,l,k='')=>`<button data-action="${a}">${l}${k?`<kbd>${k}</kbd>`:''}</button>`,sep='<hr>';let h='';
   if(!sel.length)h=B2('paste','Paste','Ctrl+V')+B2('selectAll','Select all','Ctrl+A')+sep+`<button data-ctx="zoneHere">Add zone here</button><button data-ctx="textHere">Add text here</button><button data-ctx="rackHere">Add rack here</button>`+sep+B2('layoutHier','Auto-layout page','L')+B2('rerouteAll','Re-route all connectors')+B2('check','Check diagram')+sep+B2('insertTemplate','Add template…')+B2('saveTemplate','Save page as template…')+B2('scaleSel','Scale the page…')+B2('newRevision','New revision…')+sep+B2('fit','Fit page','Shift+1')+B2('docProps','Document properties');
   else{

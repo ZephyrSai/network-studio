@@ -61,6 +61,24 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 
 ---
 
+### Racks
+* **Add drawing devices to a rack.** Select devices on any page, then right-click ▸ *Add to rack…*. Each one becomes a proper rack unit (firewall, switch, router, server, storage, NVR, UPS…) with a height you choose. Units go into an existing rack or a new one (on a "Racks" page or beside the drawing), filled from the top or bottom, never overlapping. Linked units show the device's live name and data (`{{asset}}`, `{{asset.ip}}`), and the inventory's *Rack / U* column shows where each device is mounted.
+* **Height in U.** Right-click a unit ▸ *Height* (1U–10U), or use the inspector. It keeps its top U if there's room, otherwise its bottom U, otherwise the nearest free run, and it never overlaps another unit. Units snap to free U slots when dragged or dropped in.
+* **Move and lock to a U.** *Move to U…* refuses taken slots and names what's in the way. *Lock in this U* (or *Lock all equipment* on the rack) keeps units where they are when dragged; moving the rack still carries them.
+* **Views.** Right-click a rack ▸ *Views*:
+  * *Rear*: fans, PSUs and ports; shallow front-mounted panels are shown faded.
+  * *Top*: plan of cabinet and rails, each unit's depth, the deepest unit and a warning if something is too deep.
+
+  They sit side by side with the front view.
+* **Accessories:** cable managers (1U/2U), vented cable tray, shelf, drawer, KVM console, LCD monitor, KVM switch, patch and fibre panels, PDU, transfer switch (ATS), fan tray, blanking panels (1U/2U) and brush panel. Add them from the rack's right-click menu or inspector; they go in the next free U.
+* **Space & power** (rack right-click or inspector) shows:
+  * U used and free;
+  * total draw in W, current at the supply voltage, and heat in BTU/h;
+  * percentage of the power budget, and UPS capacity;
+  * the deepest unit against usable depth.
+
+  It also lists warnings. Devices without a *Power draw* use typical values, which are flagged. It can be inserted as a table.
+
 ### First-run tour
 On the first visit, a short tour spotlights one area at a time (ribbon, shapes panel, page, inspector, status bar, layout buttons) and dims the rest. It has Back / Next (or ← →), and Skip at any time (or Esc). It shows once; replay it from *View ▸ Help ▸ Tour*. Areas hidden at the moment, such as the side panels on a phone, are left out.
 
@@ -149,8 +167,10 @@ js/inventory.js     inventory builder and per-device fields on the drawing
 js/select.js        window / lasso / Alt-click / Tab selection, select by type
 js/ports.js         arrange connection points (pure)
 js/tour.js          first-run spotlight tour
+js/racks.js         rack engine: U slots, heights, moves, locks, device mapping, power / heat / depth (pure)
+js/rackui.js        add to rack, unit and rack commands, views, accessories, space & power dialog
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
-tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions, ports)
+tests/              node:test suites (router, layout, vsdx, core/importers, merge, scale, revisions, ports, racks)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview
 ```
 
