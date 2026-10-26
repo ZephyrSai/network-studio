@@ -1,6 +1,6 @@
 // Editor state, history, pointer/keyboard interaction and the action registry.
 const $=id=>document.getElementById(id);
-const DEFAULT_PREFS={grid:true,snap:true,guides:true,rulers:true,showPorts:false,minimap:true,autoConnect:true,wheelZoom:false,gridStep:10,theme:'auto',paletteDisplay:'symbol',newDisplay:'symbol',leftOpen:true,rightOpen:true,jumpStyle:'arc',deleteConnectors:true,liveCheck:true};
+const DEFAULT_PREFS={grid:true,snap:true,guides:true,rulers:true,showPorts:false,minimap:true,autoConnect:true,wheelZoom:false,gridStep:10,theme:'auto',paletteDisplay:'symbol',newDisplay:'symbol',leftOpen:true,rightOpen:true,jumpStyle:'arc',deleteConnectors:true,liveCheck:true,showComments:true};
 const S={doc:null,pageIndex:0,selected:new Set(),activeLabel:null,segment:null,bend:null,mode:'select',view:{x:-40,y:-40,zoom:.8},drag:null,trace:null,hover:null,hoverId:null,snapPort:null,dropTarget:null,history:[],future:[],clipboard:[],space:false,dirty:false,guideLines:[],spacing:null,library:[],copiedStyle:null,highlights:new Set(),analysis:null,filterFn:null,filter:null,cursor:null,fileHandle:null,activeLayer:null,linkType:'eth',routeStyle:'auto',painter:false,lastClick:null,prefs:{...DEFAULT_PREFS}};
 const pg=()=>S.doc.pages[S.pageIndex],items=()=>pg().items,find=id=>items().find(n=>n.id===id),picked=()=>items().filter(n=>S.selected.has(n.id));
 const isLocked=n=>!!n.locked||!!layerOf(n)?.locked,editable=()=>picked().filter(n=>!isLocked(n));
@@ -12,14 +12,18 @@ let autosaveTimer=null;
 function snapshot(){return JSON.stringify({doc:S.doc,pageIndex:S.pageIndex})}
 function remember(){S.history.push(snapshot());if(S.history.length>150)S.history.shift();S.future=[]}
 function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();Quick.revInfo();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
-function mutate(fn){remember();const r=fn();changed();render();return r}
+// Review mode locks the layout: an edit stops here (the global handler swallows the error); review data changes pass.
+class ReviewLock extends Error{constructor(){super('Review mode: the layout is locked');this.name='ReviewLock'}}
+function mutate(fn){if(S.reviewMode&&!S.reviewEdit){ReviewUI.blocked();throw new ReviewLock()}remember();const r=fn();changed();render();return r}
 let checkTimer=null;
 // Design-rule check runs quietly after edits; the status bar shows the count and opens the full list.
-function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),e=issues.filter(i=>i.severity==='error').length,w=issues.filter(i=>i.severity==='warning').length,b=$('issueCount');if(!b)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
-function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear()}
+// Findings accepted as intentional or marked resolved do not count.
+function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;if(!S.side)return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),open=issues.filter(i=>i.status==='open'),e=open.filter(i=>i.severity==='error').length,w=open.filter(i=>i.severity==='warning').length,b=$('issueCount');ReviewUI.update(issues);if(!b||!S.prefs.liveCheck)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
+function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear();S.findMark=null}
 function restore(s){const r=JSON.parse(s);S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;changed();render()}
-function undo(){if(!S.history.length)return notify('Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
-function redo(){if(!S.future.length)return;S.history.push(snapshot());restore(S.future.pop())}
+// in review mode only what was done during the review can be undone
+function undo(){if(!S.history.length||S.reviewMode&&S.history.length<=S.reviewFloor)return notify(S.reviewMode?'Nothing to undo in this review.':'Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
+function redo(){if(!S.future.length||S.reviewMode&&S.future.length<=S.reviewFutureFloor)return;S.history.push(snapshot());restore(S.future.pop())}
 function setSaveState(t){const e=$('saveState');if(e)e.textContent=t}
 function autosave(){try{Packs.embedUsed(S.doc);localStorage.setItem('port-v3-recovery',JSON.stringify(S.doc));setSaveState(S.fileHandle?'Unsaved · recovery copy kept':'Recovery copy saved in this browser')}catch{setSaveState('Quick recovery copy too large — kept in browser storage only')}Workspace.saveCurrent()}
 function savePrefs(){try{localStorage.setItem('port-v3-prefs',JSON.stringify(S.prefs))}catch{}}
@@ -29,8 +33,8 @@ function notify(text,ms=3800){const t=$('toast');t.textContent=text;t.hidden=fal
 
 // ---------- modes ----------
 const IS_MAC=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent),MODK=IS_MAC?'⌘':'Ctrl',ALTK=IS_MAC?'⌥':'Alt';
-const HINTS={select:`Click to select · Shift/${MODK}-click adds · drag on empty space for a window (fully inside; ${ALTK} = touching) · ${ALTK}-click picks what is underneath · Tab steps · ${MODK}/${ALTK}-drag duplicates`,lasso:`Draw round what to select (fully inside; ${ALTK} = touching) · Shift adds · Esc returns to the pointer`,connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.'};
-function setMode(m){S.mode=m;S.trace=null;S.hover=null;S.snapPort=null;S.dropTarget=null;S.painter=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));$('canvas').style.cursor=m==='pan'?'grab':m==='select'?'default':'crosshair';$('hint').textContent=HINTS[m]||'';render('overlay');render('panel')}
+const HINTS={select:`Click to select · Shift/${MODK}-click adds · drag on empty space for a window (fully inside; ${ALTK} = touching) · ${ALTK}-click picks what is underneath · Tab steps · ${MODK}/${ALTK}-drag duplicates`,lasso:`Draw round what to select (fully inside; ${ALTK} = touching) · Shift adds · Esc returns to the pointer`,connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.',comment:'Click a device, a link or a spot to pin a comment · drag round an area · Esc returns to the pointer'};
+function setMode(m){if(S.reviewMode&&!['select','pan','comment','lasso'].includes(m)){ReviewUI.blocked();m='select'}S.mode=m;S.trace=null;S.hover=null;S.snapPort=null;S.dropTarget=null;S.painter=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));$('canvas').style.cursor=m==='pan'?'grab':m==='select'?'default':'crosshair';$('hint').textContent=HINTS[m]||'';render('overlay');render('panel')}
 
 // ---------- coordinates & snapping ----------
 function point(e){const r=$('canvas').getBoundingClientRect();return[S.view.x+(e.clientX-r.left)/S.view.zoom,S.view.y+(e.clientY-r.top)/S.view.zoom]}
@@ -73,6 +77,11 @@ function beginPointer(e){
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
   if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;const msg=S.pickCancel||'Path trace cancelled.';S.pickCancel=null;if(n?.kind==='node'){h(n.id);return}notify(msg,1500)}
   const capture=()=>{try{$('canvas').setPointerCapture(e.pointerId)}catch{}};
+  if(role==='pin'){ReviewUI.focusComment(t.dataset.comment);return}
+  if(S.mode==='comment'&&e.button===0&&!S.space){S.drag={kind:'comment',start:p,startClient:[e.clientX,e.clientY],target:n&&n.kind!=='legend'&&!n.pin?n.id:null};capture();return}
+  // review: a click selects, a drag pans — nothing moves
+  if(S.reviewMode&&S.mode!=='lasso'){if(n&&!n.pin&&!S.space&&e.button===0)selection(id,e.shiftKey||e.ctrlKey||e.metaKey);else if(!n&&!e.shiftKey&&e.button===0)S.selected.clear();S.activeLabel=null;S.findMark=null;
+    S.drag={kind:'pan',start:[e.clientX,e.clientY],view:{...S.view}};$('canvas').style.cursor='grabbing';capture();render('overlay');render('panel');ReviewUI.onSelect();return}
   if(role==='guide'&&S.mode==='select'){remember();S.drag={kind:'guide',guide:t.dataset.guide};capture();return}
   if(S.space||S.mode==='pan'||e.button===1){e.preventDefault();S.drag={kind:'pan',start:[e.clientX,e.clientY],view:{...S.view}};$('canvas').style.cursor='grabbing';capture();return}
   if(S.painter){if(n){applyPainter(n);if(!S.painterSticky){S.painter=false;$('canvas').style.cursor='default'}}else{S.painter=false;$('canvas').style.cursor='default'}render();return}
@@ -126,6 +135,7 @@ function pointerMove(e,fromPan=false){
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
   if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;clampView();render('overlay');return}
+  if(d.kind==='comment'){d.current=p;render('overlay');return}
   if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;if(d.kind==='box')d.touch=e.altKey;render('overlay');return}
   if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
@@ -182,6 +192,7 @@ function doResize(d,p,e){
 
 function pointerUp(e){
   const d=S.drag;if(!d)return;S.drag=null;S.guideLines=[];S.spacing=null;const p=point(e);$('canvas').style.cursor=S.mode==='pan'?'grab':S.mode==='select'?'default':'crosshair';
+  if(d.kind==='comment'){ReviewUI.commentAt(d,p);render('overlay');return}
   if(d.kind==='box'){const q=d.current||d.start,r={x:Math.min(q[0],d.start[0]),y:Math.min(q[1],d.start[1]),w:Math.abs(q[0]-d.start[0]),h:Math.abs(q[1]-d.start[1])},big=Math.max(r.w,r.h)*S.view.zoom>3;
     // window selection: only what it fully covers, whichever way you drag; hold Alt for everything it touches
     if(big)for(const id of Select.windowSelect(r,!!d.touch))S.selected.add(id);else if(d.zoneClick)selection(d.zoneClick)}
@@ -228,6 +239,7 @@ function quickAddMenu(e,p,d){
     const n=Shapes.make(type,0,0);C.move(n,grid(p[0]-n.w/2)-n.x,grid(p[1]-n.h/2)-n.y);n.display=S.prefs.newDisplay==='symbol'?n.display:S.prefs.newDisplay;n.layer=S.activeLayer;items().push(n);createEdge(d.from,{node:n.id,port:null},d.fromP,C.center(n));changed();select([n.id]);render()}}
 
 function onDoubleClick(e,p,t,n){
+  if(S.reviewMode){if(n&&!n.pin)ReviewUI.draftFor(n,p);return}
   const lr=e.target?.closest?.('[data-legend-row]');if(lr&&n?.kind==='legend'){openLegendRow(n,lr.dataset.legendRow);return}
   const role=t?.dataset.role;if(n&&isLocked(n))return;
   if(role==='label'){editLabel(n.id,t.dataset.label);return}
@@ -250,7 +262,7 @@ function editLabel(owner,id,fresh=false){const n=find(owner),l=n?.labels?.find(x
 function editCell(n,row,col){const x=n.x+n.cols.slice(0,col).reduce((a,b)=>a+b,0)+n.cols[col]/2,y=n.y+row*n.rowH+n.rowH/2;select([n.id]);$('inlineText').dataset.single='1';openEditor(x,y,String(n.rows[row][col]??''),v=>mutate(()=>{n.rows[row][col]=v}),{width:Math.max(140,n.cols[col]*S.view.zoom+20)});const ed=$('inlineText');ed.addEventListener('tabnext',ev=>{let c=col+ev.detail,r=row;if(c>=n.cols.length){c=0;r++}if(c<0){c=n.cols.length-1;r--}if(r>=0&&r<n.rows.length)setTimeout(()=>editCell(n,r,c),0)},{once:true})}
 
 // ---------- editing operations ----------
-function addNode(type,x,y,opts={}){
+function addNode(type,x,y,opts={}){if(S.reviewMode)return ReviewUI.blocked();
   if(type.startsWith('ann:'))return insertAnnotation(type.slice(4),x,y);
   const n=mutate(()=>{const n=Shapes.make(type,0,0);C.move(n,grid(x-n.w/2)-n.x,grid(y-n.h/2)-n.y);if(Shapes.kindOf(type)==='device'&&S.prefs.newDisplay!=='symbol')n.display=S.prefs.newDisplay;if(opts.image)n.image=opts.image;n.layer=S.activeLayer;applyThemeToNew(n);
     // dropped into a rack → snap to the slot under the pointer
@@ -262,7 +274,7 @@ function addNode(type,x,y,opts={}){
 function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(t&&S.doc.theme!=='port'){if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
   // a style set for this type from the legend applies to new ones too
   const ts=S.doc.typeStyles?.[n.type];if(ts){if(ts.stroke)n.stroke=ts.stroke;if(ts.display&&Shapes.kindOf(n.type)==='device')n.display=ts.display}}
-function insertAnnotation(kind,x,y){
+function insertAnnotation(kind,x,y){if(S.reviewMode)return ReviewUI.blocked();
   if(kind==='zone'){const z=mutate(()=>{const z=C.zone('Network zone',grid(x-160),grid(y-100),320,200);z.layer=S.activeLayer;items().unshift(z);select([z.id]);return z});return z}
   if(kind==='text'){const t=mutate(()=>{const t=C.text('Text',grid(x-120),grid(y-20),240,50,14);t.layer=S.activeLayer;items().push(t);select([t.id]);return t});editLabel(t.id,t.labels[0].id,true);return t}
   if(kind==='callout'){const target=picked().find(n=>n.kind==='node');const t=mutate(()=>{const t=C.text('Callout text',grid(x),grid(y-100),190,46,12);t.fill='#ffffff';t.stroke='#64748b';t.labels[0].wrapWidth=170;if(target)t.target=target.id;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});editLabel(t.id,t.labels[0].id,true);return t}
@@ -310,6 +322,9 @@ function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu','ribbon
 function onKey(e){
   const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag)||document.activeElement?.isContentEditable||document.querySelector('dialog[open]'))return;
   const k=e.key.toLowerCase(),mod=e.ctrlKey||e.metaKey;
+  if(e.key==='F8'){e.preventDefault();ReviewUI.step(e.shiftKey?-1:1);return}
+  if(k==='/'&&!mod){e.preventDefault();actions.palette();return}
+  if(S.reviewMode&&!mod&&!document.body.classList.contains('presenting')){if(k==='c'||k==='m'){setMode(S.mode==='comment'?'select':'comment');return}if(['delete','backspace','enter','f2','l','z','t','p'].includes(k)||k.startsWith('arrow')&&S.selected.size){e.preventDefault();ReviewUI.blocked();return}}
   if(document.body.classList.contains('presenting')){if(k==='escape')actions.present();else if(['arrowright','pagedown',' '].includes(k))presentStep(1);else if(['arrowleft','pageup'].includes(k))presentStep(-1);return}
   if(e.key==='F1'&&mod){e.preventDefault();actions.toggleRibbon();return}
   if(mod&&e.altKey&&(k==='arrowleft'||k==='arrowright')){e.preventDefault();actions[k==='arrowleft'?'toggleLeft':'toggleRight']();return}
@@ -320,7 +335,7 @@ function onKey(e){
   if(e.code==='Space'){e.preventDefault();if(!S.space){S.space=true;$('canvas').style.cursor='grab'}return}
   if(k==='tab'&&!mod&&!e.altKey){e.preventDefault();Select.tab(e.shiftKey);return}
   if(k==='escape'&&document.body.classList.contains('ribbonPeek')){document.body.classList.remove('ribbonPeek');renderRibbon();return}
-  if(k==='escape'){if(S.drag&&S.history.length&&!['box','pan','zone','textbox'].includes(S.drag.kind)){const s=S.history.pop();S.drag=null;restore(s)}S.drag=null;hideMenus();if(S.analysis||S.highlights.size||S.filter){S.analysis=null;S.highlights.clear();setFilter(null);render();return}setMode('select');S.selected.clear();S.activeLabel=null;S.painter=false;$('printPreview').hidden=true;render();return}
+  if(k==='escape'){if(S.drag&&S.history.length&&!['box','pan','zone','textbox'].includes(S.drag.kind)){const s=S.history.pop();S.drag=null;restore(s)}S.drag=null;hideMenus();if(S.reviewDraft){S.reviewDraft=null;ReviewUI.draw(true);render();return}if(S.analysis||S.highlights.size||S.filter||S.findMark){S.analysis=null;S.highlights.clear();S.findMark=null;setFilter(null);render();return}setMode('select');S.selected.clear();S.activeLabel=null;S.painter=false;$('printPreview').hidden=true;render();return}
   if(S.mode==='connect'&&S.trace&&k==='backspace'){e.preventDefault();if(S.trace.steps.length)S.trace.points.splice(S.trace.steps.pop());else S.trace=null;render('overlay');return}
   if(k==='enter'&&S.mode==='connect'&&S.trace){finishTrace();return}
   if((k==='enter'||k==='f2')&&S.selected.size===1){e.preventDefault();const n=picked()[0];if(n.kind==='edge')editEdgeLabel(n);else if(n.kind==='table')editCell(n,0,0);else onDoubleClick(e,C.center(n),null,n);return}

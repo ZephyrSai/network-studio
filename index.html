@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=d5c988a3">
+<link rel="stylesheet" href="css/app.css?v=9154743e">
 <style id="printRules"></style>
 </head>
 <body>
@@ -15,13 +15,14 @@
   <div class="brand" title="Port Network Studio">port<b>•</b><span>network studio</span></div>
   <div class="doc"><input id="docName" aria-label="Drawing name" spellcheck="false"><div class="sub" id="saveState">Ready</div></div>
   <div class="spacer"></div>
+  <button class="searchBox" data-action="palette" title="Search every tool, setting, shape, device and page (Ctrl+K or /)"><span class="i" data-icon="search"></span><span class="sbText">Search tools, shapes, devices…</span><kbd class="sbKey">Ctrl K</kbd></button>
+  <div class="spacer"></div>
   <button class="tbtn" data-action="new" title="New from template (Ctrl+N)"><span class="i" data-icon="template"></span><span>Templates</span></button>
   <button class="tbtn" data-action="open" title="Open (Ctrl+O)"><span class="i" data-icon="open"></span><span>Open</span></button>
   <button class="tbtn primary" data-action="save" title="Save (Ctrl+S)"><span class="i" data-icon="save"></span><span>Save</span></button>
   <button class="tbtn" data-action="exportVsdx" title="Export to Microsoft Visio (.vsdx)"><span class="i" data-icon="visio"></span><span>Visio</span></button>
   <button class="tbtn" data-action="share" title="Copy a share link (the drawing travels inside the link)"><span class="i" data-icon="share"></span><span>Share</span></button>
   <button class="tbtn" data-action="present" title="Present (full screen)"><span class="i" data-icon="present"></span></button>
-  <button class="tbtn" data-action="palette" title="Command palette (Ctrl+K)"><span class="i" data-icon="command"></span></button>
   <button class="tbtn" data-action="help" title="Guide"><span class="i" data-icon="help"></span></button>
 </header>
 <nav class="ribbonTabs" id="ribbonTabs" aria-label="Ribbon"></nav>
@@ -55,12 +56,14 @@
   <aside class="right" id="rightPanel">
     <div class="inspHead"><h2 id="inspectorTitle">Page</h2><div id="inspectorTabs" class="itabs"></div></div>
     <div id="inspector"></div>
+    <div id="sidePanel" hidden></div>
   </aside>
 </div>
 <footer class="status">
   <div id="pageTabs" class="pageTabs"></div>
   <div class="spacer"></div>
   <button id="issueCount" class="issueBtn" data-action="check" hidden></button>
+  <button id="reviewBadge" class="reviewBadge" data-action="reviewMode" hidden></button>
   <button id="revInfo" class="revBtn" data-action="newRevision" title="Revisions">Rev</button>
   <span id="selectionCount">Ready</span>
   <span id="cursorPos" class="mono">0 , 0 mm</span>
@@ -84,36 +87,40 @@
 <script src="js/core.js?v=3cca1d52"></script>
 <script src="js/stencils.js?v=51c82413"></script>
 <script src="js/packs/extended.js?v=05ccca0c"></script>
-<script src="js/shapes.js?v=584da4b5"></script>
-<script src="js/icons.js?v=709c572c"></script>
+<script src="js/shapes.js?v=6099618b"></script>
+<script src="js/icons.js?v=22dcf35a"></script>
 <script src="js/router.js?v=0c90e0a3"></script>
 <script src="js/layout.js?v=51056f31"></script>
 <script src="js/connectors.js?v=69f2aecd"></script>
-<script src="js/constraints.js?v=0c2357e8"></script>
+<script src="js/constraints.js?v=41a5ebd3"></script>
 <script src="js/merge.js?v=5c93b5a8"></script>
 <script src="js/scale.js?v=39784bcb"></script>
 <script src="js/ports.js?v=80e5353e"></script>
-<script src="js/racks.js?v=00e0609a"></script>
+<script src="js/racks.js?v=048b4a27"></script>
 <script src="js/revisions.js?v=3ef91001"></script>
+<script src="js/checks.js?v=3b96afd6"></script>
+<script src="js/review.js?v=4c4feb50"></script>
 <script src="js/vsdx.js?v=b99023c1"></script>
 <script src="js/visio.js?v=5f2977a0"></script>
-<script src="js/render.js?v=d864e2e2"></script>
-<script src="js/analysis.js?v=2044a101"></script>
-<script src="js/io.js?v=bd7f0953"></script>
+<script src="js/render.js?v=155f464b"></script>
+<script src="js/analysis.js?v=eea4c9df"></script>
+<script src="js/io.js?v=54cd4851"></script>
 <script src="js/packs.js?v=e3c44150"></script>
 <script src="js/builder.js?v=b9669f82"></script>
 <script src="js/templates.js?v=6669f418"></script>
-<script src="js/app.js?v=4e28b40c"></script>
+<script src="js/app.js?v=4a8dff3e"></script>
 <script src="js/inspector.js?v=dd4d9060"></script>
-<script src="js/actions.js?v=e53121b0"></script>
-<script src="js/panels.js?v=c8838ed2"></script>
+<script src="js/actions.js?v=c769deeb"></script>
+<script src="js/panels.js?v=aef888b9"></script>
 <script src="js/workspace.js?v=c4909957"></script>
 <script src="js/tplpanel.js?v=20a3c26f"></script>
 <script src="js/quick.js?v=53f2cc39"></script>
-<script src="js/rackui.js?v=d9db9971"></script>
+<script src="js/rackui.js?v=eef0dd1c"></script>
 <script src="js/inventory.js?v=7dcc7727"></script>
 <script src="js/select.js?v=95d243ce"></script>
+<script src="js/reviewui.js?v=a9512c0e"></script>
+<script src="js/search.js?v=ffb2f1db"></script>
 <script src="js/tour.js?v=b00c28ec"></script>
-<script src="js/main.js?v=f85b1eeb"></script>
+<script src="js/main.js?v=3dd07505"></script>
 </body>
 </html>

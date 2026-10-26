@@ -15,7 +15,13 @@ function fits(r,items,u,h,except){if(u<1||u+h-1>units(r))return false;const occ=
 function findSlot(r,items,h,{order='top',near=null,except}={}){const c=[];for(let u=1;u+h-1<=units(r);u++)if(fits(r,items,u,h,except))c.push(u);if(!c.length)return null;if(near!=null)return c.sort((a,b)=>Math.abs(a-near)-Math.abs(b-near)||b-a)[0];return order==='top'?c.at(-1):c[0]}
 function freeU(r,items){return units(r)-[...occupied(r,items).keys()].length}
 // Put n so its lowest U is u.
-function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU();n.h=h;n.w=i.w;C.move(n,i.x-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.[0];if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36}}
+function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU();n.h=h;n.w=i.w;C.move(n,i.x-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.find(x=>x.view!=='rear');if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36;for(const b of n.labels)if(b.view==='rear'){b.size=l.size;b.y=l.y}}}
+// Rear view labels: a unit in a rack that shows its rear view carries a second, real label there — movable and
+// editable like the front one. It repeats the front text until it is edited, and goes when the view does.
+function syncRear(items){let changed=false;for(const n of items){if(!isItem(n))continue;const r=rackOf(n,items),on=!!r?.views?.rear,i=(n.labels||[]).findIndex(l=>l.view==='rear');
+  if(!on){if(i>=0){n.labels.splice(i,1);changed=true}continue}const front=n.labels?.find(l=>l.view!=='rear');if(!front)continue;
+  if(i<0){n.labels.push({...C.copy(front),id:C.uid(),view:'rear',src:front.text,anchor:undefined,align:'start',x:n.x+Shapes.rackDims(r).rear+12,y:front.y});changed=true}
+  else{const l=n.labels[i];if(l.src===l.text&&front.text!==l.text){l.text=l.src=front.text;changed=true}}}return changed}
 // New height, keeping the top U where it was if there is room, else the bottom U, else the nearest free run.
 function setHeight(r,n,hU,items){const cur=uOf(r,n),top=cur+heightU(n)-1,exc=new Set([n.id]);let u=[top-hU+1,cur].find(x=>fits(r,items,x,hU,exc));if(u==null)u=findSlot(r,items,hU,{near:cur,except:exc});if(u==null)return null;n.h=hU*RU();placeAt(r,n,u);return u}
 function moveTo(r,n,u,items){if(!fits(r,items,u,heightU(n),new Set([n.id])))return false;placeAt(r,n,u);return true}
@@ -42,6 +48,6 @@ function summary(r,items,find){const eq=contents(r,items).sort((a,b)=>uOf(r,b)-u
   if(rows.some(x=>x.estimated))warn.push('Some power figures are typical values — enter Power draw (W) on the device for exact numbers.');
   return{rack:r,rows,units:units(r),used,free:units(r)-used,power,amps:+(power/v).toFixed(1),volts:v,btu:Math.round(power*3.412),budget,ups:Math.round(ups),depth,usable,deepest:Math.max(0,...rows.map(x=>x.depth)),warn}}
 
-return{isRack,isItem,heightU,contents,rackOf,uOf,occupied,fits,findSlot,freeU,placeAt,setHeight,moveTo,isLocked,rackTypeFor,specs,summary,TYPICAL};
+return{isRack,isItem,heightU,contents,rackOf,uOf,occupied,fits,findSlot,freeU,placeAt,syncRear,setHeight,moveTo,isLocked,rackTypeFor,specs,summary,TYPICAL};
 })();
 if(typeof module!=='undefined')module.exports=Racks;

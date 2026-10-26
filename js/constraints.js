@@ -89,7 +89,7 @@ const Constraints=(()=>{
       else if(below&&want){l.autoGap=l.y-(n.y+n.h);place(want);l.auto=want;moved=true}
       if(moved)changed=true;if(moved&&typeof Conn!=='undefined')for(const e of page.items)if(e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id))Conn.markDirty(e.id)}
     return changed}
-  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);labelSides(page,doc);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;if(typeof Racks!=='undefined')Racks.syncRear(page.items);for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);labelSides(page,doc);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
     // legends may re-wrap when the page width changes, which can change the room they need: settle in ≤3 passes
     for(let i=0;i<3;i++){const ri=page.isBackground?null:page.autoSize==='fit'?fitPage(page,doc):autoSize(page,doc);if(ri){r=r?{shift:ri.shift?[(r.shift?.[0]||0)+ri.shift[0],(r.shift?.[1]||0)+ri.shift[1]]:r.shift,resized:r.resized||ri.resized}:ri}const s2=measureLegends(page,doc);if(s2===sig)break;sig=s2}
     if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}

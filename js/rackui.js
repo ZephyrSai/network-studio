@@ -52,7 +52,12 @@ function gotoAsset(n){const a=findAny(n.ref);if(!a)return notify('The linked dev
 function gotoUnit(dev){const u=unitOf(dev);if(!u)return;gotoPage(S.doc.pages.indexOf(pageOf(u)));select([u.id]);fit(true)}
 
 // ---------- rack commands ----------
-function setView(r,k){mutate(()=>{r.views={...r.views,[k]:!r.views?.[k]};resizeRack(r)});}
+// Turning a view on widens the rack; whatever stands to its right moves along so nothing ends up underneath.
+function setView(r,k){mutate(()=>{const edge=r.x+r.w,top=r.y,h0=r.h;r.views={...r.views,[k]:!r.views?.[k]};resizeRack(r);const dx=r.x+r.w-edge;if(dx)makeRoom(r,edge,dx,top,top+Math.max(h0,r.h))})}
+function makeRoom(r,edge,dx,top,bottom){const all=items(),own=new Set([r.id,...Racks.contents(r,all).map(n=>n.id)]),set=new Set();
+  for(const n of all){if(own.has(n.id)||n.kind==='edge'||n.pin)continue;const b=C.bounds([n]);if(b.x>=edge-2&&b.y<bottom&&b.y+b.h>top){set.add(n.id);if(Racks.isRack(n))for(const u of Racks.contents(n,all))set.add(u.id)}}
+  for(const n of all)if(set.has(n.id))C.move(n,dx,0);
+  for(const e of all){if(e.kind!=='edge')continue;const a=set.has(e.from?.node),b=set.has(e.to?.node);if(a&&b||!e.from&&!e.to&&e.points.every(p=>p[0]>=edge-2))C.move(e,dx,0);else if(a||b)Conn.markDirty(e.id)}}
 function addAccessory(r,type){const h=Shapes.rackItems[type].u,u=Racks.findSlot(r,items(),h,{order:'top'});if(u==null)return notify(`No ${h}U space left in ${name(r)}.`);
   mutate(()=>{const it=Shapes.make(type,0,0);it.layer=r.layer||S.activeLayer;items().push(it);Racks.placeAt(r,it,u);select([it.id])});notify(`${Shapes.rackItems[type].name} added at U${u}.`,1800)}
 function openPower(r){const sm=()=>Racks.summary(r,items(),findAny);let s=sm();

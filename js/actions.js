@@ -91,4 +91,8 @@ const actions={
   shortcuts:()=>openShortcuts(),help:()=>openHelp(),palette:()=>openPalette(),about:()=>openHelp(),
 };
 for(const[k]of Ports.MODES)actions['ports_'+k]=()=>Quick.arrangePorts(k);
-for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom','deleteConnectors','liveCheck'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render();if(k==='liveCheck')scheduleCheck()};
+for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom','deleteConnectors','liveCheck','showComments'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render();if(k==='liveCheck')scheduleCheck()};
+// check & review (js/reviewui.js)
+Object.assign(actions,{reviewMode:()=>ReviewUI.toggleMode(),reviewComment:()=>{ReviewUI.open('comments');setMode('comment')},reviewFindings:()=>ReviewUI.open('findings'),reviewChecklist:()=>ReviewUI.open('checklist'),reviewChanges:()=>ReviewUI.open('changes'),
+  reviewReport:()=>ReviewUI.openReport(),reviewComplete:()=>{ReviewUI.open('changes');ReviewUI.openComplete()},checkConnections:()=>ReviewUI.open('findings',{cat:'connectivity',status:'open'}),checkLabels:()=>ReviewUI.open('findings',{cat:'labels,data',status:'open'}),
+  checkReadability:()=>ReviewUI.open('findings',{cat:'readability',status:'open'}),nextFinding:()=>ReviewUI.step(1),prevFinding:()=>ReviewUI.step(-1)});

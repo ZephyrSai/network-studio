@@ -55,7 +55,7 @@ const rackInner=r=>({x:r.x+RACK.rail,y:r.y+RACK.top,w:RACK.inner,h:(r.units||42)
 const rackU=(r,n)=>{const i=rackInner(r);return Math.round((i.y+i.h-(n.y+n.h))/RU)+1};
 // items: the rack's equipment (page items inside it) — drawn again, seen from the back, in the rear view; nameOf resolves labels
 function drawRack(n,g,items=[],nameOf=x=>x.labels?.[0]?.text||''){const D=rackDims(n);drawRackFrame(n,g,0,'FRONT');
-  if(D.rear!=null){const rg=el('g',{transform:`translate(${D.rear} 0)`},g);drawRackFrame(n,rg,0,'REAR');for(const it of items){const t=el('g',{transform:`translate(${f(it.x-n.x)} ${f(it.y-n.y)})`},rg);drawRear(it,t,nameOf(it),(+it.data?.depth||RACK_DEPTH[it.type]||400)<(+n.data?.depth||1000)*.4)}}
+  if(D.rear!=null){const rg=el('g',{transform:`translate(${D.rear} 0)`},g);drawRackFrame(n,rg,0,'REAR');for(const it of items){const t=el('g',{transform:`translate(${f(it.x-n.x)} ${f(it.y-n.y)})`},rg);drawRear(it,t,it.labels?.some(l=>l.view==='rear')?'':nameOf(it),(+it.data?.depth||RACK_DEPTH[it.type]||400)<(+n.data?.depth||1000)*.4)}}
   if(D.top!=null)drawRackTop(n,el('g',{transform:`translate(${D.top} 0)`},g),items,D)}
 const RACK_DEPTH={'rk-patch':120,'rk-fiber':250,'rk-cable':90,'rk-cable2':90,'rk-blank':20,'rk-blank2':20,'rk-brush':40,'rk-pdu':60,'rk-switch':350,'rk-switch24':300,'rk-firewall':350,'rk-router':450,'rk-server':700,'rk-server2':750,'rk-blade':800,'rk-storage':650,'rk-nvr':500,'rk-ups':650,'rk-kvm':650,'rk-monitor':650,'rk-kvmsw':250,'rk-shelf':500,'rk-tray':600,'rk-fan':350,'rk-ats':300,'rk-drawer':500};
 function drawRackFrame(n,g,_,caption){const units=n.units||42,s=n.stroke||'#475569',W=rackSize(units).w,H=rackSize(units).h,i={x:RACK.rail,y:RACK.top,w:RACK.inner,h:units*RU};
@@ -68,15 +68,16 @@ function drawRackFrame(n,g,_,caption){const units=n.units||42,s=n.stroke||'#4755
   if(caption&&(n.views?.rear||n.views?.top)){const t=el('text',{x:W/2,y:RACK.top/2+3.5,'text-anchor':'middle','font-size':9,'font-weight':700,'letter-spacing':1.5,fill:'#fff','font-family':C.FONT},g);t.textContent=caption}
   for(const x of[10,W-30])el('rect',{x,y:H-RACK.bottom+4,width:20,height:RACK.bottom-6,rx:2,fill:s,'fill-opacity':.6},g);
 }
-// Rear of a unit: fans, power supplies and a few ports on active gear; shallow front-mounted panels are shown faded.
+// Rear of a unit: ports, fans and power supplies on active gear, kept to the right so the left stays clear for the
+// unit's rear label (as on the front); shallow front-mounted panels are shown faded.
 function drawRear(n,g,name,shallow){const w=n.w,h=n.h,s=n.stroke||'#475569',face=rackItems[n.type]?.face||'blank',dark='#334155';
   el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:shallow?'none':n.fill||'#e2e8f0',stroke:s,'stroke-width':1,'stroke-dasharray':shallow?'3 2':null,opacity:shallow?.55:1},g);
   const passive=['patch','fiber','cable','blank','brush','shelf','tray','drawer'].includes(face);
-  if(!passive&&!shallow){const fans=Math.max(2,Math.round(w/45)),fy=h/2,r=Math.min(h/2-2.5,6);for(let k=0;k<fans;k++)el('circle',{cx:f(10+k*14),cy:f(fy),r:f(r),fill:'none',stroke:dark,'stroke-width':.8},g);
-    for(let k=0;k<2;k++){const px=w-34-k*30;el('rect',{x:px,y:2.5,width:26,height:h-5,rx:1.5,fill:'#cbd5e1',stroke:s,'stroke-width':.6},g);el('rect',{x:px+19,y:h/2-2,width:4,height:4,fill:dark},g)}
-    let d='';for(let k=0;k<4;k++)d+=`M${f(w*.42+k*7)} ${f(h/2-1.6)}h4.5v3.2h-4.5z`;el('path',{d,fill:dark},g)}
-  else if(!shallow){el('path',{d:`M6 ${f(h/2)}H${w-6}`,stroke:dark,'stroke-width':1.2,'stroke-dasharray':'2 3'},g)}
-  if(name&&h>=RU){const t=el('text',{x:w/2,y:h/2+3,'text-anchor':'middle','font-size':Math.min(8.5,h*.5),fill:dark,'fill-opacity':shallow?.5:.85,'font-family':C.FONT},g);t.textContent=name}}
+  if(!passive&&!shallow){const r=Math.min(h/2-2.5,5.5),pw=Math.min(18,w*.095);for(let k=0;k<2;k++){const px=w-4-pw-k*(pw+2);el('rect',{x:f(px),y:2.5,width:f(pw),height:h-5,rx:1.5,fill:'#cbd5e1',stroke:s,'stroke-width':.6},g);el('rect',{x:f(px+pw-6),y:h/2-2,width:4,height:4,fill:dark},g)}
+    for(let k=0;k<2;k++)el('circle',{cx:f(w-4-2*(pw+2)-r-2-k*(2*r+2)),cy:f(h/2),r:f(r),fill:'none',stroke:dark,'stroke-width':.8},g);
+    let d='';for(let k=0;k<4;k++)d+=`M${f(w*.47+k*7)} ${f(h/2-1.6)}h4.5v3.2h-4.5z`;el('path',{d,fill:dark},g)}
+  else if(!shallow){el('path',{d:`M${f(w*.47)} ${f(h/2)}H${w-6}`,stroke:dark,'stroke-width':1.2,'stroke-dasharray':'2 3'},g)}
+  if(name&&h>=RU){const t=el('text',{x:12,y:h/2+3,'font-size':Math.min(8.5,h*.5),fill:dark,'fill-opacity':shallow?.5:.85,'font-family':C.FONT},g);t.textContent=name}}
 // Plan view: cabinet outline, doors, mounting rails and each unit's depth from the front rail, deepest called out.
 function drawRackTop(n,g,items,D){const s=n.stroke||'#475569',W=rackSize(n.units||42).w,depth=+n.data?.depth||1000,usable=depth-150,k=MM,y0=22,Hd=Math.round(depth*k);
   el('rect',{x:0,y:0,width:W,height:Hd+y0*2,rx:5,fill:n.fill||'#f1f5f9',stroke:s,'stroke-width':2},g);

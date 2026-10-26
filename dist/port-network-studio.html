@@ -43,7 +43,7 @@ code{font-size:11.5px;background:var(--panel2);padding:1px 4px;border-radius:3px
 
 /* header */
 header.top{display:flex;align-items:center;gap:8px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--border);min-width:0;overflow:hidden}
-.brand{font-size:22px;font-weight:750;letter-spacing:-1px;color:var(--strong);display:flex;align-items:baseline;gap:2px;padding-right:12px}
+.brand{font-size:22px;font-weight:750;letter-spacing:-1px;color:var(--strong);display:flex;align-items:baseline;gap:2px;padding-right:12px;white-space:nowrap;flex:none}
 .brand b{color:var(--blue)}.brand span{font-size:11px;letter-spacing:.4px;font-weight:600;color:var(--muted);margin-left:6px;text-transform:uppercase}
 .doc{border-left:1px solid var(--border);padding-left:14px;min-width:160px}
 .doc input{font-weight:650;border:0;padding:0;background:transparent;width:340px;color:var(--strong);font-size:14px}
@@ -258,15 +258,28 @@ table.report.edit input{padding:4px 5px;font-size:12px}
 .issue{display:flex;align-items:flex-start;gap:8px;text-align:left;white-space:normal;font-size:12px;padding:7px 8px;line-height:1.4}
 .issue i{width:8px;height:8px;border-radius:50%;margin-top:4px;flex:none;background:var(--muted)}
 .issue em{margin-left:auto;font-style:normal;color:var(--muted);font-size:10.5px;flex:none;padding-left:6px}
-.sev-error i,.chipsRow .sev-error b{background:var(--danger)}.sev-warning i{background:var(--warn)}.sev-info i{background:#3b82f6}
+.sev-error i{background:var(--danger)}.sev-warning i{background:var(--warn)}.sev-info i{background:#3b82f6}
 .chipsRow b{font-weight:650}
 .issue.active{border-color:var(--blue-line);background:var(--blue-soft)}
-dialog.palette{width:600px;top:12vh;margin-top:0}
-#palInput{font-size:15px;padding:10px 12px;margin-bottom:8px}
-.palList{display:flex;flex-direction:column;max-height:55vh;overflow:auto}
-.palList button{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:6px 10px;border-radius:6px}
-.palList button span{flex:1}.palList button em{font-style:normal;color:var(--muted);font-size:11px}
+/* universal search */
+dialog.cmdk{width:min(660px,94vw);max-width:94vw;top:9vh;margin-top:0;overflow:hidden}
+dialog.cmdk header{gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+dialog.cmdk header input{flex:1;border:0;background:none;font-size:16px;padding:6px 2px;outline:none;color:var(--strong)}
+dialog.cmdk .cmdkIcon{display:flex;color:var(--muted)}
+dialog.cmdk .dlgBody{padding:0}
+.palList{display:flex;flex-direction:column;max-height:min(58vh,520px);overflow:auto;padding:6px}
+.palSec{font-size:10.5px;font-weight:650;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:8px 10px 3px}
+.palList button{display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;padding:6px 10px;border-radius:7px;min-height:34px;flex:none}
+.palList button .palLabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.palList button em{font-style:normal;color:var(--muted);font-size:11px;max-width:45%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:4px;padding:1px 4px}
+.palList button em[data-where]:hover{color:var(--blue);background:var(--blue-soft)}
+.palList button kbd{flex:none}
 .palList button.active{background:var(--blue-soft);color:var(--blue)}
+.palList mark{background:#fde68a;color:inherit;border-radius:2px;padding:0 1px}
+:root[data-theme=dark] .palList mark{background:#854d0e;color:#fff}
+.palOn{font-size:10px;font-weight:600;color:var(--ok);margin-left:6px}
+.palFoot{display:flex;gap:14px;flex-wrap:wrap;padding:7px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);background:var(--panel2)}
+.palFoot kbd{margin-right:2px}
 
 /* print preview */
 #printPreview{position:fixed;inset:0;background:#d5dce6;z-index:100;overflow:auto}
@@ -434,6 +447,82 @@ dialog.inventory{width:min(1200px,97vw)}
 .rkWarn{margin:0 0 10px;padding-left:18px;color:#c2410c;font-size:12px}.okTxt{color:#16a34a;font-size:12.5px;margin:0 0 10px}
 @media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}}
 
+/* a closed dialog never paints, whatever display a dialog style sets (floating dialogs once stayed on screen) */
+dialog:not([open]){display:none!important}
+
+/* title-bar search */
+.searchBox{display:flex;align-items:center;gap:8px;min-width:180px;width:min(320px,24vw);flex:0 1 auto;padding:5px 8px 5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);color:var(--muted);font-size:12.5px;cursor:text;overflow:hidden}
+.searchBox:hover{border-color:var(--blue-line);background:var(--panel)}
+.searchBox .i{display:flex}.searchBox .sbText{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis}.searchBox kbd{flex:none}
+@media (max-width:1250px){.searchBox{min-width:0;width:auto}.searchBox .sbText,.searchBox kbd{display:none}}
+/* where a found tool lives */
+@keyframes foundPulse{0%,100%{box-shadow:0 0 0 0 #376be500}30%,70%{box-shadow:0 0 0 4px #376be555}}
+.found{animation:foundPulse 1.2s ease-in-out 2;border-radius:6px;outline:2px solid var(--blue);outline-offset:1px}
+
+/* check & review panel */
+aside.right.side .inspHead,aside.right.side #inspector{display:none}
+#sidePanel{display:flex;flex-direction:column;min-height:100%}
+#sidePanel[hidden]{display:none}
+.rvHead{position:sticky;top:0;z-index:3;background:var(--panel);padding:10px 12px 0;border-bottom:1px solid var(--border)}
+.rvTop{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.rvTop h2{flex:1;font-size:15px;margin:0;color:var(--strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rvTop .x{border:0;background:none;font-size:20px;padding:0 6px;line-height:1}
+.rvMode{display:flex;align-items:center;gap:5px;font-size:11.5px;padding:4px 9px;border-radius:20px}
+.rvMode.on{background:#f59e0b;border-color:#d97706;color:#fff}
+.rvBanner{display:flex;align-items:center;gap:6px;margin:0 -12px 6px;padding:6px 12px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:550}
+.rvBanner span{flex:1}.rvBanner button{font-size:11.5px;padding:3px 8px;background:#fff7e6;border-color:#f3c77a}
+:root[data-theme=dark] .rvBanner{background:#3b2a07;color:#fcd34d}:root[data-theme=dark] .rvBanner button{background:#4a3510;border-color:#7a5a1a}
+#sidePanel .itabs{display:grid;grid-template-columns:repeat(4,1fr)}
+#sidePanel .itabs button{padding:4px 0 5px;font-size:11.5px;display:flex;flex-direction:column;align-items:center;line-height:1.2;min-width:0;overflow:hidden}
+#sidePanel .itabs button em{font-style:normal;font-size:10px;color:var(--muted);font-weight:500;min-height:12px}
+#sidePanel .itabs button.active em{color:var(--blue)}
+.rvBody{flex:1;padding:10px 12px 16px}
+.rvFoot{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--border);padding:8px 12px;display:flex;gap:6px}
+.rvFoot button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+.rvRow{display:flex;gap:6px;align-items:center;margin:0 0 8px}.rvRow select,.rvRow input{flex:1}
+.rvRow button.primary{display:flex;align-items:center;gap:6px}
+.rvNav{display:flex;align-items:center;gap:6px;margin:0 0 8px;font-size:11.5px;color:var(--muted)}.rvNav span{flex:1;text-align:center}.rvNav button{padding:2px 10px;font-size:15px;line-height:1}
+.rvCat{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:12px 0 5px;font-weight:650}.rvCat em{font-style:normal;color:var(--text)}
+.rvEmpty{color:var(--ok);font-size:12.5px;padding:10px 2px}
+.fnd{border:1px solid var(--border);border-radius:8px;padding:8px 9px;margin:0 0 5px;cursor:pointer;background:var(--panel)}
+.fnd:hover{border-color:var(--blue-line)}.fnd.active{border-color:var(--blue);background:var(--blue-soft)}
+.fnd.st-accepted,.fnd.st-resolved{opacity:.78}
+.fndMsg{display:flex;gap:8px;font-size:12px;line-height:1.4;color:var(--strong)}.fndMsg i{width:8px;height:8px;border-radius:50%;margin-top:4px;flex:none;background:#3b82f6}
+.fnd.sev-error .fndMsg i{background:var(--danger)}.fnd.sev-warning .fndMsg i{background:var(--warn)}
+.fndMeta{font-size:11px;color:var(--muted);margin:3px 0 0 16px}
+.fndAct,.fndNote{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 0 16px}.fndAct button,.fndNote button{font-size:11px;padding:3px 7px;display:flex;align-items:center;gap:4px}
+.fndNote input{flex:1 1 100%;font-size:12px}
+.pill{display:inline-block;border-radius:9px;padding:0 6px;font-size:10.5px;font-weight:600}.pill.resolved{background:#dcfce7;color:#166534}.pill.accepted{background:#e2e8f0;color:#334155}.pill.open{background:#fef3c7;color:#92400e}
+:root[data-theme=dark] .pill.resolved{background:#14532d;color:#bbf7d0}:root[data-theme=dark] .pill.accepted{background:#334155;color:#e2e8f0}
+.rvBody .chipsRow button{padding:3px 7px;font-size:11px}
+.chipsRow button b{font-weight:650;color:var(--muted);margin-left:2px}.chipsRow button.active b{color:var(--blue)}
+.cmt{display:flex;gap:9px;border:1px solid var(--border);border-radius:8px;padding:8px 9px;margin:0 0 6px;cursor:pointer;background:var(--panel)}
+.cmt:hover{border-color:var(--blue-line)}.cmt.active{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-soft)}.cmt.draft{border-color:var(--blue);cursor:default}
+.cmt.st-resolved .cmtText,.cmt.st-accepted .cmtText{color:var(--muted)}
+.pinNo{flex:none;width:22px;height:22px;border-radius:50% 50% 50% 4px;background:#376be5;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center}
+.cmtMain{flex:1;min-width:0}.cmtOn{font-size:11px;color:var(--muted);margin-bottom:2px}.cmtText{font-size:12.5px;color:var(--strong);white-space:pre-wrap;word-wrap:break-word}
+.cmtMeta{font-size:10.5px;color:var(--muted);margin-top:3px}
+.cmtReply{border-left:2px solid var(--border);padding:2px 0 2px 8px;margin-top:5px;font-size:12px}.cmtReply em{display:block;font-style:normal;font-size:10.5px;color:var(--muted)}
+.cmtAct{display:flex;flex-wrap:wrap;align-items:center;gap:3px;margin-top:6px}.cmtAct>button{font-size:11px;padding:3px 6px;display:flex;align-items:center}
+.cmt textarea{margin-top:4px;font-size:12.5px}
+.seg.mini{margin:0;flex-wrap:nowrap}.seg.mini button{font-size:10.5px;padding:3px 6px;flex:none}
+.rvSel{display:flex;align-items:center;gap:8px;border:1px dashed var(--blue-line);border-radius:8px;padding:7px 9px;margin:0 0 8px;background:var(--blue-soft)}.rvSel>div{flex:1;min-width:0}.rvSel b{font-size:12.5px}.rvSel button{display:flex;align-items:center;gap:5px;font-size:11.5px}
+.rvProgress{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;border:1px solid var(--border)}.rvProgress div{height:100%;background:var(--ok)}
+.chk{border:1px solid var(--border);border-radius:8px;padding:8px 9px;margin:6px 0}.chk.st-ok{border-color:#86efac}.chk.st-issues{border-color:#fca5a5}
+.chkHead{display:flex;align-items:center}.chkHead b{flex:1;font-size:12.5px;color:var(--strong)}.chkHead .x{border:0;background:none;padding:0 4px}
+.chkAuto{margin:5px 0}.chkAuto button{font-size:11px;padding:2px 8px;border-radius:10px}.chkAuto button.err{color:#b91c1c;border-color:#fca5a5}.chkAuto button.warn{color:#b45309;border-color:#fcd34d}.chkAuto .okTxt{font-size:11.5px;margin:0}
+.chk .seg{margin:6px 0}.chk .seg button{font-size:11px}.chk input{font-size:12px}.chk .warnTxt{font-size:11px;margin:0 0 6px}
+.chg{display:flex;align-items:center;gap:8px;text-align:left;font-size:12px;padding:5px 8px;white-space:normal}.chg i{width:8px;height:8px;border-radius:2px;flex:none}.chg span{flex:1;min-width:0}.chg em{font-style:normal;color:var(--muted);font-size:10.5px}
+.chg.added i{background:#16a34a}.chg.modified i{background:#d97706}.chg.removed i{background:#dc2626}.chg.removed span{text-decoration:line-through;color:var(--muted)}
+.rvComplete{border-top:1px solid var(--border);margin-top:14px;padding-top:10px}.rvComplete button{display:flex;align-items:center;gap:6px}
+.hist{font-size:12px;padding:3px 0}
+.kpis.k3{grid-template-columns:repeat(3,1fr)}
+/* review mode */
+body.reviewing .workarea{box-shadow:inset 0 0 0 3px #f59e0b88}
+body.reviewing [data-rtab="review"]{color:#b45309}
+.reviewBadge{border:0;border-radius:20px;padding:2px 9px;font-size:11.5px;font-weight:600;background:var(--panel2);color:var(--text);display:flex;align-items:center;gap:4px}
+.reviewBadge.on{background:#f59e0b;color:#fff}.reviewBadge[hidden]{display:none}
+
 </style>
 <style id="printRules"></style>
 </head>
@@ -442,13 +531,14 @@ dialog.inventory{width:min(1200px,97vw)}
   <div class="brand" title="Port Network Studio">port<b>•</b><span>network studio</span></div>
   <div class="doc"><input id="docName" aria-label="Drawing name" spellcheck="false"><div class="sub" id="saveState">Ready</div></div>
   <div class="spacer"></div>
+  <button class="searchBox" data-action="palette" title="Search every tool, setting, shape, device and page (Ctrl+K or /)"><span class="i" data-icon="search"></span><span class="sbText">Search tools, shapes, devices…</span><kbd class="sbKey">Ctrl K</kbd></button>
+  <div class="spacer"></div>
   <button class="tbtn" data-action="new" title="New from template (Ctrl+N)"><span class="i" data-icon="template"></span><span>Templates</span></button>
   <button class="tbtn" data-action="open" title="Open (Ctrl+O)"><span class="i" data-icon="open"></span><span>Open</span></button>
   <button class="tbtn primary" data-action="save" title="Save (Ctrl+S)"><span class="i" data-icon="save"></span><span>Save</span></button>
   <button class="tbtn" data-action="exportVsdx" title="Export to Microsoft Visio (.vsdx)"><span class="i" data-icon="visio"></span><span>Visio</span></button>
   <button class="tbtn" data-action="share" title="Copy a share link (the drawing travels inside the link)"><span class="i" data-icon="share"></span><span>Share</span></button>
   <button class="tbtn" data-action="present" title="Present (full screen)"><span class="i" data-icon="present"></span></button>
-  <button class="tbtn" data-action="palette" title="Command palette (Ctrl+K)"><span class="i" data-icon="command"></span></button>
   <button class="tbtn" data-action="help" title="Guide"><span class="i" data-icon="help"></span></button>
 </header>
 <nav class="ribbonTabs" id="ribbonTabs" aria-label="Ribbon"></nav>
@@ -482,12 +572,14 @@ dialog.inventory{width:min(1200px,97vw)}
   <aside class="right" id="rightPanel">
     <div class="inspHead"><h2 id="inspectorTitle">Page</h2><div id="inspectorTabs" class="itabs"></div></div>
     <div id="inspector"></div>
+    <div id="sidePanel" hidden></div>
   </aside>
 </div>
 <footer class="status">
   <div id="pageTabs" class="pageTabs"></div>
   <div class="spacer"></div>
   <button id="issueCount" class="issueBtn" data-action="check" hidden></button>
+  <button id="reviewBadge" class="reviewBadge" data-action="reviewMode" hidden></button>
   <button id="revInfo" class="revBtn" data-action="newRevision" title="Revisions">Rev</button>
   <span id="selectionCount">Ready</span>
   <span id="cursorPos" class="mono">0 , 0 mm</span>
@@ -960,7 +1052,7 @@ const rackInner=r=>({x:r.x+RACK.rail,y:r.y+RACK.top,w:RACK.inner,h:(r.units||42)
 const rackU=(r,n)=>{const i=rackInner(r);return Math.round((i.y+i.h-(n.y+n.h))/RU)+1};
 // items: the rack's equipment (page items inside it) — drawn again, seen from the back, in the rear view; nameOf resolves labels
 function drawRack(n,g,items=[],nameOf=x=>x.labels?.[0]?.text||''){const D=rackDims(n);drawRackFrame(n,g,0,'FRONT');
-  if(D.rear!=null){const rg=el('g',{transform:`translate(${D.rear} 0)`},g);drawRackFrame(n,rg,0,'REAR');for(const it of items){const t=el('g',{transform:`translate(${f(it.x-n.x)} ${f(it.y-n.y)})`},rg);drawRear(it,t,nameOf(it),(+it.data?.depth||RACK_DEPTH[it.type]||400)<(+n.data?.depth||1000)*.4)}}
+  if(D.rear!=null){const rg=el('g',{transform:`translate(${D.rear} 0)`},g);drawRackFrame(n,rg,0,'REAR');for(const it of items){const t=el('g',{transform:`translate(${f(it.x-n.x)} ${f(it.y-n.y)})`},rg);drawRear(it,t,it.labels?.some(l=>l.view==='rear')?'':nameOf(it),(+it.data?.depth||RACK_DEPTH[it.type]||400)<(+n.data?.depth||1000)*.4)}}
   if(D.top!=null)drawRackTop(n,el('g',{transform:`translate(${D.top} 0)`},g),items,D)}
 const RACK_DEPTH={'rk-patch':120,'rk-fiber':250,'rk-cable':90,'rk-cable2':90,'rk-blank':20,'rk-blank2':20,'rk-brush':40,'rk-pdu':60,'rk-switch':350,'rk-switch24':300,'rk-firewall':350,'rk-router':450,'rk-server':700,'rk-server2':750,'rk-blade':800,'rk-storage':650,'rk-nvr':500,'rk-ups':650,'rk-kvm':650,'rk-monitor':650,'rk-kvmsw':250,'rk-shelf':500,'rk-tray':600,'rk-fan':350,'rk-ats':300,'rk-drawer':500};
 function drawRackFrame(n,g,_,caption){const units=n.units||42,s=n.stroke||'#475569',W=rackSize(units).w,H=rackSize(units).h,i={x:RACK.rail,y:RACK.top,w:RACK.inner,h:units*RU};
@@ -973,15 +1065,16 @@ function drawRackFrame(n,g,_,caption){const units=n.units||42,s=n.stroke||'#4755
   if(caption&&(n.views?.rear||n.views?.top)){const t=el('text',{x:W/2,y:RACK.top/2+3.5,'text-anchor':'middle','font-size':9,'font-weight':700,'letter-spacing':1.5,fill:'#fff','font-family':C.FONT},g);t.textContent=caption}
   for(const x of[10,W-30])el('rect',{x,y:H-RACK.bottom+4,width:20,height:RACK.bottom-6,rx:2,fill:s,'fill-opacity':.6},g);
 }
-// Rear of a unit: fans, power supplies and a few ports on active gear; shallow front-mounted panels are shown faded.
+// Rear of a unit: ports, fans and power supplies on active gear, kept to the right so the left stays clear for the
+// unit's rear label (as on the front); shallow front-mounted panels are shown faded.
 function drawRear(n,g,name,shallow){const w=n.w,h=n.h,s=n.stroke||'#475569',face=rackItems[n.type]?.face||'blank',dark='#334155';
   el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:shallow?'none':n.fill||'#e2e8f0',stroke:s,'stroke-width':1,'stroke-dasharray':shallow?'3 2':null,opacity:shallow?.55:1},g);
   const passive=['patch','fiber','cable','blank','brush','shelf','tray','drawer'].includes(face);
-  if(!passive&&!shallow){const fans=Math.max(2,Math.round(w/45)),fy=h/2,r=Math.min(h/2-2.5,6);for(let k=0;k<fans;k++)el('circle',{cx:f(10+k*14),cy:f(fy),r:f(r),fill:'none',stroke:dark,'stroke-width':.8},g);
-    for(let k=0;k<2;k++){const px=w-34-k*30;el('rect',{x:px,y:2.5,width:26,height:h-5,rx:1.5,fill:'#cbd5e1',stroke:s,'stroke-width':.6},g);el('rect',{x:px+19,y:h/2-2,width:4,height:4,fill:dark},g)}
-    let d='';for(let k=0;k<4;k++)d+=`M${f(w*.42+k*7)} ${f(h/2-1.6)}h4.5v3.2h-4.5z`;el('path',{d,fill:dark},g)}
-  else if(!shallow){el('path',{d:`M6 ${f(h/2)}H${w-6}`,stroke:dark,'stroke-width':1.2,'stroke-dasharray':'2 3'},g)}
-  if(name&&h>=RU){const t=el('text',{x:w/2,y:h/2+3,'text-anchor':'middle','font-size':Math.min(8.5,h*.5),fill:dark,'fill-opacity':shallow?.5:.85,'font-family':C.FONT},g);t.textContent=name}}
+  if(!passive&&!shallow){const r=Math.min(h/2-2.5,5.5),pw=Math.min(18,w*.095);for(let k=0;k<2;k++){const px=w-4-pw-k*(pw+2);el('rect',{x:f(px),y:2.5,width:f(pw),height:h-5,rx:1.5,fill:'#cbd5e1',stroke:s,'stroke-width':.6},g);el('rect',{x:f(px+pw-6),y:h/2-2,width:4,height:4,fill:dark},g)}
+    for(let k=0;k<2;k++)el('circle',{cx:f(w-4-2*(pw+2)-r-2-k*(2*r+2)),cy:f(h/2),r:f(r),fill:'none',stroke:dark,'stroke-width':.8},g);
+    let d='';for(let k=0;k<4;k++)d+=`M${f(w*.47+k*7)} ${f(h/2-1.6)}h4.5v3.2h-4.5z`;el('path',{d,fill:dark},g)}
+  else if(!shallow){el('path',{d:`M${f(w*.47)} ${f(h/2)}H${w-6}`,stroke:dark,'stroke-width':1.2,'stroke-dasharray':'2 3'},g)}
+  if(name&&h>=RU){const t=el('text',{x:12,y:h/2+3,'font-size':Math.min(8.5,h*.5),fill:dark,'fill-opacity':shallow?.5:.85,'font-family':C.FONT},g);t.textContent=name}}
 // Plan view: cabinet outline, doors, mounting rails and each unit's depth from the front rail, deepest called out.
 function drawRackTop(n,g,items,D){const s=n.stroke||'#475569',W=rackSize(n.units||42).w,depth=+n.data?.depth||1000,usable=depth-150,k=MM,y0=22,Hd=Math.round(depth*k);
   el('rect',{x:0,y:0,width:W,height:Hd+y0*2,rx:5,fill:n.fill||'#f1f5f9',stroke:s,'stroke-width':2},g);
@@ -1116,6 +1209,7 @@ check:'M10 2l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V5zM7 10l2 2 4-4',spof:'M10 3l8 14H2zM
 align0:'M3 2v16M6 5h10v3H6zM6 12h6v3H6z',align1:'M10 2v16M5 5h10v3H5zM7 12h6v3H7z',align2:'M17 2v16M4 5h10v3H4zM8 12h6v3H8z',align3:'M2 3h16M5 6v10h3V6zM12 6v6h3V6z',align4:'M2 10h16M5 5v10h3V5zM12 7v6h3V7z',align5:'M2 17h16M5 4v10h3V4zM12 8v6h3V8z',distH:'M2 3v14M18 3v14M7 6h6v8H7z',distV:'M3 2h14M3 18h14M6 7h8v6H6z',samew:'M3 6h14v3H3zM6 12h8v3H6zM3 17h14',front:'M7 7h10v10H7zM3 3h10v4M3 3v10h4',back:'M3 3h10v10H3zM13 7h4v10H7v-4',forward:'M10 3v10M6 9l4 4 4-4M4 17h12',backward:'M10 17V7M6 11l4-4 4 4M4 3h12',group:'M2 2h4v4H2zM14 2h4v4h-4zM2 14h4v4H2zM14 14h4v4h-4zM6 4h8M6 16h8M4 6v8M16 6v8',ungroup:'M2 2h6v6H2zM12 12h6v6h-6z',rotate:'M15 4v4h-4M15 8a6 6 0 1 0 1 5',flipH:'M10 2v16M8 5 3 15h5zM12 5l5 10h-5z',lock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6 0v3',unlock:'M5 9h10v8H5zM7 9V6a3 3 0 0 1 6-1',layers:'M10 2 2 6l8 4 8-4zM2 10l8 4 8-4M2 14l8 4 8-4',
 gridOn:'M3 3h14v14H3zM3 8h14M3 12h14M8 3v14M12 3v14',ruler:'M2 7h16v6H2zM5 7v3M8 7v2M11 7v3M14 7v2',guide:'M7 2v16M2 13h16',ports:'M4 10a2 2 0 1 0 0-.1M16 10a2 2 0 1 0 0-.1M10 4a2 2 0 1 0 0-.1M6 10h8',map:'M2 4l5-2 6 2 5-2v14l-5 2-6-2-5 2zM7 2v14M13 4v14',zoomIn:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4M8 6v4',zoomOut:'M8 3a5 5 0 1 0 0 10A5 5 0 0 0 8 3zM12 12l5 5M6 8h4',fit:'M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5',hundred:'M4 7l2-1v9M9 6h3v9H9zM14 6h3v9h-3z',present:'M2 3h16v10H2zM10 13v4M6 17h8',moon:'M15 13a7 7 0 0 1-8-10 7 7 0 1 0 8 10z',magnet:'M5 3v7a5 5 0 0 0 10 0V3h-3v7a2 2 0 0 1-4 0V3z',arrows:'M10 3l3 3h-6zM10 17l3-3H7zM3 10l3-3v6zM17 10l-3-3v6z',wheel:'M7 2h6a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zM10 5v3',panels:'M2 3h16v14H2zM6 3v14M14 3v14',
 file:'M5 2h7l4 4v12H5z',sideL:'M2 3h16v14H2zM7 3v14M4 7h1M4 10h1',sideR:'M2 3h16v14H2zM13 3v14M15 7h1M15 10h1',ribbonUp:'M2 3h16v14H2zM2 8h16M7 13l3-3 3 3',ribbonDown:'M2 3h16v14H2zM2 8h16M7 11l3 3 3-3',titleBar:'M2 3h16v14H2zM2 6h16M5 4.5h4',statusBar:'M2 3h16v14H2zM2 14h16M5 15.5h4',focus:'M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4',open:'M2 5h6l2 2h8v9H2z',save:'M4 3h10l3 3v11H4zM7 3v4h6V3M7 17v-5h7v5',share:'M14 3a2 2 0 1 0 0 .1M6 10a2 2 0 1 0 0 .1M14 17a2 2 0 1 0 0 .1M8 9l4-4M8 11l4 4',print:'M5 8V3h10v5M5 14H3V8h14v6h-2M6 12h8v6H6z',export:'M10 14V3M6 7l4-4 4 4M3 13v4h14v-4',help:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM7.5 7.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7M10 14.5v.5',keyboard:'M2 5h16v10H2zM5 8h.1M8 8h.1M11 8h.1M14 8h.1M6 12h8',command:'M6 3a3 3 0 1 0 0 6h8a3 3 0 1 0 0-6 3 3 0 0 0-3 3v8a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 0 0-3-3z',template:'M3 3h14v4H3zM3 9h6v8H3zM11 9h6v8h-6z',plus:'M10 4v12M4 10h12',more:'M5 10h.1M10 10h.1M15 10h.1',close:'M5 5l10 10M15 5 5 15',bold:'M6 3h5a3 3 0 0 1 0 6H6zM6 9h6a3 3 0 0 1 0 6H6z',italic:'M8 3h6M6 17h6M12 3 8 17',visio:'M3 3h9l5 5v9H3zM6 7l2.5 7L11 7',drawio:'M10 2l7 4v8l-7 4-7-4V6zM6 9h3v3H6zM11 12h3v3h-3zM9 10.5l2 3',tour:'M10 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM13.5 6.5l-2 5-5 2 2-5zM10 9.2a.8.8 0 1 0 0 1.6.8.8 0 0 0 0-1.6',fullscreen:'M3 7V3h4M3 3l5 5M17 7V3h-4M17 3l-5 5M3 13v4h4M3 17l5-5M17 13v4h-4M17 17l-5-5',lasso:'M10 3.5c4.1 0 7.5 2 7.5 4.6S14.1 12.7 10 12.7 2.5 10.7 2.5 8.1 5.9 3.5 10 3.5zM5.4 11.6c-1.3 1-1.7 2.4-1.1 3.4.7 1.2 2.6 1.3 3.6.2',cloud:'M5 15.5a3 3 0 0 1-.6-5.9 4.6 4.6 0 0 1 8.9-1.4 3.6 3.6 0 1 1 1.7 7.3z',delta:'M10 3l8 14H2zM10 8.5v4.5',scale:'M3 17V10h7v7zM3 10V3h7M17 10v7h-7M12 3h5v5M17 3l-6 6M14 9h-3V6',
+comment:'M4 3h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM7 7h6M7 10h4',review:'M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10zM10 7.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5',checklist:'M3 5l1.5 1.5L7 4M3 10l1.5 1.5L7 9M3 15l1.5 1.5L7 14M10 5h7M10 10h7M10 15h7',compare:'M3 3h6v14H3zM11 3h6v14h-6zM5 7h2M13 7h2M13 10h2M5 13h2',search:'M8.5 3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM12.5 12.5 17 17',resolve:'M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM6.5 10l2.5 2.5 4.5-5',link:'M8.5 11.5l3-3M7 9.5l-1.5 1.5a2.5 2.5 0 0 0 3.5 3.5L10.5 13M13 10.5l1.5-1.5a2.5 2.5 0 0 0-3.5-3.5L9.5 7',
 };
 function icon(name,size=18){const d=Icons[name];return d?`<svg class="ico" viewBox="0 0 20 20" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`:''}
 
@@ -2477,7 +2571,7 @@ const Constraints=(()=>{
       else if(below&&want){l.autoGap=l.y-(n.y+n.h);place(want);l.auto=want;moved=true}
       if(moved)changed=true;if(moved&&typeof Conn!=='undefined')for(const e of page.items)if(e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id))Conn.markDirty(e.id)}
     return changed}
-  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);labelSides(page,doc);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
+  function sync(page,doc=(typeof S!=='undefined'?S.doc:null)){if(!page)return null;if(typeof Racks!=='undefined')Racks.syncRear(page.items);for(const e of page.items)if(e.kind==='edge'&&e.labels?.some(l=>l.anchor))Conn.placeLabels(e);labelSides(page,doc);const z=fitZones(page);let sig=measureLegends(page,doc),r=null;
     // legends may re-wrap when the page width changes, which can change the room they need: settle in ≤3 passes
     for(let i=0;i<3;i++){const ri=page.isBackground?null:page.autoSize==='fit'?fitPage(page,doc):autoSize(page,doc);if(ri){r=r?{shift:ri.shift?[(r.shift?.[0]||0)+ri.shift[0],(r.shift?.[1]||0)+ri.shift[1]]:r.shift,resized:r.resized||ri.resized}:ri}const s2=measureLegends(page,doc);if(s2===sig)break;sig=s2}
     if(!r&&!page.isBackground){const a=area(page);for(const n of page.items)if(n.pin)place(n,a,offsets(n,a))}if(page.isBackground){const a=area(page);for(const n of page.items)if(n.pin==='frame')place(n,a,{})}return{zones:z,...(r||{})}}
@@ -2737,7 +2831,13 @@ function fits(r,items,u,h,except){if(u<1||u+h-1>units(r))return false;const occ=
 function findSlot(r,items,h,{order='top',near=null,except}={}){const c=[];for(let u=1;u+h-1<=units(r);u++)if(fits(r,items,u,h,except))c.push(u);if(!c.length)return null;if(near!=null)return c.sort((a,b)=>Math.abs(a-near)-Math.abs(b-near)||b-a)[0];return order==='top'?c.at(-1):c[0]}
 function freeU(r,items){return units(r)-[...occupied(r,items).keys()].length}
 // Put n so its lowest U is u.
-function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU();n.h=h;n.w=i.w;C.move(n,i.x-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.[0];if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36}}
+function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU();n.h=h;n.w=i.w;C.move(n,i.x-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.find(x=>x.view!=='rear');if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36;for(const b of n.labels)if(b.view==='rear'){b.size=l.size;b.y=l.y}}}
+// Rear view labels: a unit in a rack that shows its rear view carries a second, real label there — movable and
+// editable like the front one. It repeats the front text until it is edited, and goes when the view does.
+function syncRear(items){let changed=false;for(const n of items){if(!isItem(n))continue;const r=rackOf(n,items),on=!!r?.views?.rear,i=(n.labels||[]).findIndex(l=>l.view==='rear');
+  if(!on){if(i>=0){n.labels.splice(i,1);changed=true}continue}const front=n.labels?.find(l=>l.view!=='rear');if(!front)continue;
+  if(i<0){n.labels.push({...C.copy(front),id:C.uid(),view:'rear',src:front.text,anchor:undefined,align:'start',x:n.x+Shapes.rackDims(r).rear+12,y:front.y});changed=true}
+  else{const l=n.labels[i];if(l.src===l.text&&front.text!==l.text){l.text=l.src=front.text;changed=true}}}return changed}
 // New height, keeping the top U where it was if there is room, else the bottom U, else the nearest free run.
 function setHeight(r,n,hU,items){const cur=uOf(r,n),top=cur+heightU(n)-1,exc=new Set([n.id]);let u=[top-hU+1,cur].find(x=>fits(r,items,x,hU,exc));if(u==null)u=findSlot(r,items,hU,{near:cur,except:exc});if(u==null)return null;n.h=hU*RU();placeAt(r,n,u);return u}
 function moveTo(r,n,u,items){if(!fits(r,items,u,heightU(n),new Set([n.id])))return false;placeAt(r,n,u);return true}
@@ -2764,7 +2864,7 @@ function summary(r,items,find){const eq=contents(r,items).sort((a,b)=>uOf(r,b)-u
   if(rows.some(x=>x.estimated))warn.push('Some power figures are typical values — enter Power draw (W) on the device for exact numbers.');
   return{rack:r,rows,units:units(r),used,free:units(r)-used,power,amps:+(power/v).toFixed(1),volts:v,btu:Math.round(power*3.412),budget,ups:Math.round(ups),depth,usable,deepest:Math.max(0,...rows.map(x=>x.depth)),warn}}
 
-return{isRack,isItem,heightU,contents,rackOf,uOf,occupied,fits,findSlot,freeU,placeAt,setHeight,moveTo,isLocked,rackTypeFor,specs,summary,TYPICAL};
+return{isRack,isItem,heightU,contents,rackOf,uOf,occupied,fits,findSlot,freeU,placeAt,syncRear,setHeight,moveTo,isLocked,rackTypeFor,specs,summary,TYPICAL};
 })();
 if(typeof module!=='undefined')module.exports=Racks;
 
@@ -2829,6 +2929,306 @@ function issue(doc,{rev,date=today(),description='',by='',clouds=false,clearClou
 return{nextRev,fingerprint,snapshot,changes,setBaseline,ensureLog,syncTables,newTable,tableRows,cloud,delta,markupLayer,clusters,cloudChanges,issue,MARKUP,today};
 })();
 if(typeof module!=='undefined')module.exports=Revisions;
+
+</script>
+<script>
+// Drawing-quality checks behind Analyze ▸ Check and Review mode:
+//  • connection integrity — lines attached to nothing, loose ends (and the device they stop at), self-connections,
+//    one port carrying several cables;
+//  • labels & data — free text that sits on a device or link without belonging to it, empty {{field}} labels,
+//    duplicate names and identifiers, labels that say something other than the shape data;
+//  • readability — overlapping labels or links, text hidden behind shapes, unreadable on its background or too small,
+//    connectors drawn through devices, content off the page.
+// Each finding carries a stable key (for open / resolved / accepted status) and the fixes that apply to it.
+// Pure (Core + Shapes): the app passes nothing in, so the rules are node-tested.
+const Checks=(()=>{
+const C=Core;
+const CATS=[['connectivity','Connection integrity'],['labels','Labels'],['data','Device data'],['readability','Readability'],['design','Network design']];
+const RULE_CAT={unattached:'connectivity',dangling:'connectivity',selfloop:'connectivity',reuse:'connectivity',broken:'connectivity',isolated:'connectivity',pagelink:'connectivity',
+  freelabel:'labels',mismatch:'labels',labelonly:'labels',placeholder:'labels',
+  dupname:'data',dupid:'data',duphost:'data',dupip:'data',ipfmt:'data',hostfmt:'data',subnet:'data',netaddr:'data',gw:'data',cidr:'data',cidrnet:'data',gwout:'data',vlan:'data',
+  labeloverlap:'readability',linkoverlap:'readability',hiddentext:'readability',tinytext:'readability',through:'readability',offpage:'readability',overlap:'readability',
+  overlapnet:'design',poe:'design',rack:'design',util:'design',spof:'design',bridge:'design'};
+const catOf=rule=>RULE_CAT[rule]||'design';
+const key=i=>`${i.rule}|${[...new Set(i.ids)].sort().join(',')}|${i.sub??''}`;
+const GENERIC=/^(top|right|bottom|left|edge \d+|port \d+)$/i,NEAR=24;
+const MARKUP=new Set(['revcloud','revdelta']);
+
+// ---------- geometry ----------
+const gap=(a,b)=>Math.hypot(Math.max(0,a.x-(b.x+b.w),b.x-(a.x+a.w)),Math.max(0,a.y-(b.y+b.h),b.y-(a.y+a.h)));
+const gapPt=(b,p)=>Math.hypot(Math.max(b.x-p[0],0,p[0]-b.x-b.w),Math.max(b.y-p[1],0,p[1]-b.y-b.h));
+const inBox=(p,b)=>p[0]>=b.x&&p[0]<=b.x+b.w&&p[1]>=b.y&&p[1]<=b.y+b.h;
+const shrink=(b,d)=>({x:b.x+d,y:b.y+d,w:b.w-2*d,h:b.h-2*d});
+function segDist(p,a,b){const vx=b[0]-a[0],vy=b[1]-a[1],L=vx*vx+vy*vy||1,t=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/L));return{d:Math.hypot(a[0]+t*vx-p[0],a[1]+t*vy-p[1]),t,q:[a[0]+t*vx,a[1]+t*vy]}}
+// Nearest point on a polyline, with its position along it (0–1).
+function nearestOn(pts,p){let best={d:Infinity},run=0,total=0;const lens=[];for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);lens.push(l);total+=l}
+  for(let i=1;i<pts.length;i++){const s=segDist(p,pts[i-1],pts[i]);if(s.d<best.d)best={d:s.d,q:s.q,at:run+s.t*lens[i-1]};run+=lens[i-1]}return{d:best.d,p:best.q||pts[0],t:total?best.at/total:.5}}
+// Where segment a→b enters box b (Liang–Barsky), or null.
+function segBox(a,c,b){let t0=0,t1=1;const dx=c[0]-a[0],dy=c[1]-a[1];for(const[p,q]of[[-dx,a[0]-b.x],[dx,b.x+b.w-a[0]],[-dy,a[1]-b.y],[dy,b.y+b.h-a[1]]]){if(p===0){if(q<0)return null;continue}const r=q/p;if(p<0){if(r>t1)return null;if(r>t0)t0=r}else{if(r<t0)return null;if(r<t1)t1=r}}return t1-t0>1e-6?[a[0]+t0*dx,a[1]+t0*dy]:null}
+const midOf=pts=>{let total=0;for(let i=1;i<pts.length;i++)total+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);let run=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);if(run+l>=total/2){const t=l?(total/2-run)/l:0;return[pts[i-1][0]+t*(pts[i][0]-pts[i-1][0]),pts[i-1][1]+t*(pts[i][1]-pts[i-1][1])]}run+=l}return pts[0]};
+const pathOf=e=>typeof Conn!=='undefined'&&Conn.sample?Conn.sample(e):e.points;
+
+// ---------- text ----------
+const txt=(n,l)=>String(C.resolve(n,l)??'').trim();
+const short=s=>{s=String(s).replace(/\s*\n\s*/g,' · ');return s.length>40?s.slice(0,38)+'…':s};
+const nameOf=n=>{if(!n)return'';const l=n.labels?.[0],t=l?txt(n,l).split('\n')[0]:'';return t||n.data?.hostname||(n.kind==='node'?Shapes.nameOf(n.type):n.kind==='zone'?'Zone':n.kind==='text'?'Text':n.kind)};
+function labelBox(n,l){const t=C.resolve(n,l);if(!String(t??'').trim())return null;const m=C.labelMetrics(l,t),a=(l.rotation||0)*Math.PI/180;if(!a)return{x:l.x+m.left,y:l.y+m.top,w:m.w,h:m.h};
+  const pts=[[m.left,m.top],[m.left+m.w,m.top],[m.left+m.w,m.top+m.h],[m.left,m.top+m.h]].map(([x,y])=>[l.x+x*Math.cos(a)-y*Math.sin(a),l.y+x*Math.sin(a)+y*Math.cos(a)]),xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  return{x:Math.min(...xs),y:Math.min(...ys),w:Math.max(...xs)-Math.min(...xs),h:Math.max(...ys)-Math.min(...ys)}}
+const isDev=n=>n.kind==='node'&&Shapes.isDevice(n)&&!Shapes.rackItems[n.type]&&n.type!=='rack';
+
+// ---------- colour ----------
+function rgba(c){if(!c||c==='none'||c==='transparent')return null;let m=/^#([\da-f])([\da-f])([\da-f])$/i.exec(c);if(m)return[...m.slice(1).map(h=>parseInt(h+h,16)),1];m=/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})?$/i.exec(c);if(m)return[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16),m[4]?parseInt(m[4],16)/255:1];return null}
+function over(top,under,alpha=1){const t=rgba(top),u=rgba(under)||[255,255,255,1];if(!t)return under;const a=t[3]*alpha;return'#'+[0,1,2].map(i=>Math.round(t[i]*a+u[i]*(1-a)).toString(16).padStart(2,'0')).join('')}
+function lum(c){const v=rgba(c);if(!v)return 1;const f=x=>{x/=255;return x<=.03928?x/12.92:((x+.055)/1.055)**2.4};return .2126*f(v[0])+.7152*f(v[1])+.0722*f(v[2])}
+const contrast=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+
+// ---------- the checks ----------
+function run(doc){
+  const out=[],all=new Map();for(const p of doc.pages)for(const n of p.items)all.set(n.id,n);
+  const hidden=new Set((doc.layers||[]).filter(l=>l.visible===false).map(l=>l.id)),vis=n=>!hidden.has(n.layer);
+  for(const page of doc.pages){if(page.isBackground)continue;const pi=doc.pages.indexOf(page);
+    const add=(severity,ids,message,rule,extra={})=>out.push({severity,page:pi,ids:[].concat(ids).filter(Boolean),message,rule,cat:catOf(rule),...extra});
+    const items=page.items.filter(vis);connectivity(items,add);labelsData(items,add,doc,all);readability(items,add,page)}
+  identifiers(doc,out,vis);
+  for(const i of out)i.key=key(i);return out}
+
+function connectivity(items,add){
+  const byId=new Map(items.map(n=>[n.id,n])),targets=items.filter(n=>n.kind==='node'&&n.type!=='rack'&&!n.pin&&!MARKUP.has(n.type));
+  const nearest=(p,skip)=>{let best=null,bd=NEAR,ba=Infinity;for(const n of targets){if(skip.has(n.id))continue;const b=C.box(n),d=gapPt(b,p),a=b.w*b.h;if(d<bd||d===bd&&a<ba){bd=d;ba=a;best=n}}return best};
+  const ports=new Map();
+  for(const e of items){if(e.kind!=='edge')continue;const P=[e.points[0],e.points.at(-1)],refs=[e.from,e.to];
+    if(!e.from&&!e.to){const a=nearest(P[0],new Set()),b=a&&nearest(P[1],new Set([a.id]));
+      add('warning',e.id,a&&b?`A line runs from “${nameOf(a)}” to “${nameOf(b)}” without being attached to either.`:'A line is not attached to anything.','unattached',{at:midOf(e.points),fixes:[...(a&&b?[{id:'attach',label:'Attach both ends'}]:[]),{id:'delete',label:'Delete the line'}],fix:{a:a?.id,b:b?.id}})}
+    else for(const k of[0,1]){if(refs[k])continue;const o=byId.get(refs[1-k]?.node),dev=nearest(P[k],new Set(o?[o.id]:[])),from=o?`from “${nameOf(o)}” `:'';
+      add('warning',e.id,dev?`The connector ${from}stops at “${nameOf(dev)}” but is not attached to it.`:`The connector ${from}has a loose end.`,'dangling',{sub:k?'to':'from',at:P[k],fixes:[...(dev?[{id:'attach',label:`Attach to ${short(nameOf(dev))}`}]:[]),{id:'delete',label:'Delete'}],fix:{end:k?'to':'from',node:dev?.id}})}
+    if(e.from&&e.to&&e.from.node===e.to.node){const n=byId.get(e.from.node);add('warning',e.id,`A connector starts and ends on “${n?nameOf(n):'the same device'}”.`,'selfloop',{fixes:[{id:'delete',label:'Delete the connector'}]})}
+    if(e.linkType==='logical'||e.linkType==='power')continue;
+    for(const k of[0,1]){const r=refs[k],n=r&&byId.get(r.node);if(!n)continue;const pt=r.port&&n.ports?.find(q=>q.id===r.port),names=new Map(),norm=s=>String(s).toLowerCase().replace(/\s+/g,'');
+      if(pt&&pt.name&&!GENERIC.test(pt.name))names.set(norm(pt.name),pt.name);const ifn=String((k?e.toIf:e.fromIf)||'').trim();if(ifn)names.set(norm(ifn),ifn);
+      for(const[nk,label]of names){const id=n.id+'|'+nk;let g=ports.get(id);if(!g)ports.set(id,g={n,label,edges:new Set()});g.edges.add(e.id)}}}
+  // a patch panel port takes the patch cord at the front and the permanent link at the back
+  for(const g of ports.values()){const max=/patch|odf|fib/i.test(g.n.type)?2:1;if(g.edges.size>max)add('warning',[g.n.id,...g.edges],`Port “${g.label}” on “${nameOf(g.n)}” is used by ${g.edges.size} connectors.`,'reuse',{sub:g.label.toLowerCase().replace(/\s+/g,'')})}}
+
+const CIDR_RE=/\b\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}\b/g,PLACE_RE=/\{\{[^}]*\}\}/g,VLAN_RE=/\bVLAN[\s#:-]*(\d{1,4})\b/gi,SPEED_RE=/\b(\d+(?:\.\d+)?)\s*([KMGT])(?:b(?:ps|\/s|it\/s)?|bE|E)?\b/gi;
+const literal=s=>String(s||'').replace(PLACE_RE,'');
+const ipsShown=s=>[...new Set(C.ipsIn(literal(s).replace(CIDR_RE,'')))];
+function labelsData(items,add,doc,all){
+  const devs=items.filter(isDev),edges=items.filter(n=>n.kind==='edge'),byId=new Map(items.map(n=>[n.id,n]));
+  // free text sitting on a device or a link without belonging to it
+  for(const t of items){if(t.kind!=='text'||t.target||t.pin||t.revTable||!t.labels?.[0])continue;const l=t.labels[0],s=txt(t,l);if(!s||s.length>48||s.split('\n').length>3||l.size>=18)continue;const b=labelBox(t,l);if(!b)continue;
+    let best=null,bd=14;for(const d of devs){const g=gap(b,C.bounds([d],true));if(g<bd){bd=g;best=d}}
+    if(!best){let ed=12;const c=[b.x+b.w/2,b.y+b.h/2];for(const e of edges){const q=nearestOn(pathOf(e),c);if(q.d<ed){ed=q.d;best=e}}}
+    if(best)add('warning',[t.id,best.id],`The text “${short(s)}” sits on ${best.kind==='edge'?`the link ${edgeName(best,byId)}`:`“${nameOf(best)}”`} but is not attached to it, so it will not move with it.`,'freelabel',{fixes:[{id:'attach',label:'Attach it'}],fix:{owner:best.id,text:t.id}})}
+  // labels that say something other than the data
+  for(const n of items){if(!n.labels?.length||n.kind==='text'||n.kind==='table'||n.kind==='legend')continue;const nm=nameOf(n);
+    const labelWith=re=>n.labels.find(l=>re(literal(l.text)));
+    if(isDev(n)){const ips=[...C.ipsIn(n.data?.ip),...C.ipsIn(n.data?.mgmtIp)],main=C.ipsIn(n.data?.ip)[0]||ips[0];
+      for(const ip of ipsShown(n.labels.map(l=>l.text).join('\n'))){if(ips.includes(ip))continue;const l=labelWith(s=>ipsShown(s).includes(ip));
+        if(ips.length)add('warning',n.id,`“${nm}”: the label shows ${ip}, but the IP address in its data is ${main}.`,'mismatch',{sub:'ip:'+ip,fixes:[{id:'useData',label:`Show ${main}`},{id:'useLabel',label:`Set the IP to ${ip}`}],fix:{label:l?.id,field:'ip',from:ip,to:main}});
+        else add('info',n.id,`“${nm}”: the label shows ${ip}, but the device has no IP address in its data.`,'labelonly',{sub:'ip:'+ip,fixes:[{id:'useLabel',label:`Set the IP to ${ip}`}],fix:{label:l?.id,field:'ip',from:ip}})}}
+    if(isDev(n)||n.kind==='zone'){const want=String(n.data?.vlan??'').split(/[,;\s]+/).filter(Boolean);
+      if(want.length)for(const m of new Set([...literal(n.labels.map(l=>l.text).join('\n')).matchAll(VLAN_RE)].map(m=>String(+m[1]))))if(!want.includes(m)){const l=labelWith(s=>[...s.matchAll(VLAN_RE)].some(x=>String(+x[1])===m));
+        add('warning',n.id,`“${nm}”: the label says VLAN ${m}, but its data says VLAN ${want.join(', ')}.`,'mismatch',{sub:'vlan:'+m,fixes:[{id:'useData',label:`Show VLAN ${want[0]}`},{id:'useLabel',label:`Set the VLAN to ${m}`}],fix:{label:l?.id,field:'vlan',from:m,to:want[0]}})}}
+    if(n.kind==='zone'&&C.cidr(n.data?.subnet)){const want=C.cidr(n.data.subnet).text;for(const s of new Set(literal(n.labels.map(l=>l.text).join('\n')).match(CIDR_RE)||[])){const c=C.cidr(s);if(c&&c.text!==want){const l=labelWith(x=>x.includes(s));
+      add('warning',n.id,`“${nm}”: the label shows ${s}, but the zone's subnet is ${want}.`,'mismatch',{sub:'subnet:'+s,fixes:[{id:'useData',label:`Show ${want}`},{id:'useLabel',label:`Set the subnet to ${s}`}],fix:{label:l?.id,field:'subnet',from:s,to:want}})}}}
+    if(n.kind==='edge'&&Shapes.speedMbps(n.data?.speed)){const want=Shapes.speedMbps(n.data.speed);for(const m of new Set(literal(n.labels.map(l=>l.text).join('\n')).match(SPEED_RE)||[])){const v=Shapes.speedMbps(m);if(v&&Math.abs(v-want)>want*1e-6){const l=labelWith(x=>x.includes(m));
+      add('warning',n.id,`The link ${edgeName(n,byId)}: the label says ${m.trim()}, but its speed is ${n.data.speed}.`,'mismatch',{sub:'speed:'+m.trim().toLowerCase(),fixes:[{id:'useData',label:`Show ${n.data.speed}`},{id:'useLabel',label:`Set the speed to ${m.trim()}`}],fix:{label:l?.id,field:'speed',from:m.trim(),to:n.data.speed}})}}}
+    // {{field}} that shows nothing
+    const fields=n.kind==='edge'?doc.linkFields||[]:n.kind==='zone'?C.ZONE_FIELDS||[]:doc.fields||[],asset=n.ref&&all.get(n.ref),seen=new Set();
+    for(const l of n.labels)for(const m of String(l.text||'').matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)){let k=m[1],src={...(asset?.data||{}),...(n.data||{})};if(k.startsWith('asset.')){k=k.slice(6);src=asset?.data||{}}const f=fields.find(x=>x.key===k);if(!f||seen.has(k))continue;seen.add(k);
+      if(String(src[k]??'').trim()==='')add('info',n.id,`“${nm}”: the label shows {{${k}}}, but ${f.label} is empty, so nothing appears there.`,'placeholder',{sub:k,fixes:[{id:'editData',label:`Fill in ${f.label}`}]})}}
+  // the same name twice on one page — for names that identify a device (SW-01, Core switch 2), not default or
+  // descriptive ones (Camera, LTE backup)
+  const names=new Map();for(const n of devs){const nm=nameOf(n);if(!nm||nm===Shapes.nameOf(n.type)||/[×x]\s*\d+\s*$/.test(nm)||/\s/.test(nm)&&!/\d/.test(nm))continue;const k=nm.toLowerCase();if(!names.has(k))names.set(k,[]);names.get(k).push(n)}
+  for(const list of names.values())if(list.length>1)add('warning',list.map(n=>n.id),`${list.length} devices on this page are named “${nameOf(list[0])}”.`,'dupname',{sub:nameOf(list[0]).toLowerCase()})}
+
+// Serial numbers, MAC addresses, asset tags, cable and circuit IDs must be unique across the drawing.
+function identifiers(doc,out,vis){
+  const groups=[[n=>isDev(n),(doc.fields||[]).filter(f=>!f.multiline&&/serial|mac|asset|tag/i.test(f.key+' '+f.label))],[n=>n.kind==='edge',(doc.linkFields||[]).filter(f=>/cable|circuit/i.test(f.key+' '+f.label))]];
+  for(const[want,fields]of groups)for(const f of fields){const seen=new Map();for(const p of doc.pages){if(p.isBackground)continue;for(const n of p.items){if(!vis(n)||!want(n))continue;const v=String(n.data?.[f.key]??'').trim();if(!v)continue;const k=v.toLowerCase();if(!seen.has(k))seen.set(k,{v,list:[]});seen.get(k).list.push({n,p})}}
+    for(const{v,list}of seen.values())if(list.length>1){const i={severity:'error',page:doc.pages.indexOf(list[0].p),ids:list.map(x=>x.n.id),message:`${f.label} “${v}” is used ${list.length} times (${list.map(x=>x.n.kind==='edge'?'a link':nameOf(x.n)).slice(0,4).join(', ')}${list.length>4?'…':''}).`,rule:'dupid',cat:'data',sub:f.key+':'+v.toLowerCase()};out.push(i)}}}
+
+function edgeName(e,byId){const a=byId?.get(e.from?.node),b=byId?.get(e.to?.node);return a&&b?`“${nameOf(a)}” – “${nameOf(b)}”`:a?`from “${nameOf(a)}”`:b?`to “${nameOf(b)}”`:'(unattached)'}
+const band=n=>n.kind==='zone'?0:n.kind==='node'&&n.type==='rack'?1:n.kind==='edge'?2:n.kind==='node'&&Shapes.rackItems[n.type]?3:4;
+function readability(items,add,page){
+  const byId=new Map(items.map(n=>[n.id,n])),z=new Map(items.map((n,i)=>[n.id,band(n)*1e6+i])),L=[];
+  for(const n of items){if(n.kind==='table'||n.kind==='legend'||MARKUP.has(n.type))continue;for(const l of n.labels||[]){const b=labelBox(n,l);if(b&&b.w>0&&b.h>0)L.push({n,l,b,a:b.w*b.h})}}
+  // overlapping labels
+  const rank=x=>x.n.kind==='text'?0:x.n.kind==='edge'?1:x.n.kind==='zone'?3:2;
+  const S=[...L].sort((p,q)=>p.b.x-q.b.x);
+  for(let i=0;i<S.length;i++){const A=S[i];for(let j=i+1;j<S.length&&S[j].b.x<A.b.x+A.b.w;j++){const B=S[j],ox=Math.min(A.b.x+A.b.w,B.b.x+B.b.w)-Math.max(A.b.x,B.b.x),oy=Math.min(A.b.y+A.b.h,B.b.y+B.b.h)-Math.max(A.b.y,B.b.y);
+    if(ox<=1||oy<=1||ox*oy<Math.min(A.a,B.a)*.2)continue;
+    const mv=rank(A)!==rank(B)?(rank(A)<rank(B)?A:B):z.get(A.n.id)>=z.get(B.n.id)?A:B,ot=mv===A?B:A,down=mv.b.y+mv.b.h/2>=ot.b.y+ot.b.h/2,dy=down?ot.b.y+ot.b.h-mv.b.y+3:ot.b.y-(mv.b.y+mv.b.h)-3;
+    add('warning',A.n===B.n?A.n.id:[A.n.id,B.n.id],`Labels overlap: “${short(txt(A.n,A.l))}” and “${short(txt(B.n,B.l))}”.`,'labeloverlap',{sub:[A.l.id,B.l.id].sort().join(','),at:[Math.max(A.b.x,B.b.x)+ox/2,Math.max(A.b.y,B.b.y)+oy/2],fixes:[{id:'apart',label:'Move apart'}],fix:{owner:mv.n.id,label:mv.l.id,dy:Math.round(dy*10)/10}})}}
+  // hidden text: on a background of nearly the same colour, behind a shape, or too small to read
+  const zones=items.filter(n=>n.kind==='zone').sort((a,b)=>b.w*b.h-a.w*a.h),opaque=n=>n.kind==='table'||n.kind==='legend'||n.kind==='node'&&(!!n.image||!!Shapes.basic[n.type]&&!!rgba(n.fill)&&rgba(n.fill)[3]>.5||isDev(n)&&['card','tile','circle'].includes(n.display));
+  const covers=items.filter(n=>opaque(n)&&!MARKUP.has(n.type));
+  for(const{n,l,b}of L){const s=short(txt(n,l)),c=[b.x+b.w/2,b.y+b.h/2];
+    if(!l.background){let bg=page.bg||'#ffffff';for(const zn of zones)if(zn!==n&&inBox(c,zn)&&zn.style!=='outline')bg=over(zn.fill,bg);
+      if(n.kind==='zone'){if(n.style!=='outline')bg=over(n.fill,bg);if((n.style==='header'||n.style==='tab')&&c[1]<n.y+36)bg=over(n.headerFill||n.stroke,bg,n.style==='tab'?.22:n.headerFill?1:.3)}
+      else if(n.kind==='node'&&Shapes.basic[n.type]&&inBox(c,n))bg=over(n.fill,bg);
+      const fg=l.color||'#34465e';if(contrast(fg,bg)<1.6)add('warning',n.id,`“${s}” is hard to read: its colour is almost the same as the background.`,'hiddentext',{sub:'contrast:'+l.id,fixes:[{id:'contrast',label:'Fix the colour'}],fix:{owner:n.id,label:l.id,color:lum(bg)>.18?'#1f2f47':'#ffffff'}})}
+    for(const m of covers){if(m===n||z.get(m.id)<=z.get(n.id))continue;const mb=C.box(m),ox=Math.min(b.x+b.w,mb.x+mb.w)-Math.max(b.x,mb.x),oy=Math.min(b.y+b.h,mb.y+mb.h)-Math.max(b.y,mb.y);
+      if(ox>0&&oy>0&&ox*oy>=b.w*b.h*.5){add('warning',[n.id,m.id],`“${s}” is hidden behind “${nameOf(m)}”.`,'hiddentext',{sub:'covered:'+l.id,fixes:band(n)>=band(m)?[{id:'front',label:'Bring it to the front'}]:[],fix:{owner:n.id,label:l.id}});break}}
+    if(l.size<5)add('info',n.id,`“${s}” is ${l.size} px — too small to read when printed.`,'tinytext',{sub:l.id,fixes:[{id:'enlarge',label:'Make it 7 px'}],fix:{owner:n.id,label:l.id}})}
+  // connectors drawn through devices
+  const solid=items.filter(n=>n.kind==='node'&&n.type!=='rack'&&!Shapes.rackItems[n.type]&&!n.pin&&!MARKUP.has(n.type)&&(isDev(n)||opaque(n)));
+  for(const e of items){if(e.kind!=='edge')continue;const pts=pathOf(e),ends=new Set([e.from?.node,e.to?.node].filter(Boolean));
+    for(const m of solid){if(ends.has(m.id))continue;const b=shrink(C.box(m),Math.min(4,C.box(m).w/4,C.box(m).h/4));if(b.w<=0||b.h<=0||pts.some(p=>inBox(p,b)))continue;
+      for(let i=1;i<pts.length;i++){const hit=segBox(pts[i-1],pts[i],b);if(hit){add('warning',[e.id,m.id],`The link ${edgeName(e,byId)} passes through “${nameOf(m)}”.`,'through',{at:hit,fixes:[{id:'reroute',label:'Route it around'}],fix:{edges:[e.id]}});break}}}}
+  // connectors that run on top of each other (links sharing a device may share a trunk on purpose)
+  const H=new Map(),V=new Map(),push=(m,k,v)=>{if(!m.has(k))m.set(k,[]);m.get(k).push(v)};
+  for(const e of items){if(e.kind!=='edge'||e.curve==='smooth')continue;const p=e.points;for(let i=1;i<p.length;i++){const a=p[i-1],b=p[i];
+    if(Math.abs(a[1]-b[1])<.5&&Math.abs(a[0]-b[0])>1)push(H,Math.round(a[1]/2),{e,c:a[1],lo:Math.min(a[0],b[0]),hi:Math.max(a[0],b[0])});
+    else if(Math.abs(a[0]-b[0])<.5&&Math.abs(a[1]-b[1])>1)push(V,Math.round(a[0]/2),{e,c:a[0],lo:Math.min(a[1],b[1]),hi:Math.max(a[1],b[1])})}}
+  const pairs=new Map();
+  for(const[m,horiz]of[[H,true],[V,false]])for(const[k,list]of m){const near=[...list,...(m.get(k+1)||[])];for(const s of list)for(const t of near){if(s.e===t.e||Math.abs(s.c-t.c)>1.5)continue;const A=s.e,B=t.e;if(A.id>B.id&&list.includes(t))continue;
+    const shared=[A.from?.node,A.to?.node].filter(Boolean).some(id=>id===B.from?.node||id===B.to?.node);if(shared)continue;const len=Math.min(s.hi,t.hi)-Math.max(s.lo,t.lo);if(len<=16)continue;
+    const pk=[A.id,B.id].sort().join('|'),mid=(Math.max(s.lo,t.lo)+Math.min(s.hi,t.hi))/2,cur=pairs.get(pk);if(!cur||cur.len<len)pairs.set(pk,{A,B,len,at:horiz?[mid,s.c]:[s.c,mid]})}}
+  for(const{A,B,len,at}of pairs.values())add('warning',[A.id,B.id],`The links ${edgeName(A,byId)} and ${edgeName(B,byId)} run on top of each other for ${Math.round(len/C.PX)} mm.`,'linkoverlap',{at,fixes:[{id:'reroute',label:'Re-route both'}],fix:{edges:[A.id,B.id]}});
+  // content off the page
+  const ps=C.pageSize(page);for(const n of items){if(n.pin||MARKUP.has(n.type))continue;const b=C.bounds([n],true);if(b.x<-1||b.y<-1||b.x+b.w>ps.w+1||b.y+b.h>ps.h+1)add('warning',n.id,`“${n.kind==='edge'?edgeName(n,byId):nameOf(n)}” is outside the printable page.`,'offpage',{fixes:[{id:'fitpage',label:'Fit the page'},...(n.kind!=='edge'?[{id:'movein',label:'Move it onto the page'}]:[])]})}}
+
+// ---------- fixes ----------
+// Applies one fix to the document; returns what happened, or null when the fix no longer applies.
+// env.markDirty(id) asks the router to re-route a connector.
+function apply(doc,issue,fixId,env={}){const page=doc.pages[issue.page];if(!page)return null;const byId=new Map(page.items.map(n=>[n.id,n])),f=issue.fix||{},first=byId.get(issue.ids[0]),dirty=id=>env.markDirty?.(id);
+  const lbl=(o,id)=>o?.labels?.find(l=>l.id===id)||o?.labels?.[0],drop=n=>{const i=page.items.indexOf(n);if(i>=0)page.items.splice(i,1)};
+  const edgesOf=id=>page.items.filter(e=>e.kind==='edge'&&(e.from?.node===id||e.to?.node===id));
+  switch(issue.rule+':'+fixId){
+    case'unattached:delete':case'dangling:delete':case'selfloop:delete':if(!first)return null;drop(first);return'Deleted.';
+    case'unattached:attach':if(!first||!byId.get(f.a)||!byId.get(f.b))return null;first.from={node:f.a,port:null};first.to={node:f.b,port:null};dirty(first.id);return'Both ends attached.';
+    case'dangling:attach':if(!first||!byId.get(f.node))return null;first[f.end]={node:f.node,port:null};dirty(first.id);return`Attached to ${nameOf(byId.get(f.node))}.`;
+    case'freelabel:attach':{const t=byId.get(f.text),o=byId.get(f.owner);if(!t||!o)return null;const l={...C.copy(t.labels[0]),id:C.uid()};
+      if(o.kind==='edge'){const q=nearestOn(pathOf(o),[l.x,l.y]);l.anchor={t:q.t,dx:l.x-q.p[0],dy:l.y-q.p[1]}}
+      o.labels=[...(o.labels||[]),l];drop(t);return`Attached — it now moves with ${o.kind==='edge'?'the link':nameOf(o)}.`}
+    case'mismatch:useData':{const l=lbl(first,f.label);if(!l)return null;const esc=String(f.from).replace(/[.*+?^${}()|[\]\\/]/g,'\\$&');
+      l.text=f.field==='vlan'?l.text.replace(new RegExp('(\\bVLAN[\\s#:-]*)0*'+esc+'\\b','i'),'$1'+f.to):l.text.replace(new RegExp(f.field==='speed'?esc:'(?<![\\d.])'+esc+'(?![\\d.]|/\\d)'),f.to);return'Label updated.'}
+    case'mismatch:useLabel':case'labelonly:useLabel':{if(!first)return null;first.data??={};const cur=String(first.data[f.field]??'');
+      first.data[f.field]=f.field==='ip'&&f.to&&cur.includes(f.to)?cur.replace(f.to,f.from):f.from;return'Data updated.'}
+    case'labeloverlap:apart':{const o=byId.get(f.owner),l=lbl(o,f.label);if(!l)return null;if(l.anchor)l.anchor.dy=(l.anchor.dy||0)+f.dy;else l.y+=f.dy;return'Moved apart.'}
+    case'hiddentext:contrast':{const l=lbl(byId.get(f.owner),f.label);if(!l)return null;l.color=f.color;return'Colour changed.'}
+    case'hiddentext:front':{const o=byId.get(f.owner);if(!o)return null;drop(o);page.items.push(o);return'Brought to the front.'}
+    case'tinytext:enlarge':{const l=lbl(byId.get(f.owner),f.label);if(!l)return null;l.size=7;return'Text enlarged.'}
+    case'through:reroute':case'linkoverlap:reroute':{let k=0;for(const id of f.edges||[]){const e=byId.get(id);if(!e)continue;e.routing='auto';dirty(id);k++}return k?'Re-routed.':null}
+    case'offpage:movein':{if(!first||first.kind==='edge')return null;const ps=C.pageSize(page),m=(page.margin||10)*C.PX,b=C.bounds([first],true);
+      const dx=b.x<m?m-b.x:b.x+b.w>ps.w-m?Math.max(m-b.x,ps.w-m-(b.x+b.w)):0,dy=b.y<m?m-b.y:b.y+b.h>ps.h-m?Math.max(m-b.y,ps.h-m-(b.y+b.h)):0;
+      const set=[first];if(first.kind==='zone'){const zb=C.box(first);for(const n of page.items)if(n!==first&&n.kind!=='edge'&&C.inside(C.box(n),zb,1))set.push(n)}
+      for(const n of set)C.move(n,dx,dy);for(const n of set)for(const e of edgesOf(n.id))dirty(e.id);return'Moved onto the page.'}}
+  return null}
+
+return{run,apply,key,catOf,CATS,RULE_CAT,labelBox,nameOf,contrast,nearestOn,segBox};
+})();
+if(typeof module!=='undefined')module.exports=Checks;
+
+</script>
+<script>
+// Review mode data, kept in doc.review: pinned comments (on a device, a connector, an area or a point), the status of
+// check findings (open / resolved / accepted as intentional), the review checklist, the snapshot taken when a review
+// is completed (so the next one can show what changed since), and the review report as HTML or CSV. Pure.
+const Review=(()=>{
+const C=Core;
+const now=()=>new Date().toISOString();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STATUS={open:'Open',resolved:'Resolved',accepted:'Accepted'};
+const CHECKS=[
+  ['connectivity','Connectivity','Every link is attached at both ends, nothing connects to itself and no port carries two cables.'],
+  ['labels','Labels','Every label belongs to its device or link, says what its data says and shows no empty fields.'],
+  ['data','Device data','Names, hostnames, IP addresses, serial numbers and cable IDs are valid and unique.'],
+  ['readability','Readability','Nothing overlaps or hides, no line runs through a device, everything is on the page.'],
+  ['design','Network design','Subnets, PoE, racks, resilience and capacity hold up.']];
+function ensure(doc){const r=doc.review??={};r.comments??=[];r.findings??={};r.history??=[];
+  if(!Array.isArray(r.checklist))r.checklist=CHECKS.map(([id,label,hint])=>({id,label,hint,cat:id,state:'',by:'',at:'',note:''}));
+  r.next=Math.max(r.next||1,1+Math.max(0,...r.comments.map(c=>+c.n||0)));return r}
+
+// ---------- comments ----------
+function addComment(doc,{page,target=null,rel=null,pos=null,area=null,text='',by=''}){const r=ensure(doc),c={id:C.uid(),n:r.next++,page,target,rel,pos,area,text:String(text).trim(),by,at:now(),status:'open',replies:[]};r.comments.push(c);return c}
+const comment=(doc,id)=>doc.review?.comments?.find(c=>c.id===id)||null;
+function editComment(doc,id,text){const c=comment(doc,id);if(c){c.text=String(text).trim();c.edited=now()}return c}
+function setCommentStatus(doc,id,status,by=''){const c=comment(doc,id);if(c&&STATUS[status]){c.status=status;c.statusBy=by;c.statusAt=now()}return c}
+function reply(doc,id,text,by=''){const c=comment(doc,id);if(c&&String(text).trim())c.replies.push({id:C.uid(),text:String(text).trim(),by,at:now()});return c}
+function removeComment(doc,id){const r=ensure(doc);r.comments=r.comments.filter(c=>c.id!==id)}
+function along(pts,t){let total=0;for(let i=1;i<pts.length;i++)total+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);let goal=total*t,run=0;
+  for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);if(run+l>=goal){const k=l?(goal-run)/l:0;return[pts[i-1][0]+k*(pts[i][0]-pts[i-1][0]),pts[i-1][1]+k*(pts[i][1]-pts[i-1][1])]}run+=l}return pts.at(-1)}
+// Where a comment's pin sits: on its target (which it follows), at its area's top-right corner, or on its point.
+function pinAt(c,find){const t=c.target&&find(c.target);if(t){if(t.kind==='edge')return along(t.points,c.rel?.[0]??.5);const b=C.box(t);return[b.x+b.w*(c.rel?.[0]??1),b.y+b.h*(c.rel?.[1]??0)]}
+  if(c.area)return[c.area.x+c.area.w,c.area.y];return c.pos||[0,0]}
+// Pin offset for a click at p on target t: a fraction of its box, or how far along a connector.
+function relFor(t,p){if(t.kind==='edge'){let best=Infinity,bt=.5,total=0;const pts=t.points,lens=[];for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);lens.push(l);total+=l}
+    let run=0;for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],vx=b[0]-a[0],vy=b[1]-a[1],L=vx*vx+vy*vy||1,k=Math.max(0,Math.min(1,((p[0]-a[0])*vx+(p[1]-a[1])*vy)/L)),d=Math.hypot(a[0]+k*vx-p[0],a[1]+k*vy-p[1]);if(d<best){best=d;bt=total?(run+k*lens[i-1])/total:.5}run+=lens[i-1]}return[+bt.toFixed(4)]}
+  const b=C.box(t);return[+Math.max(0,Math.min(1,(p[0]-b.x)/(b.w||1))).toFixed(4),+Math.max(0,Math.min(1,(p[1]-b.y)/(b.h||1))).toFixed(4)]}
+
+// ---------- findings ----------
+// Status of a finding is kept by its key; reopening without a note forgets it.
+function setFinding(doc,issue,status,{by='',note}={}){const r=ensure(doc),cur=r.findings[issue.key],n=note??cur?.note??'';if(status==='open'&&!n){delete r.findings[issue.key];return null}
+  return r.findings[issue.key]={status,by,at:now(),note:n,message:issue.message,rule:issue.rule,cat:issue.cat,severity:issue.severity}}
+// Marked findings the check no longer reports, and findings left open at the last review that are gone now.
+function fixed(doc,issues){const live=new Set(issues.map(i=>i.key)),out=new Map();
+  for(const[key,v]of Object.entries(doc.review?.findings||{}))if(!live.has(key))out.set(key,{key,...v});
+  for(const f of doc.review?.baseline?.findings||[])if(!live.has(f.key)&&!out.has(f.key))out.set(f.key,{...f,status:'fixed'});return[...out.values()]}
+
+// ---------- checklist ----------
+function checklist(doc,issues=[]){return ensure(doc).checklist.map(it=>{const open=it.cat?issues.filter(i=>i.cat===it.cat&&i.status==='open'):[];return{...it,open:open.length,errors:open.filter(i=>i.severity==='error').length}})}
+function setCheck(doc,id,patch,by=''){const it=ensure(doc).checklist.find(x=>x.id===id);if(it){Object.assign(it,patch);if('state'in patch){it.by=patch.state?by:'';it.at=patch.state?now():''}}return it}
+function addCheck(doc,label){const it={id:C.uid(),label:String(label).trim()||'Check',hint:'',cat:null,state:'',by:'',at:'',note:''};ensure(doc).checklist.push(it);return it}
+function removeCheck(doc,id){const r=ensure(doc);r.checklist=r.checklist.filter(x=>x.id!==id||x.cat)}
+
+// ---------- comparison with the previous review ----------
+const tracked=n=>!['revcloud','revdelta'].includes(n.type)&&n.kind!=='legend'&&!n.revTable&&n.pin!=='frame';
+const plainName=n=>String(n.labels?.[0]?.text||n.data?.hostname||n.type||n.kind||'');
+function snapshot(doc,nameOf=plainName){const items={},boxes={};for(const p of doc.pages)for(const n of p.items){if(!tracked(n))continue;items[n.id]=Revisions.fingerprint(n);const b=C.bounds([n]);
+  boxes[n.id]={page:p.id,box:[b.x,b.y,b.w,b.h].map(v=>Math.round(v*10)/10),name:String(nameOf(n)||'').split('\n')[0].slice(0,80),kind:n.kind}}return{items,boxes}}
+function complete(doc,{by='',issues=[],nameOf}={}){const r=ensure(doc),open=issues.filter(i=>i.status==='open');
+  r.history.push({at:now(),by,openComments:r.comments.filter(c=>c.status==='open').length,openFindings:open.length,checked:r.checklist.filter(x=>x.state==='ok').length});
+  r.baseline={at:now(),by,...snapshot(doc,nameOf),findings:open.map(i=>({key:i.key,message:i.message,severity:i.severity,cat:i.cat}))};return r.baseline}
+// What changed since the last completed review; before the first one, since the last issued revision.
+function changes(doc){const base=doc.review?.baseline;
+  if(!base){const rb=doc.revBaseline;if(!rb?.items)return{known:false,added:[],modified:[],removed:[],count:0,since:null};const ch=Revisions.changes(doc);return{...ch,removed:ch.removed.map(id=>({id})),since:{kind:'revision',rev:rb.rev,at:rb.at}}}
+  const seen=new Set(),added=[],modified=[];for(const p of doc.pages)for(const n of p.items){if(!tracked(n))continue;seen.add(n.id);const f=base.items[n.id];if(f==null)added.push(n.id);else if(f!==Revisions.fingerprint(n))modified.push(n.id)}
+  const removed=Object.keys(base.items).filter(id=>!seen.has(id)).map(id=>({id,...(base.boxes?.[id]||{})}));
+  return{known:true,added,modified,removed,count:added.length+modified.length+removed.length,since:{kind:'review',at:base.at,by:base.by}}}
+
+// ---------- report ----------
+// ctx: issues (annotated with status), name(id) → item name, where(pageRef) → page name, by, images [{page, svg}]
+function report(doc,{issues=[],name=id=>id,where=p=>p,by='',includeAccepted=true}={}){const r=ensure(doc),ch=changes(doc),cl=checklist(doc,issues);
+  const comments=r.comments.slice().sort((a,b)=>a.n-b.n).map(c=>({n:c.n,page:where(c.page),on:c.target?name(c.target)||'(deleted item)':c.area?'Area':'Point',text:c.text,by:c.by,at:c.at,status:c.status,replies:c.replies||[]}));
+  const findings=issues.filter(i=>includeAccepted||i.status!=='accepted').map(i=>({severity:i.severity,cat:i.cat,message:i.message,page:i.page>=0?where(i.page):'Whole drawing',status:i.status,note:i.note||'',by:r.findings[i.key]?.by||''}));
+  const count=(list,s)=>list.filter(x=>x.status===s).length;
+  return{drawing:doc.name,revision:doc.meta?.revision||'',by,date:now(),comments,findings,fixed:fixed(doc,issues),checklist:cl,
+    changes:{since:ch.since,known:ch.known,added:ch.added.map(name),modified:ch.modified.map(name),removed:ch.removed.map(x=>x.name||name(x.id)||'(item)')},
+    counts:{comments:{open:count(comments,'open'),resolved:count(comments,'resolved'),accepted:count(comments,'accepted')},findings:{open:count(findings,'open'),resolved:count(findings,'resolved'),accepted:count(findings,'accepted'),errors:findings.filter(f=>f.status==='open'&&f.severity==='error').length},checked:cl.filter(x=>x.state==='ok').length,checks:cl.length}}}
+const day=s=>s?String(s).slice(0,16).replace('T',' '):'';
+const CAT={connectivity:'Connection integrity',labels:'Labels',data:'Device data',readability:'Readability',design:'Network design'};
+function toHTML(d,images=[]){const pill=s=>`<span class="pill ${esc(s)}">${esc(STATUS[s]||s)}</span>`,sev=s=>`<span class="sev ${esc(s)}">${esc({error:'Error',warning:'Warning',info:'Note'}[s]||s)}</span>`;
+  const open=[...d.comments.filter(c=>c.status==='open').map(c=>`<tr><td>Comment #${c.n}</td><td>${esc(c.page)}</td><td>${esc(c.on)}</td><td>${esc(c.text)}</td><td>${esc(c.by)}</td></tr>`),...d.findings.filter(f=>f.status==='open'&&f.severity!=='info').map(f=>`<tr><td>${sev(f.severity)}</td><td>${esc(f.page)}</td><td>${esc(CAT[f.cat]||'')}</td><td>${esc(f.message)}</td><td></td></tr>`)];
+  const notes=d.findings.filter(f=>f.status==='open'&&f.severity==='info').length,ch=d.changes,since=ch.since?ch.since.kind==='review'?`since the review of ${day(ch.since.at)}${ch.since.by?' by '+esc(ch.since.by):''}`:`since revision ${esc(ch.since.rev)} was issued`:'';
+  return`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Review — ${esc(d.drawing)}</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+body{font:13px/1.45 'Segoe UI',Inter,system-ui,-apple-system,Helvetica,Arial,sans-serif;color:#1f2f47;margin:0;padding:32px;max-width:1100px}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:28px 0 8px;border-bottom:2px solid #376be5;padding-bottom:4px}
+.meta{color:#64748b}.cards{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}.cards div{border:1px solid #dfe6ef;border-radius:10px;padding:10px 14px;min-width:150px}.cards b{display:block;font-size:20px}
+table{border-collapse:collapse;width:100%;margin:4px 0 8px}th,td{border:1px solid #dfe6ef;padding:5px 7px;text-align:left;vertical-align:top}th{background:#f1f5f9;font-weight:600}
+.pill,.sev{display:inline-block;border-radius:10px;padding:0 8px;font-size:11.5px;font-weight:600}.pill.open{background:#fef3c7;color:#92400e}.pill.resolved,.pill.fixed{background:#dcfce7;color:#166534}.pill.accepted{background:#e2e8f0;color:#334155}
+.sev.error{background:#fee2e2;color:#991b1b}.sev.warning{background:#fef3c7;color:#92400e}.sev.info{background:#dbeafe;color:#1e40af}.reply{color:#475569;margin-top:4px}.muted{color:#64748b}
+figure{margin:12px 0;break-inside:avoid}figure svg{width:100%;height:auto;border:1px solid #dfe6ef}figcaption{font-weight:600;margin-bottom:4px}@media print{body{padding:0}h2{break-after:avoid}}</style></head><body>
+<h1>Review — ${esc(d.drawing)}</h1><div class="meta">Revision ${esc(d.revision)} · reviewed${d.by?' by '+esc(d.by):''} · ${esc(day(d.date))}</div>
+<div class="cards"><div><b>${open.length}</b>unresolved item${open.length===1?'':'s'}</div><div><b>${d.counts.comments.open}</b>open comments of ${d.comments.length}</div><div><b>${d.counts.findings.open}</b>open finding${d.counts.findings.open===1?'':'s'}${d.counts.findings.errors?` · ${d.counts.findings.errors} error${d.counts.findings.errors===1?'':'s'}`:''}</div><div><b>${d.counts.checked}/${d.counts.checks}</b>checks passed</div><div><b>${ch.added.length+ch.modified.length+ch.removed.length}</b>changes ${since||''}</div></div>
+<h2>Unresolved</h2>${open.length?`<table><tr><th>Item</th><th>Page</th><th>On / category</th><th>Description</th><th>By</th></tr>${open.join('')}</table>`:'<p class="muted">Nothing unresolved.</p>'}${notes?`<p class="muted">Plus ${notes} open note${notes===1?'':'s'} from the design check — listed below.</p>`:''}
+<h2>Checklist</h2><table><tr><th>Check</th><th>Result</th><th>Open findings</th><th>Note</th><th>By</th></tr>${d.checklist.map(c=>`<tr><td><b>${esc(c.label)}</b>${c.hint?`<div class="muted">${esc(c.hint)}</div>`:''}</td><td>${c.state==='ok'?'✓ Passed':c.state==='issues'?'✗ Needs work':'Not checked'}</td><td>${c.cat?c.open:''}</td><td>${esc(c.note)}</td><td>${esc(c.by)}${c.at?`<div class="muted">${esc(day(c.at))}</div>`:''}</td></tr>`).join('')}</table>
+<h2>Comments</h2>${d.comments.length?`<table><tr><th>#</th><th>Page</th><th>On</th><th>Comment</th><th>By</th><th>Status</th></tr>${d.comments.map(c=>`<tr><td>${c.n}</td><td>${esc(c.page)}</td><td>${esc(c.on)}</td><td>${esc(c.text)}${c.replies.map(x=>`<div class="reply">↳ ${esc(x.text)} — ${esc(x.by)} ${esc(day(x.at))}</div>`).join('')}</td><td>${esc(c.by)}<div class="muted">${esc(day(c.at))}</div></td><td>${pill(c.status)}</td></tr>`).join('')}</table>`:'<p class="muted">No comments.</p>'}
+<h2>Flagged by the design check</h2>${d.findings.length?`<table><tr><th>Severity</th><th>Category</th><th>Finding</th><th>Page</th><th>Status</th><th>Note</th></tr>${d.findings.map(f=>`<tr><td>${sev(f.severity)}</td><td>${esc(CAT[f.cat]||'')}</td><td>${esc(f.message)}</td><td>${esc(f.page)}</td><td>${pill(f.status)}</td><td>${esc(f.note)}</td></tr>`).join('')}</table>`:'<p class="muted">The check found nothing.</p>'}
+${d.fixed.length?`<h2>Fixed since</h2><table><tr><th>Finding</th><th>Status</th></tr>${d.fixed.map(f=>`<tr><td>${esc(f.message)}</td><td>${pill(f.status==='fixed'?'fixed':f.status)}</td></tr>`).join('')}</table>`:''}
+<h2>Changes ${since}</h2>${ch.known?[['Added',ch.added],['Changed',ch.modified],['Removed',ch.removed]].map(([t,l])=>`<p><b>${t} (${l.length})</b>${l.length?': '+l.map(esc).join(', '):''}</p>`).join(''):'<p class="muted">No earlier review or issued revision to compare with.</p>'}
+${images.length?`<h2>Drawing</h2>${images.map(i=>`<figure><figcaption>${esc(i.page)}</figcaption>${i.svg}</figure>`).join('')}`:''}
+</body></html>`}
+function toCSV(d){const q=v=>{const s=String(v??'');return/[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};const rows=[['Type','Ref','Page','On / category','Text','Severity','Status','By','Date','Note / replies']];
+  for(const c of d.comments)rows.push(['Comment','#'+c.n,c.page,c.on,c.text,'',c.status,c.by,day(c.at),c.replies.map(x=>`${x.by}: ${x.text}`).join(' | ')]);
+  for(const f of d.findings)rows.push(['Finding','',f.page,CAT[f.cat]||'',f.message,f.severity,f.status,f.by,'',f.note]);
+  for(const c of d.checklist)rows.push(['Check','',"",c.label,c.hint,'',c.state==='ok'?'passed':c.state==='issues'?'needs work':'not checked',c.by,day(c.at),c.note]);
+  return rows.map(r=>r.map(q).join(',')).join('\r\n')}
+
+return{STATUS,CHECKS,ensure,addComment,comment,editComment,setCommentStatus,reply,removeComment,pinAt,relFor,setFinding,fixed,checklist,setCheck,addCheck,removeCheck,snapshot,complete,changes,report,toHTML,toCSV};
+})();
+if(typeof module!=='undefined')module.exports=Review;
 
 </script>
 <script>
@@ -4346,7 +4746,7 @@ function drawNode(n,g,ctx){
   const kind=Shapes.kindOf(n.type),accent=colorFor(n,ctx)||n.stroke||'#2f5ea8',w=n.w,h=n.h;
   if(n.image){if(n.display==='card')el('rect',{x:0,y:0,width:w,height:h,rx:8,fill:n.fill||'#fff',stroke:accent,'stroke-width':1},t);el('image',{href:n.image,x:n.display==='card'?6:0,y:n.display==='card'?6:0,width:n.display==='card'?w-12:w,height:n.display==='card'?h-12:h,preserveAspectRatio:'xMidYMid meet'},t)}
   else if(kind==='basic'){const b=Shapes.basic[n.type];for(const p of b.paths(w,h))el('path',{d:p.d,fill:p.open||n.fill==='none'?'none':n.fill||'#fff',stroke:accent,'stroke-width':n.strokeWidth??1.75,'stroke-dasharray':n.dash||null,'stroke-linejoin':'round'},t)}
-  else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.[0]||{text:''},ctx));
+  else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.find(l=>l.view!=='rear')||{text:''},ctx));
   else if(kind==='rackitem')Shapes.drawFace({...n,stroke:colorFor(n,ctx)||n.stroke},t);
   else{
     const s=Stencils?.shapes?.[n.type],mode=n.display||'symbol';
@@ -4363,6 +4763,8 @@ function drawNode(n,g,ctx){
   // tolerance — so what is inside them stays clickable; everything else on its box
   if(kind==='basic'&&ctx.interactive&&(n.fill==='none'||Shapes.basic[n.type].paths(w,h).every(q=>q.open)))for(const q of Shapes.basic[n.type].paths(w,h))el('path',{d:q.d,fill:'none',stroke:'transparent','stroke-width':14,'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':n.id,'data-role':'object'},t);
   else hitRect(n,t,ctx);
+  // equipment seen in a rack's rear view picks (and drags) the unit itself
+  if(kind==='rack'&&ctx.interactive){const rd=Shapes.rackDims(n).rear;if(rd!=null)for(const it of Racks.contents(n,ctx.page.items))hitRect(it,t,ctx,rd+it.x-n.x,it.y-n.y)}
   if(ctx.interactive&&n.url){const b=el('g',{transform:`translate(${n.x+n.w-4} ${n.y-2})`,'pointer-events':'none'},g);el('circle',{cx:0,cy:0,r:6.5,fill:'#fff',stroke:'#376be5'},b);el('path',{d:'M-2.5 1.5l5-5M-1 -3.5h3.5V0',stroke:'#376be5','stroke-width':1.3,fill:'none'},b)}
 }
 function rackOf(n,page){if(!Shapes.rackItems[n.type])return null;const b=Core.box(n),c=[b.x+b.w/2,b.y+b.h/2];return page.items.find(r=>r.kind==='node'&&r.type==='rack'&&Core.inside({x:c[0],y:c[1],w:0,h:0},Shapes.rackInner(r)))||null}
@@ -4523,7 +4925,7 @@ function renderOverlay(){
     else if(hi.kind!=='node'){const b=Core.box(hi);el('rect',{...st,x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,'stroke-width':1.5/z,'stroke-dasharray':`${5/z} ${3/z}`},o)}}
   // hover
   const hov=S.hoverId&&find(S.hoverId);
-  if(hov&&!S.drag&&hov.kind==='node'&&!isLocked(hov)&&['select','connect','port'].includes(S.mode)){const b=Core.box(hov);el('rect',{x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,fill:'none',stroke:blue,'stroke-opacity':.45,'stroke-width':sw,'pointer-events':'none'},o);
+  if(hov&&!S.drag&&hov.kind==='node'&&!isLocked(hov)&&['select','connect','port'].includes(S.mode)&&!S.reviewMode){const b=Core.box(hov);el('rect',{x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,fill:'none',stroke:blue,'stroke-opacity':.45,'stroke-width':sw,'pointer-events':'none'},o);
     if(S.mode==='select'&&!S.selected.has(hov.id)||S.mode==='select'&&S.selected.size===1)drawPorts(hov,o,z);
     if(S.mode==='select'&&S.prefs.autoConnect&&Shapes.kindOf(hov.type)==='device')drawAutoArrows(hov,o,z)}
   if(S.mode==='connect'||S.mode==='port'||S.drag?.kind==='bend'||S.drag?.kind==='connect')for(const n of items())if(n.kind==='node'&&itemVisible(n,{doc:S.doc})&&!isLocked(n))drawPorts(n,o,z);
@@ -4532,11 +4934,13 @@ function renderOverlay(){
   if(sel.length){
     // the first selected item is the primary one (Align ▸ relative to first selected, Same size): a stronger outline
     if(sel.length>1){const prim=[...S.selected][0];for(const n of sel){const pr=n.id===prim;if(n.kind==='edge')el('path',{d:Conn.path(n),fill:'none',stroke:blue,'stroke-width':(n.strokeWidth||2)+(pr?5:3)/z,'stroke-opacity':pr?.5:.35,'pointer-events':'none'},o);else{const b=Core.box(n);el('rect',{x:b.x-(pr?2:0)/z,y:b.y-(pr?2:0)/z,width:b.w+(pr?4:0)/z,height:b.h+(pr?4:0)/z,fill:'none',stroke:pr?'#c026d3':blue,'stroke-opacity':pr?.85:.6,'stroke-width':(pr?2:1)*sw,'pointer-events':'none'},o)}}}
-    if(sel.length===1&&sel[0].kind==='edge')drawEdgeHandles(sel[0],o,z);
+    if(sel.length===1&&sel[0].kind==='edge'&&!S.reviewMode)drawEdgeHandles(sel[0],o,z);
+    else if(sel.length===1&&sel[0].kind==='edge')el('path',{d:Conn.path(sel[0]),fill:'none',stroke:blue,'stroke-width':(sel[0].strokeWidth||2)+3/z,'stroke-opacity':.25,'pointer-events':'none'},o);
     else{const b=Core.bounds(sel);el('rect',{x:b.x-4/z,y:b.y-4/z,width:b.w+8/z,height:b.h+8/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o);
       // racks and rack units take their size from U counts (inspector / right-click), never from handles
-      const ed=editable(),rackish=sel.some(x=>x.type==='rack'||Shapes.rackItems[x.type]);if(ed.length===sel.length&&!S.drag&&!rackish){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
+      const ed=editable(),rackish=sel.some(x=>x.type==='rack'||Shapes.rackItems[x.type]);if(ed.length===sel.length&&!S.drag&&!rackish&&!S.reviewMode){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
         if(sel.length===1&&sel[0].kind==='node'&&sel[0].type!=='rack'&&!Shapes.rackItems[sel[0].type]){const cx=b.x+b.w/2,cy=b.y-24/z;el('line',{x1:cx,y1:b.y-4/z,x2:cx,y2:cy,stroke:blue,'stroke-width':sw,'pointer-events':'none'},o);el('circle',{cx,cy,r:5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'rotate',cursor:'grab'},o)}}
+      for(const n of sel){const r=Shapes.rackItems[n.type]&&rackOf(n,pg()),rd=r&&Shapes.rackDims(r).rear;if(rd!=null)el('rect',{x:n.x+rd-2/z,y:n.y-2/z,width:n.w+4/z,height:n.h+4/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o)}
       if(sel.some(isLocked)){const t=el('text',{x:b.x,y:b.y-9/z,fill:'#8c97a8','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none'},o);t.textContent='🔒 Locked'}}
     if(S.prefs.showPorts&&sel.length===1&&sel[0].kind==='node')drawPorts(sel[0],o,z,true)}
   // active label
@@ -4556,7 +4960,7 @@ function renderOverlay(){
   if(d?.kind==='lasso'&&d.pts.length>2)for(const id of Select.lassoSelect(d.pts,!!d.touch)){const n=find(id);if(!n||S.selected.has(id)||n.kind==='edge')continue;const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:d.touch?'#16a34a':blue,'fill-opacity':.1,stroke:d.touch?'#16a34a':blue,'stroke-width':sw,'pointer-events':'none'},o)}
   if(d?.kind==='lasso'&&d.pts.length>1){const col=d.touch?'#16a34a':blue;el('path',{d:'M'+d.pts.map(q=>q.join(' ')).join('L')+'Z',fill:col,'fill-opacity':.07,stroke:col,'stroke-width':sw,'stroke-dasharray':d.touch?`${5/z} ${3/z}`:null,'pointer-events':'none'},o)}
   if(d?.kind==='move'&&d.rackSlot){const r=d.rackSlot;el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:'#25b889','fill-opacity':.25,stroke:'#159c70','stroke-width':sw,'pointer-events':'none'},o)}
-}
+  ReviewUI.drawOverlay(o,z)}
 function drawPorts(n,o,z,named=false){for(const p of n.ports||[]){const q=Core.portPoint(n,p);const c=el('circle',{cx:q[0],cy:q[1],r:4/z,fill:'#fff',stroke:'#3779db','stroke-width':1.5/z,'data-id':n.id,'data-role':'port','data-port':p.id,cursor:'crosshair'},o);const t=el('title',{},c);t.textContent=p.name||'Port';if(named&&p.name){const tx=el('text',{x:q[0]+6/z,y:q[1]-6/z,'font-size':9/z,fill:'#3779db','font-family':Core.FONT,'pointer-events':'none'},o);tx.textContent=p.name}}}
 function drawAutoArrows(n,o,z){const b=Core.box(n),gap=14/z,s=7/z;for(const[dir,x,y,rot]of[['up',b.x+b.w/2,b.y-gap,0],['right',b.x+b.w+gap,b.y+b.h/2,90],['down',b.x+b.w/2,b.y+b.h+gap+(n.labels?.length?Core.labelMetrics(n.labels[0],resolveLabel(n,n.labels[0])).h+8/z:0),180],['left',b.x-gap,b.y+b.h/2,270]]){const g=el('g',{transform:`translate(${x} ${y}) rotate(${rot})`,'data-role':'autoconnect','data-id':n.id,'data-dir':dir,cursor:'pointer'},o);el('circle',{cx:0,cy:0,r:s*1.5,fill:'transparent'},g);el('path',{d:`M${-s} ${s*.5}L0 ${-s*.7}L${s} ${s*.5}Z`,fill:'#3774e8','fill-opacity':.55},g);const t=el('title',{},g);t.textContent='Click: add a connected copy · Drag: connect'}}
 function drawEdgeHandles(e,o,z){const blue='#3774e8',hs=8/z,locked=isLocked(e);el('path',{d:Conn.path(e),fill:'none',stroke:blue,'stroke-width':(e.strokeWidth||2)+3/z,'stroke-opacity':.25,'pointer-events':'none'},o);if(locked)return;
@@ -4596,7 +5000,7 @@ function thumbnail(doc,page,w=260,h=170){const svg=sceneSvg(page,{doc,print:true
 // PoE budgets, CCTV storage, rack capacity, IP plan, design-rule checks and reports (inventory, cables, BOM).
 const Analysis=(()=>{
 const C=Core;
-const nameOf=n=>{if(!n)return'';const l=n.labels?.[0];const t=l?resolveLabel(n,l,makeCtx(pageOfItem(n)||pg())):'';return(t||n.data?.hostname||Shapes.nameOf(n.type)).replace(/\n/g,' ')};
+const nameOf=n=>{if(!n)return'';const l=n.labels?.[0];const t=l?resolveLabel(n,l,makeCtx(pageOfItem(n)||pg())):'';return String(t||n.data?.hostname||(n.kind==='zone'?'Zone':Shapes.nameOf(n.type))||n.kind||'').replace(/\n/g,' ')};
 const pageOfItem=n=>S.doc.pages.find(p=>p.items.includes(n));
 const tier=n=>Stencils?.shapes?.[n.type]?.tier??(Shapes.rackItems[n.type]?3:5);
 const DEFAULT_POE={camera:6.5,domecamera:7,ptzcamera:25,anpr:12,thermal:12,wap:15,ipphone:5,accesscontrol:8,intercom:10,sensor:3,iotgateway:8,display:25,thinclient:12};
@@ -4650,30 +5054,33 @@ function nextFreeIp(n,page){const z=zoneOf(n,page),c=z&&C.cidr(z.data?.subnet);i
 
 // ---------- design-rule check ----------
 function check(doc){
-  const issues=[],add=(severity,page,ids,message,rule)=>issues.push({severity,page:doc.pages.indexOf(page),ids:[].concat(ids).filter(Boolean),message,rule});
+  const issues=[],add=(severity,page,ids,message,rule,sub)=>issues.push({severity,page:doc.pages.indexOf(page),ids:[].concat(ids).filter(Boolean),message,rule,sub});
   const hostnames=new Map(),ips=new Map(),seenSubnets=[];
   for(const page of doc.pages){if(page.isBackground)continue;const byId=new Map(page.items.map(n=>[n.id,n])),ps=C.pageSize(page),G=graph(page);
     for(const n of page.items){
-      if(n.kind==='edge'){for(const k of['from','to']){if(!n[k])add('warning',page,n.id,`Connector end is not attached (${k==='from'?'start':'end'}).`,'loose');else if(!Conn.resolveEnd(n,k,byId))add('error',page,n.id,'Connector is attached to a device or port that no longer exists.','broken')}if(n.from&&n.to&&n.from.node===n.to.node)add('warning',page,n.id,'Connector loops back to the same device.','loop')}
-      const b=C.bounds([n],true);if(b.x<0||b.y<0||b.x+b.w>ps.w||b.y+b.h>ps.h)add('warning',page,n.id,`“${nameOf(n)||n.kind}” is outside the printable page.`,'offpage');
+      // loose ends, self-connections and content off the page are Checks rules (with fixes)
+      if(n.kind==='edge')for(const k of['from','to'])if(n[k]&&!Conn.resolveEnd(n,k,byId))add('error',page,n.id,'Connector is attached to a device or port that no longer exists.','broken',k);
       if(n.kind!=='node'||!Shapes.isDevice(n))continue;
       const nm=nameOf(n),h=(n.data?.hostname||'').trim();
       if(h){const k=h.toLowerCase();if(hostnames.has(k))add('error',page,[n.id,hostnames.get(k).id],`Duplicate hostname “${h}”.`,'duphost');else hostnames.set(k,n);if(/\s/.test(h))add('info',page,n.id,`Hostname “${h}” contains spaces.`,'hostfmt')}
-      for(const field of['ip','mgmtIp']){const raw=n.data?.[field];if(!raw)continue;const found=C.ipsIn(raw);if(!found.length)add('error',page,n.id,`“${nm}”: “${raw}” is not a valid IPv4 address.`,'ipfmt');for(const ip of found){if(ips.has(ip))add('error',page,[n.id,ips.get(ip).id],`Duplicate IP address ${ip} (${nm} and ${nameOf(ips.get(ip))}).`,'dupip');else ips.set(ip,n);
-        const z=zoneOf(n,page),c=z&&C.cidr(z.data?.subnet);if(c&&field==='ip'){const v=C.ip2int(ip),dv=n.data?.vlan!=null&&n.data.vlan!==''&&(doc.vlans||[]).find(x=>String(x.id)===String(n.data.vlan)),dc=dv&&C.cidr(dv.subnet);if(!C.inCidr(v,c)){if(!(dc&&C.inCidr(v,dc)))add('warning',page,n.id,`${nm}: ${ip} is outside zone “${zoneName(z)}” subnet ${c.text}${dv?` and VLAN ${dv.id} subnet ${dv.subnet||'(none)'}`:''}.`,'subnet')}else if(c.bits<31&&(v===c.net||v===c.broadcast))add('error',page,n.id,`${nm}: ${ip} is the ${v===c.net?'network':'broadcast'} address of ${c.text}.`,'netaddr');const gw=C.ip2int(z.data?.gateway);if(gw!=null&&gw===v&&!['router','firewall','l3switch','rk-router','rk-firewall'].includes(n.type))add('warning',page,n.id,`${nm} uses the zone gateway address ${ip}.`,'gw')}}}
+      for(const field of['ip','mgmtIp']){const raw=n.data?.[field];if(!raw)continue;const found=C.ipsIn(raw);if(!found.length)add('error',page,n.id,`“${nm}”: “${raw}” is not a valid IPv4 address.`,'ipfmt',field);for(const ip of found){if(ips.has(ip))add('error',page,[n.id,ips.get(ip).id],`Duplicate IP address ${ip} (${nm} and ${nameOf(ips.get(ip))}).`,'dupip',ip);else ips.set(ip,n);
+        const z=zoneOf(n,page),c=z&&C.cidr(z.data?.subnet);if(c&&field==='ip'){const v=C.ip2int(ip),dv=n.data?.vlan!=null&&n.data.vlan!==''&&(doc.vlans||[]).find(x=>String(x.id)===String(n.data.vlan)),dc=dv&&C.cidr(dv.subnet);if(!C.inCidr(v,c)){if(!(dc&&C.inCidr(v,dc)))add('warning',page,n.id,`${nm}: ${ip} is outside zone “${zoneName(z)}” subnet ${c.text}${dv?` and VLAN ${dv.id} subnet ${dv.subnet||'(none)'}`:''}.`,'subnet',ip)}else if(c.bits<31&&(v===c.net||v===c.broadcast))add('error',page,n.id,`${nm}: ${ip} is the ${v===c.net?'network':'broadcast'} address of ${c.text}.`,'netaddr',ip);const gw=C.ip2int(z.data?.gateway);if(gw!=null&&gw===v&&!['router','firewall','l3switch','rk-router','rk-firewall'].includes(n.type))add('warning',page,n.id,`${nm} uses the zone gateway address ${ip}.`,'gw',ip)}}}
       if(!G.adj.get(n.id)?.length&&!Shapes.rackItems[n.type])add('info',page,n.id,`“${nm}” has no connections.`,'isolated');
       if(n.url?.startsWith('#page:')&&!doc.pages.some(p=>p.id===n.url.slice(6)))add('warning',page,n.id,`“${nm}” links to a page that no longer exists.`,'pagelink');
     }
     // overlapping devices
     const devs=page.items.filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&!Shapes.rackItems[n.type]);for(let i=0;i<devs.length;i++)for(let j=i+1;j<devs.length;j++){const a=C.box(devs[i]),c=C.box(devs[j]);const ox=Math.min(a.x+a.w,c.x+c.w)-Math.max(a.x,c.x),oy=Math.min(a.y+a.h,c.y+c.h)-Math.max(a.y,c.y);if(ox>a.w*.3&&oy>a.h*.3)add('warning',page,[devs[i].id,devs[j].id],`“${nameOf(devs[i])}” overlaps “${nameOf(devs[j])}”.`,'overlap')}
     // zones: subnet sanity
-    for(const z of page.items.filter(n=>n.kind==='zone')){const s=z.data?.subnet;if(!s)continue;const c=C.cidr(s);if(!c){add('error',page,z.id,`Zone “${zoneName(z)}”: “${s}” is not a valid CIDR subnet.`,'cidr');continue}if(c.ip!==c.net)add('info',page,z.id,`Zone “${zoneName(z)}”: ${s} is not the network address (did you mean ${c.text}?).`,'cidrnet');const gw=C.ip2int(z.data?.gateway);if(z.data?.gateway&&(gw==null||!C.inCidr(gw,c)))add('error',page,z.id,`Zone “${zoneName(z)}”: gateway ${z.data.gateway} is not inside ${c.text}.`,'gwout');for(const o of seenSubnets)if(o.z!==z&&((c.net&o.c.mask)>>>0)===o.c.net||((o.c.net&c.mask)>>>0)===c.net&&o.z!==z)add('warning',page,[z.id,o.z.id],`Subnets overlap: ${c.text} (${zoneName(z)}) and ${o.c.text} (${zoneName(o.z)}).`,'overlapnet');seenSubnets.push({z,c})}
+    for(const z of page.items.filter(n=>n.kind==='zone')){const s=z.data?.subnet;if(!s)continue;const c=C.cidr(s);if(!c){add('error',page,z.id,`Zone “${zoneName(z)}”: “${s}” is not a valid CIDR subnet.`,'cidr');continue}if(c.ip!==c.net)add('info',page,z.id,`Zone “${zoneName(z)}”: ${s} is not the network address (did you mean ${c.text}?).`,'cidrnet');const gw=C.ip2int(z.data?.gateway);if(z.data?.gateway&&(gw==null||!C.inCidr(gw,c)))add('error',page,z.id,`Zone “${zoneName(z)}”: gateway ${z.data.gateway} is not inside ${c.text}.`,'gwout');for(const o of seenSubnets)if(o.z!==z&&!C.inside(C.box(z),C.box(o.z),1)&&!C.inside(C.box(o.z),C.box(z),1)&&((c.net&o.c.mask)>>>0)===o.c.net||((o.c.net&c.mask)>>>0)===c.net&&o.z!==z)add('warning',page,[z.id,o.z.id],`Subnets overlap: ${c.text} (${zoneName(z)}) and ${o.c.text} (${zoneName(o.z)}).`,'overlapnet');seenSubnets.push({z,c})}
     for(const r of poe(page))if(r.budget&&r.draw>r.budget)add('error',page,r.sw.id,`PoE budget exceeded on ${nameOf(r.sw)}: ${r.draw.toFixed(1)} W of ${r.budget} W (${r.count} powered devices).`,'poe');else if(r.budget&&r.pct>85)add('warning',page,r.sw.id,`${nameOf(r.sw)} PoE budget at ${Math.round(r.pct)}% (${r.draw.toFixed(1)} / ${r.budget} W).`,'poe');
     for(const r of racks(page)){for(const[a,c]of r.overlaps)add('error',page,[a.id,c.id],`Rack “${nameOf(r.rack)}”: ${nameOf(a)} and ${nameOf(c)} occupy the same U.`,'rack');if(r.used>r.units)add('error',page,r.rack.id,`Rack “${nameOf(r.rack)}” is over capacity (${r.used}/${r.units} U).`,'rack')}
     if(page.items.some(n=>C.CAMERAS.includes(n.type))){const t=traffic(page);for(const[id,L]of t.loads)if(L.pct!=null&&L.pct>=80)add('warning',page,id,`Link carries ${L.text} of camera streams (${L.cap>=1000?L.cap/1000+'G':L.cap+'M'} link).`,'util')}
     const sp=spof(page);for(const a of sp.nodes)add('info',page,a.id,`Single point of failure: losing “${nameOf(sp.graph.byId.get(a.id))}” isolates ${a.cut} device(s).`,'spof');for(const b of sp.bridges)add('info',page,b.edge.id,`Non-redundant link between ${nameOf(sp.graph.byId.get(b.edge.from.node))} and ${nameOf(sp.graph.byId.get(b.edge.to.node))}.`,'bridge');
   }
-  const vids=new Map();for(const v of doc.vlans||[]){if(vids.has(String(v.id)))issues.push({severity:'error',page:-1,ids:[],message:`VLAN ${v.id} is defined twice (${vids.get(String(v.id))} / ${v.name}).`,rule:'vlan'});vids.set(String(v.id),v.name);if(!(+v.id>=1&&+v.id<=4094))issues.push({severity:'error',page:-1,ids:[],message:`VLAN ID ${v.id} is outside 1–4094.`,rule:'vlan'})}
+  const vids=new Map();for(const v of doc.vlans||[]){if(vids.has(String(v.id)))issues.push({severity:'error',page:-1,ids:[],message:`VLAN ${v.id} is defined twice (${vids.get(String(v.id))} / ${v.name}).`,rule:'vlan',sub:'twice:'+v.id});vids.set(String(v.id),v.name);if(!(+v.id>=1&&+v.id<=4094))issues.push({severity:'error',page:-1,ids:[],message:`VLAN ID ${v.id} is outside 1–4094.`,rule:'vlan',sub:'range:'+v.id})}
+  issues.push(...Checks.run(doc));for(const i of issues){i.cat??=Checks.catOf(i.rule);i.key??=Checks.key(i)}
+  // findings marked resolved or accepted in review keep that status while they are still detected
+  const marks=doc.review?.findings||{};for(const i of issues){const m=marks[i.key];i.status=m?.status||'open';i.note=m?.note||''}
   const order={error:0,warning:1,info:2};return issues.sort((a,b)=>order[a.severity]-order[b.severity])}
 
 // ---------- reports ----------
@@ -4723,7 +5130,7 @@ async function handleFile(file,handle=null,at=null){
     const doc=C.migrate(data);if(S.dirty&&!confirm('Open “'+file.name+'”? Unsaved changes stay recoverable with Undo.'))return;
     loadDocument(doc,{handle:name.endsWith('.json')?handle:null,name:file.name});notify(data.version===3?'Drawing opened.':'Port v'+(data.version||1)+' drawing imported and upgraded to v3.')
   }catch(err){notify(err.message||'Unable to read file.')}}
-function loadDocument(doc,{handle=null,name='',id=null}={}){S.fromTemplate=null;if(S.doc&&S.dirty)Workspace.saveCurrent(true);remember();Packs.installDoc(doc);Constraints.upgrade(doc);Quick.prepare(doc);S.doc=doc;S.docId=id||Workspace.newId();S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.fileHandle=handle;S.activeLayer=doc.layers[0].id;clearTransient();S.analysis=null;Conn.reset();S.dirty=false;setSaveState(name?'Opened '+name:'Ready');changed();S.dirty=false;fit();render()}
+function loadDocument(doc,{handle=null,name='',id=null}={}){S.fromTemplate=null;if(S.doc&&S.dirty)Workspace.saveCurrent(true);remember();Packs.installDoc(doc);Constraints.upgrade(doc);Quick.prepare(doc);S.doc=doc;S.docId=id||Workspace.newId();S.reviewMode=false;S.reviewDraft=null;document.body.classList.remove('reviewing');S.pageIndex=Math.max(0,doc.pages.findIndex(p=>!p.isBackground));S.fileHandle=handle;S.activeLayer=doc.layers[0].id;clearTransient();S.analysis=null;Conn.reset();S.dirty=false;setSaveState(name?'Opened '+name:'Ready');changed();S.dirty=false;fit();render()}
 function importImage(file,at){if(file.size>8*1024*1024)return notify('Use an image smaller than 8 MB.');const r=new FileReader();r.onload=()=>{const data=r.result,img=new Image();img.onload=()=>{const ratio=img.naturalHeight/img.naturalWidth||1;mutate(()=>{const c=at||[S.view.x+$('canvas').clientWidth/2/S.view.zoom,S.view.y+$('canvas').clientHeight/2/S.view.zoom],n=C.node('image',0,0,file.name.replace(/\.[^.]+$/,''),160,Math.max(16,160*ratio));C.move(n,grid(c[0]-80),grid(c[1]-n.h/2));n.image=data;n.layer=S.activeLayer;items().push(n);select([n.id])});notify('Image imported. Save it to your library to reuse it as a symbol.')};img.onerror=()=>notify('The image could not be decoded.');img.src=data};r.readAsDataURL(file)}
 function importLibraryData(d){const list=(d.library||[]).map(e=>{const p=C.page();p.items=e.items;C.validate({version:3,pages:[p]});return{id:C.uid(),name:String(e.name||'Imported symbol'),items:e.items}});S.library.push(...list);saveLibrary();notify(list.length+' library item(s) imported.')}
 function saveLibrary(){Store.kvSet('library',S.library).catch(()=>{});try{localStorage.setItem('port-v3-library',JSON.stringify(S.library))}catch{}renderPalette()}
@@ -5225,7 +5632,7 @@ return{list:()=>LIST.map(([id,name,description])=>({id,name,description})),build
 <script>
 // Editor state, history, pointer/keyboard interaction and the action registry.
 const $=id=>document.getElementById(id);
-const DEFAULT_PREFS={grid:true,snap:true,guides:true,rulers:true,showPorts:false,minimap:true,autoConnect:true,wheelZoom:false,gridStep:10,theme:'auto',paletteDisplay:'symbol',newDisplay:'symbol',leftOpen:true,rightOpen:true,jumpStyle:'arc',deleteConnectors:true,liveCheck:true};
+const DEFAULT_PREFS={grid:true,snap:true,guides:true,rulers:true,showPorts:false,minimap:true,autoConnect:true,wheelZoom:false,gridStep:10,theme:'auto',paletteDisplay:'symbol',newDisplay:'symbol',leftOpen:true,rightOpen:true,jumpStyle:'arc',deleteConnectors:true,liveCheck:true,showComments:true};
 const S={doc:null,pageIndex:0,selected:new Set(),activeLabel:null,segment:null,bend:null,mode:'select',view:{x:-40,y:-40,zoom:.8},drag:null,trace:null,hover:null,hoverId:null,snapPort:null,dropTarget:null,history:[],future:[],clipboard:[],space:false,dirty:false,guideLines:[],spacing:null,library:[],copiedStyle:null,highlights:new Set(),analysis:null,filterFn:null,filter:null,cursor:null,fileHandle:null,activeLayer:null,linkType:'eth',routeStyle:'auto',painter:false,lastClick:null,prefs:{...DEFAULT_PREFS}};
 const pg=()=>S.doc.pages[S.pageIndex],items=()=>pg().items,find=id=>items().find(n=>n.id===id),picked=()=>items().filter(n=>S.selected.has(n.id));
 const isLocked=n=>!!n.locked||!!layerOf(n)?.locked,editable=()=>picked().filter(n=>!isLocked(n));
@@ -5237,14 +5644,18 @@ let autosaveTimer=null;
 function snapshot(){return JSON.stringify({doc:S.doc,pageIndex:S.pageIndex})}
 function remember(){S.history.push(snapshot());if(S.history.length>150)S.history.shift();S.future=[]}
 function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();Quick.revInfo();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
-function mutate(fn){remember();const r=fn();changed();render();return r}
+// Review mode locks the layout: an edit stops here (the global handler swallows the error); review data changes pass.
+class ReviewLock extends Error{constructor(){super('Review mode: the layout is locked');this.name='ReviewLock'}}
+function mutate(fn){if(S.reviewMode&&!S.reviewEdit){ReviewUI.blocked();throw new ReviewLock()}remember();const r=fn();changed();render();return r}
 let checkTimer=null;
 // Design-rule check runs quietly after edits; the status bar shows the count and opens the full list.
-function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),e=issues.filter(i=>i.severity==='error').length,w=issues.filter(i=>i.severity==='warning').length,b=$('issueCount');if(!b)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
-function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear()}
+// Findings accepted as intentional or marked resolved do not count.
+function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;if(!S.side)return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),open=issues.filter(i=>i.status==='open'),e=open.filter(i=>i.severity==='error').length,w=open.filter(i=>i.severity==='warning').length,b=$('issueCount');ReviewUI.update(issues);if(!b||!S.prefs.liveCheck)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
+function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear();S.findMark=null}
 function restore(s){const r=JSON.parse(s);S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;changed();render()}
-function undo(){if(!S.history.length)return notify('Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
-function redo(){if(!S.future.length)return;S.history.push(snapshot());restore(S.future.pop())}
+// in review mode only what was done during the review can be undone
+function undo(){if(!S.history.length||S.reviewMode&&S.history.length<=S.reviewFloor)return notify(S.reviewMode?'Nothing to undo in this review.':'Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
+function redo(){if(!S.future.length||S.reviewMode&&S.future.length<=S.reviewFutureFloor)return;S.history.push(snapshot());restore(S.future.pop())}
 function setSaveState(t){const e=$('saveState');if(e)e.textContent=t}
 function autosave(){try{Packs.embedUsed(S.doc);localStorage.setItem('port-v3-recovery',JSON.stringify(S.doc));setSaveState(S.fileHandle?'Unsaved · recovery copy kept':'Recovery copy saved in this browser')}catch{setSaveState('Quick recovery copy too large — kept in browser storage only')}Workspace.saveCurrent()}
 function savePrefs(){try{localStorage.setItem('port-v3-prefs',JSON.stringify(S.prefs))}catch{}}
@@ -5254,8 +5665,8 @@ function notify(text,ms=3800){const t=$('toast');t.textContent=text;t.hidden=fal
 
 // ---------- modes ----------
 const IS_MAC=/Mac|iPhone|iPad/.test(navigator.platform||navigator.userAgent),MODK=IS_MAC?'⌘':'Ctrl',ALTK=IS_MAC?'⌥':'Alt';
-const HINTS={select:`Click to select · Shift/${MODK}-click adds · drag on empty space for a window (fully inside; ${ALTK} = touching) · ${ALTK}-click picks what is underneath · Tab steps · ${MODK}/${ALTK}-drag duplicates`,lasso:`Draw round what to select (fully inside; ${ALTK} = touching) · Shift adds · Esc returns to the pointer`,connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.'};
-function setMode(m){S.mode=m;S.trace=null;S.hover=null;S.snapPort=null;S.dropTarget=null;S.painter=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));$('canvas').style.cursor=m==='pan'?'grab':m==='select'?'default':'crosshair';$('hint').textContent=HINTS[m]||'';render('overlay');render('panel')}
+const HINTS={select:`Click to select · Shift/${MODK}-click adds · drag on empty space for a window (fully inside; ${ALTK} = touching) · ${ALTK}-click picks what is underneath · Tab steps · ${MODK}/${ALTK}-drag duplicates`,lasso:`Draw round what to select (fully inside; ${ALTK} = touching) · Shift adds · Esc returns to the pointer`,connect:'Drag from a device to another to connect · or click a point, then click bends, Enter to finish (manual styles) · Alt = free point',zone:'Drag a rectangle to create a network zone (container). Members move with the zone.',text:'Click to add text, or drag to set the text box width.',port:'Click a device edge to add a connection point · drag existing points to move them.',pan:'Drag to pan · wheel / pinch to zoom.',comment:'Click a device, a link or a spot to pin a comment · drag round an area · Esc returns to the pointer'};
+function setMode(m){if(S.reviewMode&&!['select','pan','comment','lasso'].includes(m)){ReviewUI.blocked();m='select'}S.mode=m;S.trace=null;S.hover=null;S.snapPort=null;S.dropTarget=null;S.painter=false;document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===m));$('canvas').style.cursor=m==='pan'?'grab':m==='select'?'default':'crosshair';$('hint').textContent=HINTS[m]||'';render('overlay');render('panel')}
 
 // ---------- coordinates & snapping ----------
 function point(e){const r=$('canvas').getBoundingClientRect();return[S.view.x+(e.clientX-r.left)/S.view.zoom,S.view.y+(e.clientY-r.top)/S.view.zoom]}
@@ -5298,6 +5709,11 @@ function beginPointer(e){
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
   if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;const msg=S.pickCancel||'Path trace cancelled.';S.pickCancel=null;if(n?.kind==='node'){h(n.id);return}notify(msg,1500)}
   const capture=()=>{try{$('canvas').setPointerCapture(e.pointerId)}catch{}};
+  if(role==='pin'){ReviewUI.focusComment(t.dataset.comment);return}
+  if(S.mode==='comment'&&e.button===0&&!S.space){S.drag={kind:'comment',start:p,startClient:[e.clientX,e.clientY],target:n&&n.kind!=='legend'&&!n.pin?n.id:null};capture();return}
+  // review: a click selects, a drag pans — nothing moves
+  if(S.reviewMode&&S.mode!=='lasso'){if(n&&!n.pin&&!S.space&&e.button===0)selection(id,e.shiftKey||e.ctrlKey||e.metaKey);else if(!n&&!e.shiftKey&&e.button===0)S.selected.clear();S.activeLabel=null;S.findMark=null;
+    S.drag={kind:'pan',start:[e.clientX,e.clientY],view:{...S.view}};$('canvas').style.cursor='grabbing';capture();render('overlay');render('panel');ReviewUI.onSelect();return}
   if(role==='guide'&&S.mode==='select'){remember();S.drag={kind:'guide',guide:t.dataset.guide};capture();return}
   if(S.space||S.mode==='pan'||e.button===1){e.preventDefault();S.drag={kind:'pan',start:[e.clientX,e.clientY],view:{...S.view}};$('canvas').style.cursor='grabbing';capture();return}
   if(S.painter){if(n){applyPainter(n);if(!S.painterSticky){S.painter=false;$('canvas').style.cursor='default'}}else{S.painter=false;$('canvas').style.cursor='default'}render();return}
@@ -5351,6 +5767,7 @@ function pointerMove(e,fromPan=false){
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
   if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;clampView();render('overlay');return}
+  if(d.kind==='comment'){d.current=p;render('overlay');return}
   if(['box','zone','textbox'].includes(d.kind)){d.current=d.kind==='zone'?[grid(p[0]),grid(p[1])]:p;if(d.kind==='box')d.touch=e.altKey;render('overlay');return}
   if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
@@ -5407,6 +5824,7 @@ function doResize(d,p,e){
 
 function pointerUp(e){
   const d=S.drag;if(!d)return;S.drag=null;S.guideLines=[];S.spacing=null;const p=point(e);$('canvas').style.cursor=S.mode==='pan'?'grab':S.mode==='select'?'default':'crosshair';
+  if(d.kind==='comment'){ReviewUI.commentAt(d,p);render('overlay');return}
   if(d.kind==='box'){const q=d.current||d.start,r={x:Math.min(q[0],d.start[0]),y:Math.min(q[1],d.start[1]),w:Math.abs(q[0]-d.start[0]),h:Math.abs(q[1]-d.start[1])},big=Math.max(r.w,r.h)*S.view.zoom>3;
     // window selection: only what it fully covers, whichever way you drag; hold Alt for everything it touches
     if(big)for(const id of Select.windowSelect(r,!!d.touch))S.selected.add(id);else if(d.zoneClick)selection(d.zoneClick)}
@@ -5453,6 +5871,7 @@ function quickAddMenu(e,p,d){
     const n=Shapes.make(type,0,0);C.move(n,grid(p[0]-n.w/2)-n.x,grid(p[1]-n.h/2)-n.y);n.display=S.prefs.newDisplay==='symbol'?n.display:S.prefs.newDisplay;n.layer=S.activeLayer;items().push(n);createEdge(d.from,{node:n.id,port:null},d.fromP,C.center(n));changed();select([n.id]);render()}}
 
 function onDoubleClick(e,p,t,n){
+  if(S.reviewMode){if(n&&!n.pin)ReviewUI.draftFor(n,p);return}
   const lr=e.target?.closest?.('[data-legend-row]');if(lr&&n?.kind==='legend'){openLegendRow(n,lr.dataset.legendRow);return}
   const role=t?.dataset.role;if(n&&isLocked(n))return;
   if(role==='label'){editLabel(n.id,t.dataset.label);return}
@@ -5475,7 +5894,7 @@ function editLabel(owner,id,fresh=false){const n=find(owner),l=n?.labels?.find(x
 function editCell(n,row,col){const x=n.x+n.cols.slice(0,col).reduce((a,b)=>a+b,0)+n.cols[col]/2,y=n.y+row*n.rowH+n.rowH/2;select([n.id]);$('inlineText').dataset.single='1';openEditor(x,y,String(n.rows[row][col]??''),v=>mutate(()=>{n.rows[row][col]=v}),{width:Math.max(140,n.cols[col]*S.view.zoom+20)});const ed=$('inlineText');ed.addEventListener('tabnext',ev=>{let c=col+ev.detail,r=row;if(c>=n.cols.length){c=0;r++}if(c<0){c=n.cols.length-1;r--}if(r>=0&&r<n.rows.length)setTimeout(()=>editCell(n,r,c),0)},{once:true})}
 
 // ---------- editing operations ----------
-function addNode(type,x,y,opts={}){
+function addNode(type,x,y,opts={}){if(S.reviewMode)return ReviewUI.blocked();
   if(type.startsWith('ann:'))return insertAnnotation(type.slice(4),x,y);
   const n=mutate(()=>{const n=Shapes.make(type,0,0);C.move(n,grid(x-n.w/2)-n.x,grid(y-n.h/2)-n.y);if(Shapes.kindOf(type)==='device'&&S.prefs.newDisplay!=='symbol')n.display=S.prefs.newDisplay;if(opts.image)n.image=opts.image;n.layer=S.activeLayer;applyThemeToNew(n);
     // dropped into a rack → snap to the slot under the pointer
@@ -5487,7 +5906,7 @@ function addNode(type,x,y,opts={}){
 function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(t&&S.doc.theme!=='port'){if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
   // a style set for this type from the legend applies to new ones too
   const ts=S.doc.typeStyles?.[n.type];if(ts){if(ts.stroke)n.stroke=ts.stroke;if(ts.display&&Shapes.kindOf(n.type)==='device')n.display=ts.display}}
-function insertAnnotation(kind,x,y){
+function insertAnnotation(kind,x,y){if(S.reviewMode)return ReviewUI.blocked();
   if(kind==='zone'){const z=mutate(()=>{const z=C.zone('Network zone',grid(x-160),grid(y-100),320,200);z.layer=S.activeLayer;items().unshift(z);select([z.id]);return z});return z}
   if(kind==='text'){const t=mutate(()=>{const t=C.text('Text',grid(x-120),grid(y-20),240,50,14);t.layer=S.activeLayer;items().push(t);select([t.id]);return t});editLabel(t.id,t.labels[0].id,true);return t}
   if(kind==='callout'){const target=picked().find(n=>n.kind==='node');const t=mutate(()=>{const t=C.text('Callout text',grid(x),grid(y-100),190,46,12);t.fill='#ffffff';t.stroke='#64748b';t.labels[0].wrapWidth=170;if(target)t.target=target.id;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});editLabel(t.id,t.labels[0].id,true);return t}
@@ -5535,6 +5954,9 @@ function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu','ribbon
 function onKey(e){
   const tag=document.activeElement?.tagName;if(['INPUT','TEXTAREA','SELECT'].includes(tag)||document.activeElement?.isContentEditable||document.querySelector('dialog[open]'))return;
   const k=e.key.toLowerCase(),mod=e.ctrlKey||e.metaKey;
+  if(e.key==='F8'){e.preventDefault();ReviewUI.step(e.shiftKey?-1:1);return}
+  if(k==='/'&&!mod){e.preventDefault();actions.palette();return}
+  if(S.reviewMode&&!mod&&!document.body.classList.contains('presenting')){if(k==='c'||k==='m'){setMode(S.mode==='comment'?'select':'comment');return}if(['delete','backspace','enter','f2','l','z','t','p'].includes(k)||k.startsWith('arrow')&&S.selected.size){e.preventDefault();ReviewUI.blocked();return}}
   if(document.body.classList.contains('presenting')){if(k==='escape')actions.present();else if(['arrowright','pagedown',' '].includes(k))presentStep(1);else if(['arrowleft','pageup'].includes(k))presentStep(-1);return}
   if(e.key==='F1'&&mod){e.preventDefault();actions.toggleRibbon();return}
   if(mod&&e.altKey&&(k==='arrowleft'||k==='arrowright')){e.preventDefault();actions[k==='arrowleft'?'toggleLeft':'toggleRight']();return}
@@ -5545,7 +5967,7 @@ function onKey(e){
   if(e.code==='Space'){e.preventDefault();if(!S.space){S.space=true;$('canvas').style.cursor='grab'}return}
   if(k==='tab'&&!mod&&!e.altKey){e.preventDefault();Select.tab(e.shiftKey);return}
   if(k==='escape'&&document.body.classList.contains('ribbonPeek')){document.body.classList.remove('ribbonPeek');renderRibbon();return}
-  if(k==='escape'){if(S.drag&&S.history.length&&!['box','pan','zone','textbox'].includes(S.drag.kind)){const s=S.history.pop();S.drag=null;restore(s)}S.drag=null;hideMenus();if(S.analysis||S.highlights.size||S.filter){S.analysis=null;S.highlights.clear();setFilter(null);render();return}setMode('select');S.selected.clear();S.activeLabel=null;S.painter=false;$('printPreview').hidden=true;render();return}
+  if(k==='escape'){if(S.drag&&S.history.length&&!['box','pan','zone','textbox'].includes(S.drag.kind)){const s=S.history.pop();S.drag=null;restore(s)}S.drag=null;hideMenus();if(S.reviewDraft){S.reviewDraft=null;ReviewUI.draw(true);render();return}if(S.analysis||S.highlights.size||S.filter||S.findMark){S.analysis=null;S.highlights.clear();S.findMark=null;setFilter(null);render();return}setMode('select');S.selected.clear();S.activeLabel=null;S.painter=false;$('printPreview').hidden=true;render();return}
   if(S.mode==='connect'&&S.trace&&k==='backspace'){e.preventDefault();if(S.trace.steps.length)S.trace.points.splice(S.trace.steps.pop());else S.trace=null;render('overlay');return}
   if(k==='enter'&&S.mode==='connect'&&S.trace){finishTrace();return}
   if((k==='enter'||k==='f2')&&S.selected.size===1){e.preventDefault();const n=picked()[0];if(n.kind==='edge')editEdgeLabel(n);else if(n.kind==='table')editCell(n,0,0);else onDoubleClick(e,C.center(n),null,n);return}
@@ -5840,7 +6262,11 @@ const actions={
   shortcuts:()=>openShortcuts(),help:()=>openHelp(),palette:()=>openPalette(),about:()=>openHelp(),
 };
 for(const[k]of Ports.MODES)actions['ports_'+k]=()=>Quick.arrangePorts(k);
-for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom','deleteConnectors','liveCheck'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render();if(k==='liveCheck')scheduleCheck()};
+for(const k of['grid','rulers','guides','showPorts','minimap','autoConnect','snap','wheelZoom','deleteConnectors','liveCheck','showComments'])actions['toggle_'+k]=()=>{S.prefs[k]=!S.prefs[k];savePrefs();renderRibbon();render();if(k==='liveCheck')scheduleCheck()};
+// check & review (js/reviewui.js)
+Object.assign(actions,{reviewMode:()=>ReviewUI.toggleMode(),reviewComment:()=>{ReviewUI.open('comments');setMode('comment')},reviewFindings:()=>ReviewUI.open('findings'),reviewChecklist:()=>ReviewUI.open('checklist'),reviewChanges:()=>ReviewUI.open('changes'),
+  reviewReport:()=>ReviewUI.openReport(),reviewComplete:()=>{ReviewUI.open('changes');ReviewUI.openComplete()},checkConnections:()=>ReviewUI.open('findings',{cat:'connectivity',status:'open'}),checkLabels:()=>ReviewUI.open('findings',{cat:'labels,data',status:'open'}),
+  checkReadability:()=>ReviewUI.open('findings',{cat:'readability',status:'open'}),nextFinding:()=>ReviewUI.step(1),prevFinding:()=>ReviewUI.step(-1)});
 
 </script>
 <script>
@@ -5878,10 +6304,16 @@ const RIBBON=[
     {name:'Registries',items:[B('vlans','VLANs','vlan','VLAN registry'),B('repIp','IP plan','ip')]},
     {name:'Reports',items:[B('repInventory','Inventory','report',''),B('repCables','Cable schedule','connect'),B('repBom','BOM','fields','Bill of materials with optional prices'),B('repRack','Racks','rack'),B('repVlan','VLAN table','vlan')]}]},
   {id:'analyze',name:'Analyze',groups:[
-    {name:'Validate',items:[B('check','Check diagram','check','Design-rule check: IPs, subnets, loose links, PoE, racks…',true)]},
+    {name:'Validate',items:[B('check','Check diagram','check','All findings: connections, labels & data, readability, network design — click one to go to it, fix it or accept it',true),B('checkConnections','Connections','connect','Unattached lines, dangling ends, self-connections, reused ports'),B('checkLabels','Labels & data','fields','Free labels, duplicate identifiers, labels that disagree with the data'),B('checkReadability','Readability','find','Overlapping labels or links, hidden text, lines through devices, content off the page')]},
     {name:'Resilience',items:[B('spof','Single points of failure','spof','Highlight devices and links whose failure isolates part of the network',true),B('trace','Trace path','trace','Click a device, then the destination')]},
     {name:'Capacity',items:[B('traffic','Stream traffic','traffic','Route camera streams to recorders and show link utilisation',true),B('poeBudget','PoE budget','poe'),B('storage','CCTV storage','storage')]},
     {name:'View',items:[B('filter','Highlight by data','filter','Dim everything that does not match'),B('clearAnalysis','Clear','clear','Esc')]}]},
+  {id:'review',name:'Review',groups:[
+    {name:'Review',items:[B('reviewMode','Review mode','review','Inspect and annotate without changing the layout: click selects, drag pans, edits are locked',true)]},
+    {name:'Comments',items:[B('reviewComment','Comment','comment','Pin a comment to a device, a link, an area (drag) or a point',true),T('showComments','Show comments','comment')]},
+    {name:'Findings',items:[B('check','Findings','check','Open, resolved and intentional findings of the design check',true),B('checkConnections','Connections','connect'),B('checkLabels','Labels & data','fields'),B('checkReadability','Readability','find')]},
+    {name:'Sign-off',items:[B('reviewChecklist','Checklist','checklist','Connectivity, labels, device data, readability — pass or needs work',true),B('reviewChanges','Changes','compare','What changed since the previous review'),B('reviewComplete','Complete review','resolve','Record this review; the next one compares against now')]},
+    {name:'Report',items:[B('reviewReport','Review report','report','Comments, flagged errors and unresolved items together — HTML, PDF or CSV',true)]}]},
   {id:'arrange',name:'Arrange',groups:[
     {name:'Align',items:[B('align0','Left','align0'),B('align1','Centre','align1'),B('align2','Right','align2'),B('align3','Top','align3'),B('align4','Middle','align4'),B('align5','Bottom','align5')]},
     {name:'Space & size',items:[B('distributeX','Distribute ↔','distH'),B('distributeY','Distribute ↕','distV'),B('sameWidth','Same width','samew'),B('sameSize','Same size','duplicate')]},
@@ -5897,7 +6329,7 @@ const RIBBON=[
     {name:'Zoom',items:[B('fit','Fit page','fit','Shift+1'),B('fitSelection','Selection','fitpage','Shift+2'),B('zoom100','100%','hundred','Ctrl+1'),B('zoomIn','Zoom in','zoomIn','Ctrl+='),B('zoomOut','Zoom out','zoomOut','Ctrl+-')]},
     {name:'Layout',items:[B('fullscreen','Full screen','fullscreen','The whole editor full screen — ribbon, panels and all (Ctrl+Shift+F)',true),B('focusMode','Focus mode','focus','Canvas only — Ctrl+. to toggle',true),B('resetLayout','Reset layout','reroute','Restore title bar, ribbon, panels and status bar'),B('toggleLeft','Shapes panel','sideL','Ctrl+Alt+←'),B('toggleRight','Inspector','sideR','Ctrl+Alt+→'),B('toggleRibbon','Collapse ribbon','ribbonUp','Ctrl+F1'),B('toggleHeader','Title bar','titleBar'),B('toggleStatus','Status bar','statusBar')]},
     {name:'Window',items:[T('wheelZoom','Wheel zooms','wheel'),B('uiTheme','Light / dark','moon'),B('present','Present','present','Full-screen; arrows change page; Esc exits',true)]},
-    {name:'Help',items:[B('tour','Tour','tour','A quick tour of the editor (6 steps)'),B('palette','Commands','command','Ctrl+K'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
+    {name:'Help',items:[B('tour','Tour','tour','A quick tour of the editor (6 steps)'),B('palette','Search','search','Find any tool, setting, shape or device (Ctrl+K or /)'),B('shortcuts','Shortcuts','keyboard','?'),B('help','Guide','help')]}]},
 ];
 function renderRibbon(){const tab=RIBBON.find(r=>r.id===(S.ribbonTab||'home'))||RIBBON[0];
   const cls=document.body.classList,peekOn=cls.contains('ribbonPeek'),collapsed=!!S.prefs.ribbonCollapsed;
@@ -5943,7 +6375,7 @@ function renderChrome(){
   $('pageTabs').innerHTML=S.doc.pages.map((p,i)=>`<button data-page="${i}" draggable="true" class="${i===S.pageIndex?'active':''} ${p.isBackground?'bgTab':''}" title="${p.isBackground?'Background page':'Double-click to rename · right-click for options'}">${p.isBackground?'▧ ':''}${html(p.name)}</button>`).join('')+'<button data-action="addPage" title="Add page" class="addTab">＋</button>';
   if(document.activeElement!==$('docName'))$('docName').value=S.doc.name;document.title=S.doc.name+' · Port Network Studio';
   const sel=picked();$('selectionCount').textContent=sel.length?`${sel.length} selected${sel.length===1&&sel[0].kind!=='edge'?` · ${Math.round(sel[0].w/C.PX)}×${Math.round(sel[0].h/C.PX)} mm`:''}`:`${items().length} objects`;
-  $('pageInfo').textContent=`${pg().paper==='Custom'?pg().customW+'×'+pg().customH+' mm':pg().paper} · ${pg().orientation}`;showZoom();
+  ReviewUI.badge();$('pageInfo').textContent=`${pg().paper==='Custom'?pg().customW+'×'+pg().customH+' mm':pg().paper} · ${pg().orientation}`;showZoom();
   $('layerSel').innerHTML=S.doc.layers.map(l=>`<option value="${l.id}" ${S.activeLayer===l.id?'selected':''}>${html(l.name)}</option>`).join('');
   $('undoBtn')?.toggleAttribute('disabled',!S.history.length);
   document.querySelectorAll('[data-mode]').forEach(b=>b.classList.toggle('active',b.dataset.mode===S.mode));
@@ -5952,7 +6384,9 @@ function renderChrome(){
   if(S.ribbonTab==='design'||S.ribbonTab==='data'){const keep=document.activeElement?.closest?.('#ribbon');if(!keep)renderRibbon()}}
 
 // ---------- dialogs ----------
-function openDialog(title,body,{wide=false,modeless=false,cls=''}={}){const d=$('dlg');d.className=(wide?'wide ':'')+(modeless?'floating ':'')+cls;d.innerHTML=`<header><h2>${title}</h2><button class="x" data-close>×</button></header><div class="dlgBody">${body}</div>`;if(d.open)d.close();modeless?d.show():d.showModal();return d}
+// light: a click outside closes it (search, lists to look at — not forms)
+function openDialog(title,body,{wide=false,modeless=false,cls='',light=false}={}){const d=$('dlg');d.className=(wide?'wide ':'')+(modeless?'floating ':'')+cls;d.innerHTML=`<header><h2>${title}</h2><button class="x" data-close>×</button></header><div class="dlgBody">${body}</div>`;if(d.open)d.close();
+  d.onmousedown=light?e=>{if(e.target!==d)return;const r=d.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)closeDialog()}:null;modeless?d.show():d.showModal();return d}
 function closeDialog(){const d=$('dlg');if(d.open)d.close()}
 function openTemplates(mode){mode??=S.prefs.tplMode==='add'&&items().length?'add':'new';const list=Templates.list(),mine=TplLib.list();
   const cardsFor=add=>`${add?'':'<button class="tpl" data-tpl="_blank"><div class="thumb blank">＋</div><b>Blank drawing</b><span>A3 landscape, empty</span></button>'}${list.map(t=>`<button class="tpl" data-tpl="b:${t.id}"><div class="thumb" data-thumb="b:${t.id}"></div><b>${html(t.name)}</b><span>${html(t.description)}</span></button>`).join('')}${mine.map(t=>`<button class="tpl" data-tpl="u:${t.id}"><div class="thumb" data-thumb="u:${t.id}"></div><b>${html(t.name)}</b><span>My template${t.description?' · '+html(t.description):''}</span></button>`).join('')}`;
@@ -6030,10 +6464,7 @@ function openImportDialog({tab='csv',devices='',text='',update=false}={}){
 function showReport(r){const max=300;const d=openDialog(r.title,`<p class="muted">${r.rows.length} row(s). Download for Excel, copy, or place the table on a page (it stays editable).</p><div class="tableWrap"><table class="report"><thead><tr>${r.columns.map(c=>`<th>${html(c)}</th>`).join('')}</tr></thead><tbody>${r.rows.slice(0,max).map(row=>`<tr>${row.map(v=>`<td>${html(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>${r.rows.length>max?`<p class="muted">…and ${r.rows.length-max} more rows in the download.</p>`:''}</div><footer><button data-rep="csv">Download CSV</button><button data-rep="copy">Copy for Excel</button><button data-rep="page">Insert on this page</button><button class="primary" data-rep="newpage">Insert on a new page</button></footer>`,{wide:true});
   d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const a=e.target.closest('[data-rep]')?.dataset.rep;if(!a)return;if(a==='csv')download(safeName(S.doc.name+' - '+r.title)+'.csv','﻿'+Analysis.toCSV(r),'text/csv');if(a==='copy')navigator.clipboard.writeText(Analysis.toTSV(r)).then(()=>notify('Copied — paste into Excel.'));if(a==='page'||a==='newpage'){closeDialog();insertReportTable(r,a==='newpage')}}}
 function insertReportTable(r,newPage){mutate(()=>{if(newPage){const p=C.page(r.title);p.paper='A3';S.doc.pages.push(p);S.pageIndex=S.doc.pages.length-1;clearTransient()}const size=10,cols=r.columns.map((c,i)=>Math.min(260,Math.max(54,...[c,...r.rows.slice(0,200).map(x=>x[i])].map(v=>C.textWidth(String(v??''),size,true)+16)))),m=pg().margin*C.PX;const t={id:C.uid(),kind:'table',x:m+20,y:m+50,cols,rowH:20,size,header:true,rows:[r.columns,...r.rows.map(x=>x.map(v=>String(v??'')))],labels:[],stroke:'#94a3b8',headerFill:'#eef2f7',layer:S.activeLayer};tableLayout(t);const title=C.text(r.title,m+20,m+10,400,30,16);title.labels[0].bold=true;items().push(title,t);select([t.id]);if(newPage)Builder.autoSizePage(pg(),{notify:false})});fit()}
-function openCheck(){const issues=Analysis.check(S.doc),counts={error:0,warning:0,info:0};issues.forEach(i=>counts[i.severity]++);let filter=counts.error?'error':counts.warning?'warning':'all';
-  const draw=()=>{const list=issues.filter(i=>filter==='all'||i.severity===filter);return`<div class="chipsRow">${[['all','All',issues.length],['error','Errors',counts.error],['warning','Warnings',counts.warning],['info','Notes',counts.info]].map(([k,t,c])=>`<button data-sev="${k}" class="${filter===k?'active':''} sev-${k}">${t} <b>${c}</b></button>`).join('')}<button data-recheck>↻ Re-check</button></div><div class="issues">${list.map((i,k)=>`<button class="issue sev-${i.severity}" data-issue="${issues.indexOf(i)}"><i></i><span>${html(i.message)}</span>${i.page>=0?`<em>${html(S.doc.pages[i.page]?.name||'')}</em>`:''}</button>`).join('')||'<p class="muted pad">✓ Nothing to report.</p>'}</div>`};
-  const d=openDialog('Check diagram',`<div id="checkBody">${draw()}</div>`,{modeless:true});
-  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const s=e.target.closest('[data-sev]');if(s){filter=s.dataset.sev;$('checkBody').innerHTML=draw();return}if(e.target.closest('[data-recheck]')){closeDialog();openCheck();return}const it=e.target.closest('[data-issue]');if(it){const i=issues[+it.dataset.issue];if(i.page>=0&&i.page!==S.pageIndex){S.pageIndex=i.page;clearTransient()}S.highlights=new Set(i.ids);select(i.ids.filter(id=>find(id)));const n=find(i.ids[0]);if(n){const b=C.bounds(i.ids.map(find).filter(Boolean),true),svg=$('canvas');S.view.x=b.x+b.w/2-svg.clientWidth/2/S.view.zoom;S.view.y=b.y+b.h/2-svg.clientHeight/2/S.view.zoom}render();d.querySelectorAll('.issue').forEach(x=>x.classList.toggle('active',x===it))}}}
+function openCheck(){ReviewUI.open('findings')}
 function openFind(){const d=openDialog('Find & replace',`<label class="fld"><span>Find</span><input id="findText" placeholder="Name, IP, model, VLAN…" autocomplete="off"></label><label class="fld"><span>Replace with</span><input id="replaceText"></label><div class="row"><label class="check"><input type="checkbox" id="findData" checked>Search shape data</label><label class="check"><input type="checkbox" id="findCase">Match case</label></div><div class="row"><label class="check"><input type="checkbox" id="findAll">All pages</label><span></span></div><div id="findResults" class="issues"></div><footer><button data-replace-all>Replace all</button><button class="primary" data-select-found>Select results</button></footer>`,{modeless:true});
   const run=()=>{const q=$('findText').value,cs=$('findCase').checked,inData=$('findData').checked,all=$('findAll').checked;S.found=[];if(!q){$('findResults').innerHTML='';S.highlights.clear();render('overlay');return}const m=s=>cs?String(s).includes(q):String(s).toLowerCase().includes(q.toLowerCase());
     (all?S.doc.pages:[pg()]).forEach(p=>{const pi=S.doc.pages.indexOf(p);for(const n of p.items){const hits=[];(n.labels||[]).forEach(l=>{if(m(l.text))hits.push('text')});if(inData)for(const[k,v]of Object.entries(n.data||{}))if(m(v))hits.push(k);if(n.fromIf&&m(n.fromIf)||n.toIf&&m(n.toIf))hits.push('interface');if(n.kind==='table'&&n.rows.some(r=>r.some(m)))hits.push('table');if(hits.length)S.found.push({pi,n,hits})}});
@@ -6052,23 +6483,21 @@ function openVlans(){let rows=C.copy(S.doc.vlans||[]);const draw=()=>`<table cla
   d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(e.target.closest('[data-vadd]')){const next=Math.max(0,...rows.map(r=>+r.id||0))+10;rows.push({id:next,name:'VLAN '+next,subnet:'',gateway:'',color:Shapes.PALETTE[rows.length%Shapes.PALETTE.length]});$('vlanTable').innerHTML=draw();return}const del=e.target.closest('[data-vdel]');if(del){rows.splice(+del.dataset.vdel,1);$('vlanTable').innerHTML=draw();return}
     if(e.target.closest('[data-vzones]')){for(const p of S.doc.pages)for(const z of p.items)if(z.kind==='zone'&&z.data?.vlan&&!rows.some(r=>String(r.id)===String(z.data.vlan)))rows.push({id:z.data.vlan,name:Analysis.zoneName(z),subnet:z.data.subnet||'',gateway:z.data.gateway||'',color:Shapes.PALETTE[rows.length%Shapes.PALETTE.length]});$('vlanTable').innerHTML=draw();return}
     if(e.target.closest('[data-vsave]')){mutate(()=>S.doc.vlans=rows.filter(r=>String(r.id).trim()));closeDialog();notify('VLAN registry saved ('+S.doc.vlans.length+').')}}}
-const SHORTCUTS=[['V / C / Z / T / P / H','Pointer · Connector · Zone · Text · Points · Pan'],['Space + drag','Pan'],['Ctrl/⌘ + wheel or pinch','Zoom'],['Shift+1 / Shift+2 · F','Fit page / fit selection'],['Ctrl+1','Zoom 100 %'],['Enter / F2 / double-click','Edit text'],['Delete','Delete selection, section or bend'],['Arrows (Shift ×10)','Nudge'],['Click','Select (top-most shape; unfilled shapes such as revision clouds by their outline)'],['Shift / Ctrl/⌘ + click','Add to / remove from the selection'],['Click a grouped shape again','Select just that member of the group'],['Alt + click','Select what is underneath (repeat to cycle)'],['Drag on empty space or inside a zone','Window: selects only what is fully inside (hold Alt for touching)'],['Tab / Shift+Tab','Select next / previous shape'],['Ctrl+A','Select all'],['Ctrl/⌘ or Alt + drag','Duplicate while dragging (held from the start)'],['Ctrl/⌘ pressed during a drag','Move without snapping'],['Shift + drag','Constrain to axis / keep proportions'],['Ctrl+C / X / V / D','Copy · cut · paste · duplicate (works across tabs)'],['Ctrl+Z / Ctrl+Y','Undo / redo'],['Ctrl+G / Ctrl+Shift+G','Group / ungroup'],['Ctrl+] / Ctrl+[','Bring forward / send backward (+Shift: front/back)'],['Ctrl+L / Ctrl+Shift+L','Lock / unlock'],['Ctrl+B / Ctrl+I','Bold / italic text'],['Ctrl+F','Find & replace'],['Ctrl+K','Command palette'],['Ctrl+S / Ctrl+Shift+S','Save / save as'],['Ctrl+P','Print / PDF'],['Ctrl+E','Export PNG'],['L','Auto-layout page'],['Ctrl/⌘ + click a shape with a link','Open its hyperlink'],['Ctrl+. ','Focus mode (canvas only)'],['Ctrl+F1','Collapse / pin the ribbon'],['Ctrl+Alt+← / Ctrl+Alt+→','Hide / show the shapes panel / inspector'],['Esc','Cancel · clear highlights · back to pointer'],['Connector mode: Backspace / Enter','Remove last bend / finish manual path']];
+const SHORTCUTS=[['V / C / Z / T / P / H','Pointer · Connector · Zone · Text · Points · Pan'],['Space + drag','Pan'],['Ctrl/⌘ + wheel or pinch','Zoom'],['Shift+1 / Shift+2 · F','Fit page / fit selection'],['Ctrl+1','Zoom 100 %'],['Enter / F2 / double-click','Edit text'],['Delete','Delete selection, section or bend'],['Arrows (Shift ×10)','Nudge'],['Click','Select (top-most shape; unfilled shapes such as revision clouds by their outline)'],['Shift / Ctrl/⌘ + click','Add to / remove from the selection'],['Click a grouped shape again','Select just that member of the group'],['Alt + click','Select what is underneath (repeat to cycle)'],['Drag on empty space or inside a zone','Window: selects only what is fully inside (hold Alt for touching)'],['Tab / Shift+Tab','Select next / previous shape'],['Ctrl+A','Select all'],['Ctrl/⌘ or Alt + drag','Duplicate while dragging (held from the start)'],['Ctrl/⌘ pressed during a drag','Move without snapping'],['Shift + drag','Constrain to axis / keep proportions'],['Ctrl+C / X / V / D','Copy · cut · paste · duplicate (works across tabs)'],['Ctrl+Z / Ctrl+Y','Undo / redo'],['Ctrl+G / Ctrl+Shift+G','Group / ungroup'],['Ctrl+] / Ctrl+[','Bring forward / send backward (+Shift: front/back)'],['Ctrl+L / Ctrl+Shift+L','Lock / unlock'],['Ctrl+B / Ctrl+I','Bold / italic text'],['Ctrl+F','Find & replace'],['Ctrl+K / /','Search every tool, setting, shape, device and page'],['F8 / Shift+F8','Next / previous finding of the check'],['C (in review mode)','Pin a comment — click a device, link or spot, or drag round an area'],['Ctrl+S / Ctrl+Shift+S','Save / save as'],['Ctrl+P','Print / PDF'],['Ctrl+E','Export PNG'],['L','Auto-layout page'],['Ctrl/⌘ + click a shape with a link','Open its hyperlink'],['Ctrl+. ','Focus mode (canvas only)'],['Ctrl+F1','Collapse / pin the ribbon'],['Ctrl+Alt+← / Ctrl+Alt+→','Hide / show the shapes panel / inspector'],['Esc','Cancel · clear highlights · back to pointer'],['Connector mode: Backspace / Enter','Remove last bend / finish manual path']];
 function openShortcuts(){openDialog('Keyboard shortcuts',`<table class="kv keys">${SHORTCUTS.map(([k,t])=>`<tr><td>${k.split(' / ').map(x=>`<kbd>${html(x)}</kbd>`).join(' ')}</td><td>${html(t)}</td></tr>`).join('')}</table>`).onclick=e=>{if(e.target.closest('[data-close]'))closeDialog()}}
 function openHelp(){openDialog('Port Network Studio',`<p><b>Draw precise network diagrams, keep the data with them.</b> A browser-based, offline Visio alternative for network, security, CCTV, OT and data-centre designs.</p><ul class="help">
 <li><b>Shapes</b> — drag from the left panel or click to drop at the centre. Drop a device onto a link to insert it inline. Search knows synonyms (“fw”, “nvr”, “ap”…).</li>
 <li><b>Connect</b> — drag from a blue point or the quick-connect arrows to another device. Click an arrow to add a connected copy. Auto-routed links avoid shapes and re-route as you move things; drag a section to take manual control. Line jumps, interface names at link ends, link types (10G, stack, HA, VPN, wireless…).</li>
 <li><b>Zones & racks</b> — zones are containers: members move with them. Give zones a subnet/VLAN for IP checks and auto-addressing. Rack equipment snaps into U slots.</li>
 <li><b>Data</b> — every device has shape data (hostname, IP, model, PoE, bitrate…). Show fields under labels, colour by status/VLAN, use {{fields}} in text, import CSV / NetBox / CDP / LLDP, export inventory, cable schedule, BOM, IP plan.</li>
-<li><b>Analyze</b> — design-rule check, single points of failure, path trace, camera stream bandwidth & link utilisation, PoE budgets, CCTV storage sizing.</li>
+<li><b>Analyze</b> — design check (connections, labels & data, readability, network design): click a finding to go to it, fix it or accept it as intentional; F8 steps through them. Single points of failure, path trace, camera stream bandwidth & link utilisation, PoE budgets, CCTV storage sizing.</li>
+<li><b>Review</b> — Review mode locks the layout while you pin comments to devices, links or areas, work through the checklist and see what changed since the last review; the review report gathers it all.</li>
+<li><b>Search</b> — the box in the title bar (Ctrl+K or /) finds any tool, setting, shape, page, device or comment.</li>
 <li><b>Pages</b> — multiple pages, shared background pages with title blocks, layers, page hyperlinks for drill-down, print/PDF (fit, actual size or tiled), Visio .vsdx and draw.io export, share links.</li>
 <li><b>Everything stays linked</b> — the page auto-sizes to the drawing, title blocks and legends stay pinned to the page corners, zones grow to fit their members, the legend lists what is on the page, and the status bar shows live design-check results.</li>
 <li><b>More shapes</b> — 350+ built in. The <b>Icons</b> tab searches 200,000+ open-source icons online; <b>Import shapes</b> takes SVG folders, vendor icon ZIPs, draw.io libraries and images. Packs are kept in this browser and embedded in drawings that use them.</li></ul>
 <p class="muted">Drawings auto-save in this browser (File ▸ My drawings) — also when the app is hosted on GitHub Pages. Use File ▸ Save for a portable .json. Opens Port v1/v2 drawings. Nothing is uploaded anywhere.</p><footer><button data-action="shortcuts">Shortcuts</button><button class="primary" data-close>Start drawing</button></footer>`).onclick=e=>{if(e.target.closest('[data-close]'))closeDialog()}}
-function paletteCommands(){const out=[];for(const r of RIBBON)for(const g of r.groups)for(const i of g.items){if(i.t==='btn')out.push({id:'a:'+i.action,label:i.label,hint:r.name+' ▸ '+g.name,icon:i.icon});if(i.t==='mode')out.push({id:'m:'+i.mode,label:i.label+' tool',hint:'Tool · '+i.key,icon:i.icon});if(i.t==='toggle')out.push({id:'a:toggle_'+i.pref,label:'Toggle '+i.label,hint:'View',icon:i.icon})}for(const f of FILE_MENU)if(f!=='-')out.push({id:'a:'+f[0],label:f[1],hint:'File',icon:f[2]});for(const[k,v]of[['repPoe','PoE budget report'],['repCctv','CCTV storage report'],['exportCsv','Inventory CSV'],['traceFrom','Trace path from selection'],['rerouteAll','Re-route all connectors'],['selectAll','Select all']])out.push({id:'a:'+k,label:v,hint:'Command',icon:'command'});for(const c of Shapes.catalog())for(const i of c.items)out.push({id:'s:'+i.type,label:'Insert '+i.name,hint:c.name,icon:null,type:i.type});const seen=new Set();return out.filter(o=>!seen.has(o.id+o.label)&&seen.add(o.id+o.label))}
-function openPalette(){const cmds=paletteCommands();const d=openDialog('Command palette',`<input id="palInput" placeholder="Type a command or shape…" autocomplete="off"><div id="palList" class="palList"></div>`,{cls:'palette'});let sel=0,list=[];
-  const draw=()=>{const q=$('palInput').value.toLowerCase().trim();list=(q?cmds.filter(c=>(c.label+' '+c.hint).toLowerCase().includes(q)):cmds.slice(0,40)).slice(0,60);sel=Math.min(sel,list.length-1);$('palList').innerHTML=list.map((c,i)=>`<button data-cmd="${i}" class="${i===sel?'active':''}">${c.type?Shapes.iconSvg(c.type,{size:20}):icon(c.icon||'command',16)}<span>${html(c.label)}</span><em>${html(c.hint)}</em></button>`).join('')};
-  const run=c=>{closeDialog();if(!c)return;const[k,v]=[c.id.slice(0,1),c.id.slice(2)];if(k==='a')actions[v]?.();else if(k==='m')setMode(v);else if(k==='s'){addNode(v,...centerOfView());bumpRecent(v)}};
-  draw();setTimeout(()=>$('palInput')?.focus(),20);$('palInput').oninput=()=>{sel=0;draw()};$('palInput').onkeydown=e=>{if(e.key==='ArrowDown'){sel=Math.min(list.length-1,sel+1);draw();e.preventDefault()}else if(e.key==='ArrowUp'){sel=Math.max(0,sel-1);draw();e.preventDefault()}else if(e.key==='Enter')run(list[sel])};d.onclick=e=>{const b=e.target.closest('[data-cmd]');if(b)run(list[+b.dataset.cmd]);if(e.target.closest('[data-close]'))closeDialog()}}
+function openPalette(){Search.open()}
 function bumpRecent(type){const r=(S.prefs.recent||[]).filter(t=>t!==type);r.unshift(type);S.prefs.recent=r.slice(0,8);savePrefs()}
 
 // ---------- context menus ----------
@@ -6076,9 +6505,11 @@ function canvasMenu(e){
   // a right-click on a selection handle keeps the selection
   e.preventDefault();const t=e.target.closest('[data-id]'),id=t?.dataset.id,n=id&&find(id),onHandle=!!e.target.closest?.('[data-role="resize"],[data-role="rotate"]');if(n&&!S.selected.has(id))selection(id);if(!n&&!onHandle){S.selected.clear()}render('overlay');render('panel');S.menuPoint=point(e);
   const sel=picked(),one=sel.length===1?sel[0]:null,B2=(a,l,k='')=>`<button data-action="${a}">${l}${k?`<kbd>${k}</kbd>`:''}</button>`,sep='<hr>';let h='';
+  if(S.reviewMode){const m=$('contextMenu');m.innerHTML=(one?`<button data-ctx="rvc">Comment on this</button>`:`<button data-ctx="rvp">Comment here</button>`)+B2('copy','Copy','Ctrl+C')+sep+B2('check','Findings')+B2('fit','Fit page','Shift+1')+sep+B2('reviewMode','Exit review mode');showMenu(m,e.clientX,e.clientY);
+    m.onclick=ev=>{const c=ev.target.closest('[data-ctx]')?.dataset.ctx;if(!c)return;hideMenus();if(c==='rvc')ReviewUI.draftFor(picked()[0],S.menuPoint);else ReviewUI.commentAt({start:S.menuPoint,target:null},S.menuPoint)};return}
   if(!sel.length)h=B2('paste','Paste','Ctrl+V')+B2('selectAll','Select all','Ctrl+A')+sep+`<button data-ctx="zoneHere">Add zone here</button><button data-ctx="textHere">Add text here</button><button data-ctx="rackHere">Add rack here</button>`+sep+B2('layoutHier','Auto-layout page','L')+B2('rerouteAll','Re-route all connectors')+B2('check','Check diagram')+sep+B2('insertTemplate','Add template…')+B2('saveTemplate','Save page as template…')+B2('scaleSel','Scale the page…')+B2('newRevision','New revision…')+sep+B2('fit','Fit page','Shift+1')+B2('docProps','Document properties');
   else{
-    if(one&&one.kind!=='edge')h+=`<button data-ctx="edit">Edit text<kbd>F2</kbd></button>`;if(one?.kind==='edge')h+=`<button data-ctx="edit">Edit label<kbd>F2</kbd></button>${B2('reverse','Reverse direction')}`;
+    if(one)h+=`<button data-ctx="rvc">Add comment…</button>`;if(one&&one.kind!=='edge')h+=`<button data-ctx="edit">Edit text<kbd>F2</kbd></button>`;if(one?.kind==='edge')h+=`<button data-ctx="edit">Edit label<kbd>F2</kbd></button>${B2('reverse','Reverse direction')}`;
     h+=Quick.menu(sel)+sep+B2('cut','Cut','Ctrl+X')+B2('copy','Copy','Ctrl+C')+B2('duplicate','Duplicate','Ctrl+D')+B2('delete','Delete','Del')+sep;
     if(one?.kind==='node'&&Shapes.isDevice(one))h+=`<button data-ctx="connected">Select connected</button>${B2('traceFrom','Trace path from here…')}<button data-ctx="callout">Add callout</button>`+(one.url?`<button data-ctx="link">Open hyperlink</button>`:'');
     h+=`<div class="sub"><button>Layer ▸</button><div class="submenu">${S.doc.layers.map(l=>`<button data-ctx="ly:${l.id}">${html(l.name)}</button>`).join('')}</div></div>`;
@@ -6094,7 +6525,7 @@ function canvasMenu(e){
     else if(c.startsWith('st:')){if(ensureEditable())mutate(()=>editable().filter(x=>x.kind==='node').forEach(x=>{x.data??={};if(c.slice(3))x.data.status=c.slice(3);else delete x.data.status}))}
     else if(c.startsWith('ly:'))setLayer(c.slice(3));
     else if(c==='connected'){const o=picked()[0],ids=new Set([o.id]);for(const e2 of items())if(e2.kind==='edge'&&(e2.from?.node===o.id||e2.to?.node===o.id)){ids.add(e2.id);if(e2.from)ids.add(e2.from.node);if(e2.to)ids.add(e2.to.node)}select([...ids])}
-    else if(c==='callout')actions.callout();else if(c==='link')followLink(picked()[0].url)}}
+    else if(c==='callout')actions.callout();else if(c==='link')followLink(picked()[0].url);else if(c==='rvc')ReviewUI.draftFor(picked()[0],p)}}
 function tabMenu(e,i){e.preventDefault();gotoPage(i);const p=pg(),m=$('contextMenu');m.innerHTML=`<button data-tm="rename">Rename…</button><button data-action="duplicatePage">Duplicate</button><button data-action="deletePage">Delete</button><hr><button data-action="pageLeft">Move left</button><button data-action="pageRight">Move right</button><hr><button data-tm="bg">${p.isBackground?'Make foreground page':'Make background page'}</button>${!p.isBackground&&S.doc.pages.some(x=>x.isBackground)?`<div class="sub"><button>Background ▸</button><div class="submenu"><button data-tm="bg:">(none)</button>${S.doc.pages.filter(x=>x.isBackground).map(b=>`<button data-tm="bg:${b.id}">${html(b.name)}</button>`).join('')}</div></div>`:''}`;showMenu(m,e.clientX,e.clientY-120);
   m.onclick=ev=>{const t=ev.target.closest('[data-tm]')?.dataset.tm;if(!t)return;hideMenus();if(t==='rename')renamePage();else if(t==='bg')mutate(()=>{p.isBackground=!p.isBackground;if(p.isBackground){p.background=null;for(const q of S.doc.pages)if(q.background===p.id&&q===p)q.background=null}else for(const q of S.doc.pages)if(q.background===p.id)q.background=null});else if(t.startsWith('bg:'))mutate(()=>p.background=t.slice(3)||null)}}
 function renamePage(){const v=prompt('Page name',pg().name);if(v?.trim())mutate(()=>pg().name=v.trim())}
@@ -6670,7 +7101,12 @@ function gotoAsset(n){const a=findAny(n.ref);if(!a)return notify('The linked dev
 function gotoUnit(dev){const u=unitOf(dev);if(!u)return;gotoPage(S.doc.pages.indexOf(pageOf(u)));select([u.id]);fit(true)}
 
 // ---------- rack commands ----------
-function setView(r,k){mutate(()=>{r.views={...r.views,[k]:!r.views?.[k]};resizeRack(r)});}
+// Turning a view on widens the rack; whatever stands to its right moves along so nothing ends up underneath.
+function setView(r,k){mutate(()=>{const edge=r.x+r.w,top=r.y,h0=r.h;r.views={...r.views,[k]:!r.views?.[k]};resizeRack(r);const dx=r.x+r.w-edge;if(dx)makeRoom(r,edge,dx,top,top+Math.max(h0,r.h))})}
+function makeRoom(r,edge,dx,top,bottom){const all=items(),own=new Set([r.id,...Racks.contents(r,all).map(n=>n.id)]),set=new Set();
+  for(const n of all){if(own.has(n.id)||n.kind==='edge'||n.pin)continue;const b=C.bounds([n]);if(b.x>=edge-2&&b.y<bottom&&b.y+b.h>top){set.add(n.id);if(Racks.isRack(n))for(const u of Racks.contents(n,all))set.add(u.id)}}
+  for(const n of all)if(set.has(n.id))C.move(n,dx,0);
+  for(const e of all){if(e.kind!=='edge')continue;const a=set.has(e.from?.node),b=set.has(e.to?.node);if(a&&b||!e.from&&!e.to&&e.points.every(p=>p[0]>=edge-2))C.move(e,dx,0);else if(a||b)Conn.markDirty(e.id)}}
 function addAccessory(r,type){const h=Shapes.rackItems[type].u,u=Racks.findSlot(r,items(),h,{order:'top'});if(u==null)return notify(`No ${h}U space left in ${name(r)}.`);
   mutate(()=>{const it=Shapes.make(type,0,0);it.layer=r.layer||S.activeLayer;items().push(it);Racks.placeAt(r,it,u);select([it.id])});notify(`${Shapes.rackItems[type].name} added at U${u}.`,1800)}
 function openPower(r){const sm=()=>Racks.summary(r,items(),findAny);let s=sm();
@@ -6827,6 +7263,328 @@ function openByType(){const list=items().filter(n=>selectable(n)&&!n.pin),groups
   d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(!e.target.closest('[data-bt-go]'))return;const ids=chosen();closeDialog();select([...ids]);notify(`${ids.size} selected — right-click to change them all.`,2200)}}
 
 return{windowSelect,lassoSelect,stackAt,cycleAt,tab,invert,all,openByType,describe,selectable,inside,touches,pip};
+})();
+
+</script>
+<script>
+// Check & review panel (on the right, in place of the inspector):
+//  • Findings — the design check by category. Click one to go to it and highlight it, fix it, or mark it resolved or
+//    accepted as intentional (accepted ones stop counting in the status bar).
+//  • Comments — numbered pins on a device, a connector, an area or a point; open / resolved / accepted, with replies.
+//  • Checklist — connectivity, labels, device data, readability and design, each showing the findings still open.
+//  • Changes — what changed since the previous review (or the last issued revision), highlighted on the drawing.
+// Review mode locks the layout: a click selects, a drag pans, the comment tool pins comments, and edit commands are
+// refused. Review data (comments, statuses, checklist) still changes, saves and undoes like the rest of the drawing.
+const ReviewUI=(()=>{
+const h=html,plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const ui={status:'open',cat:'',cstatus:'open',changes:true,accepting:null,replying:null,editing:null,focus:null,pending:false};
+let issues=[],cursor=null;
+const me=()=>S.prefs.reviewer||S.doc.meta?.author||'';
+const CATS=Checks.CATS,FILTERS=[['','All checks'],['connectivity','Connection integrity'],['labels,data','Labels & data'],['labels','  Labels'],['data','  Device data'],['readability','Readability'],['design','Network design']],catName=k=>(FILTERS.find(c=>c[0]===k)||[,'Other'])[1].trim();
+const catOk=i=>!ui.cat||ui.cat.split(',').includes(i.cat);
+const COLORS={open:'#ea580c',resolved:'#16a34a',accepted:'#64748b'};
+const anyItem=id=>{for(const p of S.doc.pages){const n=p.items.find(x=>x.id===id);if(n)return{n,p}}return null};
+const itemName=id=>{const r=anyItem(id);return r?(r.n.kind==='edge'?edgeName(r.n,r.p):Analysis.nameOf(r.n)):''};
+const pageOfId=id=>S.doc.pages.findIndex(p=>p.id===id);
+const when=s=>{if(!s)return'';const d=new Date(s),m=(Date.now()-d)/6e4;return m<1?'just now':m<60?Math.round(m)+' min ago':m<1440?Math.round(m/60)+' h ago':d.toISOString().slice(0,10)};
+// Review data changes go through the normal history (undo, autosave) even while the layout is locked.
+function edit(fn){S.reviewEdit=true;try{return mutate(fn)}finally{S.reviewEdit=false}}
+function recheck(){issues=Analysis.check(S.doc);return issues}
+
+// ---------- opening, closing, review mode ----------
+function open(tab='findings',o={}){S.side=tab;if(o.cat!==undefined)ui.cat=o.cat;if(o.status)ui.status=o.status;reveal();recheck();draw(true);render('overlay')}
+function reveal(){if(narrowScreen()){document.body.classList.remove('showLeft');document.body.classList.add('showRight')}else if(!S.prefs.rightOpen)setChrome('rightOpen',true)}
+function close(){if(S.reviewMode)return setMode2(false);S.side=null;S.findMark=null;draw(true);render()}
+function setMode2(on){S.reviewMode=on;document.body.classList.toggle('reviewing',on);S.reviewDraft=null;if(S.mode!=='select'&&S.mode!=='pan'&&S.mode!=='comment'||!on&&S.mode==='comment')setMode('select');
+  if(on){S.reviewFloor=S.history.length;S.reviewFutureFloor=S.future.length;if(!S.side||S.side==='findings')S.side='comments';reveal();notify('Review mode — the layout is locked. Click to select, drag to pan, C pins a comment.',4200)}else{S.side=S.side==='comments'||S.side==='checklist'||S.side==='changes'?S.side:null;notify('Review mode off — editing is back.',1800)}
+  renderRibbon();recheck();draw(true);render()}
+const toggleMode=()=>setMode2(!S.reviewMode);
+
+// ---------- going to things ----------
+// Brings a box into view: centred, zoomed in to at least 100 % when it fits, out when it does not.
+function view(b){const cv=$('canvas'),cw=cv.clientWidth||900,ch=cv.clientHeight||600,fz=Math.min(cw/(b.w+240),ch/(b.h+200)),z=Math.max(.05,Math.min(fz,Math.max(S.view.zoom,1)));
+  S.view.zoom=z;S.view.x=b.x+b.w/2-cw/2/z;S.view.y=b.y+b.h/2-ch/2/z;clampView();showZoom()}
+function onPage(i){if(i>=0&&i!==S.pageIndex){S.pageIndex=i;clearTransient();Constraints.sync(pg(),S.doc)}}
+function goFinding(it){cursor=it.key;onPage(it.page);const ns=it.ids.map(find).filter(Boolean);S.highlights=new Set(ns.map(n=>n.id));S.selected=new Set(ns.filter(n=>n.kind!=='zone'||ns.length===1).map(n=>n.id));S.activeLabel=null;
+  S.findMark=it.at?{p:it.at,page:S.pageIndex}:null;const pts=ns.length?C.bounds(ns,true):null;let b=pts;if(it.at){const a={x:it.at[0]-20,y:it.at[1]-20,w:40,h:40};b=b?{x:Math.min(b.x,a.x),y:Math.min(b.y,a.y),w:Math.max(b.x+b.w,a.x+a.w)-Math.min(b.x,a.x),h:Math.max(b.y+b.h,a.y+a.h)-Math.min(b.y,a.y)}:a}
+  if(b)view(b);render();draw(true);$('sidePanel').querySelector('.fnd.active')?.scrollIntoView({block:'nearest'})}
+function step(dir){const list=visible();if(!list.length)return notify('No findings to step through.');let i=list.findIndex(x=>x.key===cursor);i=i<0?(dir>0?0:list.length-1):(i+dir+list.length)%list.length;if(S.side!=='findings')open('findings');goFinding(list[i])}
+function goComment(c){ui.focus=c.id;onPage(pageOfId(c.page));const t=c.target&&find(c.target),p=Review.pinAt(c,find);S.highlights=new Set(t?[t.id]:[]);S.findMark=null;
+  view(c.area?c.area:t?C.bounds([t],true):{x:p[0]-60,y:p[1]-60,w:120,h:120});render();draw(true)}
+function focusComment(id){const c=Review.comment(S.doc,id);if(!c)return;if(S.side!=='comments'){S.side='comments';reveal()}ui.cstatus=c.status==='open'||ui.cstatus==='all'?ui.cstatus:'all';goComment(c);setTimeout(()=>$('sidePanel')?.querySelector(`[data-ci="${id}"]`)?.scrollIntoView({block:'nearest'}),30)}
+
+// ---------- comments ----------
+// From the comment tool: a drag makes an area comment, a click on something pins to it, a click on empty space to that point.
+function commentAt(d,p){const moved=Math.hypot(p[0]-d.start[0],p[1]-d.start[1])*S.view.zoom>6,pid=pg().id;
+  if(moved)S.reviewDraft={page:pid,area:{x:Math.min(p[0],d.start[0]),y:Math.min(p[1],d.start[1]),w:Math.abs(p[0]-d.start[0]),h:Math.abs(p[1]-d.start[1])}};
+  else{const t=d.target&&find(d.target);S.reviewDraft=t?{page:pid,target:t.id,rel:Review.relFor(t,d.start)}:{page:pid,pos:d.start}}
+  if(S.mode==='comment')setMode('select');if(S.side!=='comments'){S.side='comments';reveal()}draw(true);render('overlay');setTimeout(()=>$('rvDraft')?.focus(),30)}
+function draftFor(n,p){S.reviewDraft={page:pg().id,target:n.id,rel:Review.relFor(n,p||C.center(n))};if(S.side!=='comments'){S.side='comments';reveal()}draw(true);render('overlay');setTimeout(()=>$('rvDraft')?.focus(),30)}
+function saveDraft(){const t=$('rvDraft')?.value.trim();if(!t)return notify('Write the comment first.');const d=S.reviewDraft;S.reviewDraft=null;let c;edit(()=>{c=Review.addComment(S.doc,{...d,text:t,by:me()})});ui.focus=c.id;if(ui.cstatus==='resolved')ui.cstatus='open';draw(true);render('overlay');notify(`Comment #${c.n} added.`,1600)}
+
+// ---------- what the panel lists ----------
+const visible=()=>issues.filter(i=>(ui.status==='all'||i.status===ui.status)&&catOk(i));
+function comments(){const r=S.doc.review;return(r?.comments||[]).slice().sort((a,b)=>a.n-b.n)}
+let changesCache=null;function changes(){return changesCache=Review.changes(S.doc)}
+
+// ---------- drawing the panel ----------
+function draw(force){const box=$('sidePanel');if(!box)return;const on=!!S.side;$('rightPanel').classList.toggle('side',on);box.hidden=!on;if(!on){render('panel');return}
+  const a=document.activeElement;if(!force&&box.contains(a)&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)){ui.pending=true;return}ui.pending=false;
+  const scroll=box.querySelector('.rvBody')?.scrollTop||0,cs=comments(),openC=cs.filter(c=>c.status==='open').length,openF=issues.filter(i=>i.status==='open').length,cl=Review.checklist(S.doc,issues),ch=changes();
+  const tabs=[['findings','Findings',openF],['comments','Comments',openC],['checklist','Checklist',`${cl.filter(x=>x.state==='ok').length}/${cl.length}`],['changes','Changes',ch.known?ch.count:'']];
+  box.innerHTML=`<div class="rvHead"><div class="rvTop"><h2>${S.reviewMode?'Review':'Check & review'}</h2><button data-rv="mode" class="rvMode ${S.reviewMode?'on':''}" title="Review mode keeps the layout as it is: click to select, drag to pan, pin comments">${icon('review',15)}<span>${S.reviewMode?'Reviewing':'Review mode'}</span></button><button class="x" data-rv="close" title="${S.reviewMode?'Exit review mode':'Back to the inspector'}">×</button></div>
+    ${S.reviewMode?`<div class="rvBanner">${icon('lock',14)}<span>Layout locked for review</span><button data-rv="mode">Exit review</button></div>`:''}
+    <div class="itabs">${tabs.map(([k,t,n])=>`<button data-rvtab="${k}" class="${S.side===k?'active':''}">${t}<em>${n}</em></button>`).join('')}</div></div>
+    <div class="rvBody">${S.side==='findings'?findingsTab():S.side==='comments'?commentsTab(cs):S.side==='checklist'?checklistTab(cl):changesTab(ch)}</div>
+    <div class="rvFoot"><button data-rv="report">${icon('report',15)} Review report…</button></div>`;
+  box.querySelector('.rvBody').scrollTop=scroll}
+
+function findingsTab(){const counts={open:0,resolved:0,accepted:0};for(const i of issues)if(catOk(i))counts[i.status]=(counts[i.status]||0)+1;const list=visible(),pos=list.findIndex(x=>x.key===cursor);
+  const chips=[['open','Open'],['resolved','Resolved'],['accepted','Accepted'],['all','All']].map(([k,t])=>`<button data-fstat="${k}" class="${ui.status===k?'active':''}">${t} <b>${k==='all'?Object.values(counts).reduce((a,b)=>a+b,0):counts[k]||0}</b></button>`).join('');
+  const groups=CATS.map(([k,name])=>[k,name,list.filter(i=>i.cat===k)]).filter(g=>g[2].length);
+  return`<div class="chipsRow">${chips}</div><div class="rvRow"><select data-fcat title="Which checks">${FILTERS.map(([k,t])=>`<option value="${k}" ${ui.cat===k?'selected':''}>${t.replace(/^  /,'\u2003')}</option>`).join('')}</select><button data-rv="recheck" title="Run the check again">↻</button></div>
+    ${list.length?`<div class="rvNav"><button data-rv="prev" title="Previous finding (Shift+F8)">‹</button><span>${pos>=0?`Finding ${pos+1} of ${list.length}`:plural(list.length,'finding')} · F8 steps</span><button data-rv="next" title="Next finding (F8)">›</button></div>`:''}
+    ${groups.map(([k,name,l])=>`<h3 class="rvCat">${h(name)} <em>${l.length}</em></h3>${l.map(card).join('')}`).join('')||`<p class="rvEmpty">${ui.status==='open'?'✓ Nothing open'+(ui.cat?' in '+h(catName(ui.cat)):'')+'.':'Nothing here.'}</p>`}`}
+function card(i){const fix=(i.fixes||[]).map(f=>`<button data-fix="${h(f.id)}" ${S.reviewMode?'disabled title="Leave review mode to fix"':''}>${h(f.label)}</button>`).join(''),key=h(i.key),acc=ui.accepting===i.key;
+  return`<div class="fnd sev-${i.severity} st-${i.status} ${cursor===i.key?'active':''}" data-fk="${key}"><div class="fndMsg"><i title="${{error:'Error',warning:'Warning',info:'Note'}[i.severity]}"></i><span>${h(i.message)}</span></div>
+    <div class="fndMeta">${i.page>=0?h(S.doc.pages[i.page]?.name||''):'Whole drawing'}${i.status!=='open'?` · <b class="pill ${i.status}">${i.status==='accepted'?'Accepted as intentional':'Resolved'}</b>${i.status==='resolved'?' — still detected':''}`:''}${i.note?` · “${h(i.note)}”`:''}</div>
+    ${acc?`<div class="fndNote"><input id="rvAccNote" placeholder="Why is it intentional? (optional)" value="${h(i.note||'')}"><button class="primary" data-fs="accepted">Accept</button><button data-fs="cancel">Cancel</button></div>`
+      :`<div class="fndAct">${fix}${i.status==='open'?`<button data-fs="resolved" title="Mark as resolved">${icon('resolve',14)}</button><button data-fs="accept" title="Accept as intentional — it stops counting">Intentional…</button>`:`<button data-fs="open">Reopen</button>`}</div>`}</div>`}
+
+function selCard(){if(!S.selected.size)return'';const n=picked()[0];if(!n)return'';const nm=n.kind==='edge'?edgeName(n,pg()):Analysis.nameOf(n),d=n.data||{},bits=[n.kind==='node'?Shapes.nameOf(n.type):n.kind,d.ip,d.vlan&&'VLAN '+d.vlan,d.model].filter(Boolean);
+  return`<div class="rvSel"><div><b>${h(nm)}</b><div class="muted">${h(bits.join(' · '))}${S.selected.size>1?` · +${S.selected.size-1} more`:''}</div></div><button data-rv="commentSel">${icon('comment',14)} Comment</button></div>`}
+function commentsTab(cs){const n={open:0,resolved:0,accepted:0};for(const c of cs)n[c.status]++;const list=cs.filter(c=>ui.cstatus==='all'||c.status===ui.cstatus),d=S.reviewDraft;
+  const on=c=>c.target?itemName(c.target)||'(deleted item)':c.area?'Area':'Point';
+  return`<div class="rvRow"><button class="primary" data-rv="tool">${icon('comment',15)} ${S.mode==='comment'?'Click the drawing…':'Add comment'}</button><span class="spacer"></span></div>
+    <div class="chipsRow">${[['open','Open'],['resolved','Resolved'],['accepted','Accepted'],['all','All']].map(([k,t])=>`<button data-cstat="${k}" class="${ui.cstatus===k?'active':''}">${t} <b>${k==='all'?cs.length:n[k]}</b></button>`).join('')}</div>
+    ${S.reviewMode?selCard():''}
+    ${d?`<div class="cmt draft"><b class="pinNo">+</b><div class="cmtMain"><div class="cmtOn">${d.target?'On '+h(itemName(d.target)):d.area?'On the marked area':'At the point you clicked'} · ${h(pg().name)}</div><textarea id="rvDraft" rows="3" placeholder="Comment… (${MODK}+Enter adds it)"></textarea><div class="cmtAct"><button class="primary" data-rv="saveDraft">Add comment</button><button data-rv="cancelDraft">Cancel</button></div></div></div>`:''}
+    ${list.map(c=>`<div class="cmt st-${c.status} ${ui.focus===c.id?'active':''}" data-ci="${c.id}"><b class="pinNo" style="background:${COLORS[c.status]}">${c.n}</b><div class="cmtMain">
+      <div class="cmtOn">${h(on(c))} · ${h(S.doc.pages[pageOfId(c.page)]?.name||'')}</div>
+      ${ui.editing===c.id?`<textarea id="rvEdit" rows="3">${h(c.text)}</textarea><div class="cmtAct"><button class="primary" data-ca="saveEdit">Save</button><button data-ca="cancel">Cancel</button></div>`:`<div class="cmtText">${h(c.text)}</div>`}
+      <div class="cmtMeta">${h(c.by||'Someone')} · ${when(c.at)}${c.edited?' · edited':''}</div>
+      ${(c.replies||[]).map(r=>`<div class="cmtReply"><span>${h(r.text)}</span><em>${h(r.by||'Someone')} · ${when(r.at)}</em></div>`).join('')}
+      ${ui.replying===c.id?`<textarea id="rvReply" rows="2" placeholder="Reply… (${MODK}+Enter sends)"></textarea><div class="cmtAct"><button class="primary" data-ca="sendReply">Reply</button><button data-ca="cancel">Cancel</button></div>`:''}
+      <div class="cmtAct"><span class="seg mini">${Object.entries(Review.STATUS).map(([k,t])=>`<button data-cs="${k}" class="${c.status===k?'active':''}">${t}</button>`).join('')}</span><button data-ca="reply" title="Reply">↩</button><button data-ca="edit" title="Edit">✎</button><button data-ca="delete" title="Delete">${icon('trash',13)}</button></div></div></div>`).join('')
+      ||`<p class="rvEmpty">${cs.length?'No '+ui.cstatus+' comments.':`No comments yet. ${S.reviewMode?'':'Turn on Review mode or '}Use Add comment, then click a device, a link or a spot — or drag round an area.`}</p>`}`}
+
+function checklistTab(cl){const done=cl.filter(x=>x.state==='ok').length;
+  return`<div class="rvProgress"><div style="width:${cl.length?done/cl.length*100:0}%"></div></div><p class="muted">${done} of ${cl.length} checks passed${cl.some(x=>x.state==='issues')?` · ${cl.filter(x=>x.state==='issues').length} need work`:''}.</p>
+    ${cl.map(c=>`<div class="chk st-${c.state||'none'}" data-ck="${c.id}"><div class="chkHead"><b>${h(c.label)}</b>${c.cat?'':`<button class="x" data-ck-del title="Remove this check">×</button>`}</div>${c.hint?`<div class="muted">${h(c.hint)}</div>`:''}
+      ${c.cat?`<div class="chkAuto">${c.open?`<button data-ck-show="${c.cat}" class="${c.errors?'err':'warn'}">${plural(c.open,'open finding')}${c.errors?` · ${c.errors} error${c.errors>1?'s':''}`:''} ›</button>`:'<span class="okTxt">✓ No open findings</span>'}</div>`:''}
+      <div class="seg">${[['ok','✓ Passed'],['issues','✗ Needs work'],['','Not checked']].map(([k,t])=>`<button data-ck-state="${k}" class="${(c.state||'')===k?'active':''}">${t}</button>`).join('')}</div>
+      ${c.state==='ok'&&c.open?`<div class="warnTxt">Passed with ${plural(c.open,'open finding')} — mark them intentional or fix them.</div>`:''}
+      <input data-ck-note placeholder="Note" value="${h(c.note||'')}">${c.by?`<div class="cmtMeta">${h(c.by)} · ${when(c.at)}</div>`:''}</div>`).join('')}
+    <div class="rvRow"><input id="rvNewCheck" placeholder="Add a check of your own…"><button data-rv="addCheck">Add</button></div>`}
+
+function changesTab(ch){const r=S.doc.review,hist=(r?.history||[]).slice().reverse();
+  const since=ch.since?ch.since.kind==='review'?`Since the review of ${when(ch.since.at)}${ch.since.by?' by '+h(ch.since.by):''}.`:`Since revision ${h(ch.since.rev)} was issued — no review has been completed yet.`:'Nothing to compare with yet. Complete a review and the next one shows what changed since.';
+  const row=(id,k)=>{const r2=anyItem(id);return`<button class="chg ${k}" data-chg="${id}"><i></i><span>${h(r2?(r2.n.kind==='edge'?edgeName(r2.n,r2.p):Analysis.nameOf(r2.n)):id)}</span><em>${h(r2?.p.name||'')}</em></button>`};
+  const rem=x=>`<button class="chg removed" data-chg-rem="${h(x.id)}"><i></i><span>${h(x.name||'(item)')}</span><em>${h(S.doc.pages.find(p=>p.id===x.page)?.name||'')}</em></button>`;
+  return`<p class="muted">${since}</p>${ch.known?`<label class="check"><input type="checkbox" data-rv-changes ${ui.changes?'checked':''}>Highlight them on the drawing</label>
+    ${[['Added','added',ch.added],['Changed','modified',ch.modified]].map(([t,k,l])=>l.length?`<h3 class="rvCat">${t} <em>${l.length}</em></h3><div class="issues">${l.slice(0,200).map(id=>row(id,k)).join('')}</div>`:'').join('')}
+    ${ch.removed.length?`<h3 class="rvCat">Removed <em>${ch.removed.length}</em></h3><div class="issues">${ch.removed.slice(0,200).map(rem).join('')}</div>`:''}${ch.count?'':'<p class="rvEmpty">✓ Nothing has changed.</p>'}`:''}
+    <div class="rvComplete"><button class="primary" data-rv="complete">${icon('resolve',15)} Complete review…</button><p class="muted">Records this review; the next one is compared with the drawing as it is now. Open items carry over.</p></div>
+    ${hist.length?`<h3 class="rvCat">Earlier reviews</h3>${hist.map(x=>`<div class="hist"><b>${h(new Date(x.at).toISOString().slice(0,10))}</b> ${h(x.by||'')}<span class="muted"> · ${plural(x.openComments||0,'open comment')}, ${plural(x.openFindings||0,'open finding')}, ${plural(x.checked||0,'check')} passed</span></div>`).join('')}`:''}`}
+
+// ---------- panel events ----------
+function onClick(e){const t=e.target,b=t.closest('button');
+  const rt=t.closest('[data-rvtab]');if(rt){S.side=rt.dataset.rvtab;if(S.side!=='changes')S.findMark=null;draw(true);render('overlay');return}
+  const rv=b?.dataset.rv;
+  if(rv==='close')return close();if(rv==='mode')return toggleMode();if(rv==='report')return openReport();if(rv==='recheck'){recheck();draw(true);return notify('Checked again.',1200)}
+  if(rv==='prev'||rv==='next')return step(rv==='next'?1:-1);
+  if(rv==='tool'){setMode(S.mode==='comment'?'select':'comment');draw(true);return}
+  if(rv==='commentSel'){const n=picked()[0];if(n)draftFor(n);return}
+  if(rv==='saveDraft')return saveDraft();if(rv==='cancelDraft'){S.reviewDraft=null;draw(true);render('overlay');return}
+  if(rv==='addCheck'){const v=$('rvNewCheck').value.trim();if(!v)return;edit(()=>Review.addCheck(S.doc,v));draw(true);return}
+  if(rv==='complete')return openComplete();
+  const fs=b?.dataset.fstat;if(fs){ui.status=fs;draw(true);return}const cst=b?.dataset.cstat;if(cst){ui.cstatus=cst;draw(true);return}
+  // findings
+  const fc=t.closest('[data-fk]');if(fc){const it=issues.find(i=>i.key===fc.dataset.fk);if(!it)return;
+    if(b?.dataset.fix){applyFix(it,b.dataset.fix);return}
+    const st=b?.dataset.fs;if(st){if(st==='accept'){ui.accepting=it.key;draw(true);setTimeout(()=>$('rvAccNote')?.focus(),20);return}if(st==='cancel'){ui.accepting=null;draw(true);return}
+      const note=st==='accepted'?$('rvAccNote')?.value.trim()||'':undefined;ui.accepting=null;edit(()=>Review.setFinding(S.doc,it,st,{by:me(),note}));recheck();draw(true);
+      notify(st==='accepted'?'Accepted as intentional — it no longer counts.':st==='resolved'?'Marked resolved.':'Reopened.',1600);return}
+    if(!b)goFinding(it);return}
+  // comments
+  const cc=t.closest('[data-ci]');if(cc){const c=Review.comment(S.doc,cc.dataset.ci);if(!c)return;
+    const cs=b?.dataset.cs;if(cs){edit(()=>Review.setCommentStatus(S.doc,c.id,cs,me()));draw(true);render('overlay');return}
+    const ca=b?.dataset.ca;
+    if(ca==='reply'){ui.replying=c.id;ui.editing=null;draw(true);setTimeout(()=>$('rvReply')?.focus(),20);return}
+    if(ca==='edit'){ui.editing=c.id;ui.replying=null;draw(true);setTimeout(()=>$('rvEdit')?.focus(),20);return}
+    if(ca==='cancel'){ui.editing=ui.replying=null;draw(true);return}
+    if(ca==='sendReply'){const v=$('rvReply').value;ui.replying=null;if(v.trim())edit(()=>Review.reply(S.doc,c.id,v,me()));draw(true);return}
+    if(ca==='saveEdit'){const v=$('rvEdit').value;ui.editing=null;if(v.trim())edit(()=>Review.editComment(S.doc,c.id,v));draw(true);return}
+    if(ca==='delete'){if(!confirm(`Delete comment #${c.n}?`))return;edit(()=>Review.removeComment(S.doc,c.id));draw(true);render('overlay');return}
+    if(!b&&!t.closest('textarea'))goComment(c);return}
+  // checklist
+  const ck=t.closest('[data-ck]');if(ck){const id=ck.dataset.ck;if(b?.dataset.ckState!==undefined){edit(()=>Review.setCheck(S.doc,id,{state:b.dataset.ckState},me()));draw(true);return}
+    if(b?.dataset.ckShow){open('findings',{cat:b.dataset.ckShow,status:'open'});const first=visible()[0];if(first)goFinding(first);return}
+    if(b?.hasAttribute('data-ck-del')){edit(()=>Review.removeCheck(S.doc,id));draw(true)}return}
+  // changes
+  const cg=t.closest('[data-chg]');if(cg){const r=anyItem(cg.dataset.chg);if(!r)return;onPage(S.doc.pages.indexOf(r.p));select([r.n.id]);S.highlights=new Set([r.n.id]);view(C.bounds([r.n],true));render();return}
+  const cr=t.closest('[data-chg-rem]');if(cr){const x=changesCache?.removed.find(y=>y.id===cr.dataset.chgRem);if(!x?.box)return notify('That item is gone; there is no record of where it was.');onPage(pageOfId(x.page));S.selected.clear();S.findMark={p:[x.box[0]+x.box[2]/2,x.box[1]+x.box[3]/2],page:S.pageIndex};view({x:x.box[0],y:x.box[1],w:x.box[2],h:x.box[3]});render();return}}
+function onChange(e){const t=e.target;
+  if(t.matches('[data-fcat]')){ui.cat=t.value;draw(true);return}
+  if(t.matches('[data-rv-changes]')){ui.changes=t.checked;render('overlay');return}
+  const ck=t.closest('[data-ck]');if(ck&&t.matches('[data-ck-note]')){edit(()=>Review.setCheck(S.doc,ck.dataset.ck,{note:t.value}));return}}
+function onKey(e){const mod=e.ctrlKey||e.metaKey;if(e.key==='Enter'&&mod){if(e.target.id==='rvDraft'){e.preventDefault();saveDraft()}else if(e.target.id==='rvReply')$('sidePanel').querySelector('[data-ca="sendReply"]')?.click();else if(e.target.id==='rvEdit')$('sidePanel').querySelector('[data-ca="saveEdit"]')?.click()}
+  if(e.key==='Enter'&&e.target.id==='rvNewCheck')$('sidePanel').querySelector('[data-rv="addCheck"]')?.click();
+  if(e.key==='Enter'&&e.target.id==='rvAccNote')$('sidePanel').querySelector('[data-fs="accepted"]')?.click();
+  if(e.key==='Escape'&&e.target.id==='rvDraft'){S.reviewDraft=null;draw(true);render('overlay')}
+  e.stopPropagation()}
+
+// ---------- fixes ----------
+function applyFix(it,id){if(S.reviewMode)return notify('Leave review mode to fix things — review keeps the layout as it is.');
+  if(id==='editData'){onPage(it.page);select(it.ids.filter(x=>find(x)));S.tab='data';S.side=null;draw(true);render();return}
+  if(id==='fitpage'){onPage(it.page);mutate(()=>Constraints.fitPage(pg(),S.doc,pg().fit||{}));fit();recheck();draw(true);return notify('Page fitted to the drawing.',1800)}
+  onPage(it.page);let msg=null;mutate(()=>{msg=Checks.apply(S.doc,it,id,{markDirty:Conn.markDirty})});if(!msg){notify('That no longer applies — checking again.');recheck();draw(true);return}
+  // stay on the same spot in the list: the next finding moves up into it
+  const list=visible(),i=list.findIndex(x=>x.key===it.key);S.highlights.clear();S.findMark=null;S.selected=new Set(it.ids.filter(x=>find(x)));recheck();const after=visible();cursor=(after[i]||after[i-1])?.key??null;render();draw(true);notify(msg,1800)}
+
+// ---------- canvas overlay: pins, the comment being placed, change highlights, finding marker ----------
+function drawOverlay(o,z){const page=pg(),pid=page.id;
+  if(S.side==='changes'&&ui.changes&&changesCache?.known){const ch=changesCache;for(const[ids,col]of[[ch.added,'#16a34a'],[ch.modified,'#d97706']])for(const id of ids){const n=find(id);if(!n)continue;const b=C.bounds([n],n.kind!=='edge');el('rect',{x:b.x-6/z,y:b.y-6/z,width:b.w+12/z,height:b.h+12/z,rx:5/z,fill:col,'fill-opacity':.08,stroke:col,'stroke-width':2/z,'pointer-events':'none'},o)}
+    for(const x of ch.removed)if(x.page===pid&&x.box){const[bx,by,bw,bh]=x.box;el('rect',{x:bx,y:by,width:bw,height:bh,rx:4/z,fill:'#dc2626','fill-opacity':.06,stroke:'#dc2626','stroke-width':1.5/z,'stroke-dasharray':`${5/z} ${4/z}`,'pointer-events':'none'},o);const t=el('text',{x:bx,y:by-5/z,fill:'#dc2626','font-size':11/z,'font-family':C.FONT,'font-weight':600,'pointer-events':'none'},o);t.textContent='Removed: '+(x.name||'item')}}
+  if(S.findMark&&S.findMark.page===S.pageIndex){const[x,y]=S.findMark.p,c=el('circle',{cx:x,cy:y,r:12/z,fill:'none',stroke:'#dc2626','stroke-width':2.5/z,'pointer-events':'none'},o);const a=el('animate',{attributeName:'r',values:`${9/z};${17/z};${9/z}`,dur:'1.4s',repeatCount:'indefinite'},c)}
+  const show=S.reviewMode||S.side==='comments'||S.prefs.showComments!==false;
+  if(show)for(const c of comments()){if(c.page!==pid||!S.reviewMode&&S.side!=='comments'&&c.status!=='open')continue;const col=COLORS[c.status]||COLORS.open,act=ui.focus===c.id;
+    if(c.area)el('rect',{x:c.area.x,y:c.area.y,width:c.area.w,height:c.area.h,rx:4/z,fill:col,'fill-opacity':act?.1:.05,stroke:col,'stroke-width':(act?2:1.4)/z,'stroke-dasharray':`${6/z} ${4/z}`,'pointer-events':'none'},o);
+    pin(o,z,Review.pinAt(c,find),String(c.n),col,act,c.id,c.status!=='open')}
+  const d=S.reviewDraft;if(d&&d.page===pid){if(d.area)el('rect',{x:d.area.x,y:d.area.y,width:d.area.w,height:d.area.h,rx:4/z,fill:'#376be5','fill-opacity':.08,stroke:'#376be5','stroke-width':2/z,'stroke-dasharray':`${6/z} ${4/z}`,'pointer-events':'none'},o);pin(o,z,Review.pinAt(d,find),'+','#376be5',true)}
+  const dr=S.drag;if(dr?.kind==='comment'&&dr.current){const p=dr.current,s=dr.start;el('rect',{x:Math.min(p[0],s[0]),y:Math.min(p[1],s[1]),width:Math.abs(p[0]-s[0]),height:Math.abs(p[1]-s[1]),fill:'#376be5','fill-opacity':.06,stroke:'#376be5','stroke-width':1.5/z,'stroke-dasharray':`${6/z} ${4/z}`,'pointer-events':'none'},o)}}
+function pin(o,z,p,text,col,act,id,faded){const g=el('g',{transform:`translate(${p[0]} ${p[1]}) scale(${1/z})`,'data-role':id?'pin':null,'data-comment':id||null,cursor:id?'pointer':null,opacity:faded?.7:null},o);
+  el('path',{d:'M0 0 L-5 -9 A11 11 0 1 1 5 -9 Z',transform:'translate(0 0)',fill:col,stroke:'#fff','stroke-width':act?2.5:1.5},g);if(act)el('circle',{cx:0,cy:-17,r:15,fill:'none',stroke:col,'stroke-width':1.5,'stroke-opacity':.5},g);
+  const t=el('text',{x:0,y:-13,'text-anchor':'middle','font-size':text.length>2?9:11,'font-weight':700,fill:'#fff','font-family':C.FONT,'pointer-events':'none'},g);t.textContent=text}
+
+// ---------- complete review, report ----------
+function openComplete(){const cs=comments(),openC=cs.filter(c=>c.status==='open').length,openF=issues.filter(i=>i.status==='open').length,cl=Review.checklist(S.doc,issues);
+  const d=openDialog('Complete review',`<p>This records the review${me()?' by '+h(me()):''} and makes the drawing as it is now the starting point for the next one, which will show what changed since.</p>
+    <div class="kpis k3"><div><b>${openC}</b><span>open comments</span></div><div><b>${openF}</b><span>open findings</span></div><div><b>${cl.filter(x=>x.state==='ok').length}/${cl.length}</b><span>checks passed</span></div></div>
+    <label class="fld"><span>Reviewer</span><input id="rvBy" value="${h(me())}" placeholder="Your name"></label><p class="muted">Open comments and findings stay open and carry over to the next review.</p>
+    <footer><button data-close>Cancel</button><button data-rc="report">Report first…</button><button class="primary" data-rc="go">Complete review</button></footer>`);
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const a=e.target.closest('[data-rc]')?.dataset.rc;if(!a)return;const by=$('rvBy').value.trim();if(by!==(S.prefs.reviewer||'')){S.prefs.reviewer=by;savePrefs()}
+    if(a==='report'){closeDialog();return openReport()}closeDialog();edit(()=>Review.complete(S.doc,{by,issues,nameOf:n=>n.kind==='edge'?edgeName(n,pg()):Analysis.nameOf(n)}));recheck();draw(true);render('overlay');notify('Review completed. The next review will show what changed from here.',3200)}}
+function images(rep){const pins=new Map();for(const c of comments()){const k=c.page;if(!pins.has(k))pins.set(k,[]);pins.get(k).push(c)}
+  const pages=S.doc.pages.filter(p=>!p.isBackground),want=pages.filter(p=>pins.has(p.id)||issues.some(i=>i.status==='open'&&S.doc.pages[i.page]===p));
+  return(want.length?want:pages).slice(0,20).map(p=>{const svg=sceneSvg(p,{print:true,pad:12,area:{x:0,y:0,...C.pageSize(p)}}),f=id=>p.items.find(n=>n.id===id),g=document.createElementNS(svg.namespaceURI,'g');svg.append(g);const z=Math.max(.6,C.pageSize(p).w/1400);
+    for(const c of pins.get(p.id)||[]){if(c.area)el('rect',{x:c.area.x,y:c.area.y,width:c.area.w,height:c.area.h,fill:'none',stroke:COLORS[c.status],'stroke-width':1.5*z,'stroke-dasharray':`${6*z} ${4*z}`},g);pin(g,1/z,Review.pinAt(c,f),String(c.n),COLORS[c.status]||COLORS.open,false)}
+    for(const n of svg.querySelectorAll('[data-role],[data-id]')){n.removeAttribute('data-role');n.removeAttribute('data-id')}
+    return{page:p.name,svg:new XMLSerializer().serializeToString(svg)}})}
+function openReport(){recheck();const d=openDialog('Review report',`<p class="muted">One document with the checklist, every comment with its replies, everything the check flagged and what changed since the previous review — unresolved items first.</p>
+    <label class="fld"><span>Reviewer</span><input id="rpBy" value="${h(me())}" placeholder="Your name"></label>
+    <label class="check"><input type="checkbox" id="rpImg" checked>Include the pages, with the comment pins</label><label class="check"><input type="checkbox" id="rpAcc" checked>Include findings accepted as intentional</label>
+    <footer><button data-rp="csv">CSV</button><span class="spacer"></span><button data-rp="print">Print / PDF</button><button class="primary" data-rp="html">Download report</button></footer>`);
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const a=e.target.closest('[data-rp]')?.dataset.rp;if(!a)return;const by=$('rpBy').value.trim();if(by&&by!==S.prefs.reviewer){S.prefs.reviewer=by;savePrefs()}
+    const rep=Review.report(S.doc,{issues,by,includeAccepted:$('rpAcc').checked,name:itemName,where:p=>typeof p==='number'?S.doc.pages[p]?.name||'':S.doc.pages.find(x=>x.id===p)?.name||''}),base=safeName(S.doc.name+' - review '+new Date().toISOString().slice(0,10));
+    if(a==='csv'){download(base+'.csv','﻿'+Review.toCSV(rep),'text/csv');closeDialog();return}
+    const doc=Review.toHTML(rep,$('rpImg').checked?images(rep):[]);closeDialog();
+    if(a==='html'){download(base+'.html',doc,'text/html');notify('Review report downloaded — open it in a browser, or print it to PDF.',3200);return}
+    const f=document.createElement('iframe');f.style.cssText='position:fixed;width:0;height:0;border:0;right:0;bottom:0';document.body.append(f);f.onload=()=>{try{f.contentWindow.focus();f.contentWindow.print()}finally{setTimeout(()=>f.remove(),60000)}};f.srcdoc=doc}}
+
+// ---------- hooks for the rest of the app ----------
+// After every check (the status bar runs one shortly after each change): keep the panel current.
+function update(list){issues=list;if(S.side){changes();draw()}}
+function onSelect(){if(S.side==='comments'&&S.reviewMode)draw()}
+// Status bar: review mode (click to leave it), or how many comments are open.
+function badge(){const b=$('reviewBadge');if(!b)return;const n=(S.doc.review?.comments||[]).filter(c=>c.status==='open').length;b.hidden=!S.reviewMode&&!n;b.classList.toggle('on',!!S.reviewMode);
+  b.innerHTML=S.reviewMode?`${icon('review',13)} Reviewing · exit`:`${icon('comment',13)} ${n} open`;b.title=S.reviewMode?'Review mode — click to go back to editing':`${plural(n,'open comment')} — click to review`}
+function init(){window.addEventListener('error',e=>{if(e.error?.name==='ReviewLock')e.preventDefault()});window.addEventListener('unhandledrejection',e=>{if(e.reason?.name==='ReviewLock')e.preventDefault()});
+  for(const k of Object.keys(actions)){const f=actions[k];if(typeof f==='function')actions[k]=(...a)=>guard(k)?f(...a):blocked()}
+  const box=$('sidePanel');box.addEventListener('click',onClick);box.addEventListener('change',onChange);box.addEventListener('keydown',onKey);box.addEventListener('focusout',()=>setTimeout(()=>{if(ui.pending&&!box.contains(document.activeElement))draw(true)},0))}
+// Edit commands refused in review mode (looking, checking, exporting and review commands still work).
+const SAFE=new Set(['save','saveAs','open','new','newBlank','myDrawings','importVisio','share','print','printAll','exportPng','exportPng4','exportPngT','exportSvg','exportVsdx','exportDrawio','copyPng','downloadOffline','closePrint','printNow',
+  'copy','selectAll','selectNone','selectByType','invertSel','find','palette','help','shortcuts','about','tour','check','spof','trace','traceFrom','traffic','poeBudget','storage','filter','clearAnalysis',
+  'repInventory','repCables','repBom','repRack','repVlan','repIp','repPoe','repCctv','exportCsv','fit','fitSelection','zoom100','zoomIn','zoomOut','present','fullscreen','focusMode','resetLayout','toggleLeft','toggleRight','toggleRibbon','toggleHeader','toggleStatus','uiTheme','docProps',
+  'reviewMode','reviewComment','reviewFindings','reviewChecklist','reviewChanges','reviewReport','reviewComplete','checkConnections','checkLabels','checkReadability','nextFinding','prevFinding']);
+const guard=k=>!S.reviewMode||SAFE.has(k)||k.startsWith('toggle_');
+function blocked(){notify('Review mode keeps the layout as it is — exit review mode to edit.',2600)}
+
+return{badge,open,close,toggleMode,setMode:setMode2,step,goFinding,focusComment,commentAt,draftFor,drawOverlay,update,onSelect,init,draw,recheck,guard,blocked,openReport,openComplete,get issues(){return issues}};
+})();
+
+</script>
+<script>
+// Universal search (the box in the title bar, Ctrl/⌘+K or /): every ribbon command, tool and setting, the File menu,
+// panels, shapes to insert, pages, and the devices, links, zones and comments in the drawing — plus the keyboard
+// shortcuts. Words match in any order and in any part of a name; each result says where the tool lives, and
+// Alt/⌥+Enter (or the location) shows it in the ribbon instead of running it.
+const Search=(()=>{
+const h=html;
+// extra words people search with
+const KW={check:'validate errors issues problems lint design rule drc findings',print:'pdf paper',printAll:'pdf',exportPng:'image picture screenshot',exportPng4:'image picture print',exportSvg:'vector image',exportVsdx:'visio microsoft',importVisio:'vsdx vssx stencil',share:'link url send',open:'load file import',
+  spof:'redundancy failure resilience',trace:'route path hop',traffic:'bandwidth throughput utilisation utilization',poeBudget:'power over ethernet watts',storage:'nvr retention disk recording',legendGen:'key',newRevision:'version issue delta',layoutHier:'auto arrange tidy',rerouteAll:'routing lines tidy',
+  find:'replace search text',fields:'columns properties attributes',vlans:'network segments',repIp:'subnet address addressing ipam',fullscreen:'maximise maximize',focusMode:'zen distraction',present:'slideshow presentation',uiTheme:'dark mode light night',tour:'onboarding help guide',rack:'cabinet elevation',
+  zone:'container group area subnet',wrapZone:'container',scaleSel:'resize shrink grow',group:'combine',lock:'freeze protect',duplicate:'copy clone',delete:'remove erase',painter:'format copy style',importDialog:'csv netbox excel spreadsheet',importNeighbors:'cdp lldp discovery',repInventory:'asset list devices',repCables:'cable schedule patch',repBom:'bill of materials cost price',
+  reviewMode:'comments annotate markup feedback approve sign off',reviewComment:'note pin feedback annotate markup',reviewReport:'export review pdf comments',reviewChanges:'compare diff revision changed',reviewChecklist:'sign off review tasks',checkConnections:'loose dangling unattached ports',checkLabels:'labels data duplicates identifiers mismatch',checkReadability:'overlap hidden text through page'};
+const CTRL={linkTypeSel:'Link type',routeSel:'Connector routing',fontSizeSel:'Text size',displaySel:'Device display',paperSel:'Paper size',autoSizeSel:'Page auto-size',jumpSel:'Line jumps',colorBySel:'Colour devices by',showFieldSel:'Show field on drawing',gridStepSel:'Grid spacing'};
+const COLORS={fontColor:'Text colour',strokeColor:'Line / accent colour',fillColor:'Fill colour'};
+const SUGGEST=['a:check','a:reviewMode','a:reviewComment','a:find','a:legendGen','a:layoutHier','a:exportPng','a:print','a:shortcuts'];
+const keyOf=t=>(/\b((?:Ctrl|Shift|Alt|⌘)\+[^\s,;)]+(?:\+[^\s,;)]+)?)/.exec(t||'')||[])[1]||(/^[A-Z?]$/.test(t||'')?t:'');
+
+function sources(){const out=[],seen=new Set(),add=o=>{if(seen.has(o.id))return;seen.add(o.id);out.push(o)};
+  // the ribbon: buttons, tools, toggles, and the choices inside its drop-downs
+  for(const r of RIBBON)for(const g of r.groups){const where=`${r.name} ▸ ${g.name}`;for(const i of g.items){
+    if(i.t==='btn')add({id:'a:'+i.action,sec:'Commands',label:i.label,where,icon:i.icon,key:keyOf(i.title),kw:(KW[i.action]||'')+' '+(i.title||''),tab:r.id,sel:`[data-action="${i.action}"]`,run:()=>actions[i.action]?.()});
+    else if(i.t==='mode')add({id:'m:'+i.mode,sec:'Commands',label:i.label+' tool',where,icon:i.icon,key:i.key,tab:r.id,sel:`[data-mode="${i.mode}"]`,run:()=>setMode(i.mode)});
+    else if(i.t==='toggle')add({id:'t:'+i.pref,sec:'Settings',label:`${i.label}: ${S.prefs[i.pref]?'on → turn off':'off → turn on'}`,where,icon:i.icon,tab:r.id,sel:`[data-action="toggle_${i.pref}"]`,run:()=>actions['toggle_'+i.pref]?.()});
+    else if(i.t==='html'){const tmp=document.createElement('div');try{tmp.innerHTML=i.fn()}catch{continue}
+      for(const s of tmp.querySelectorAll('select[id]')){const name=CTRL[s.id]||s.closest('[title]')?.title||s.id;for(const o of s.options){if(!o.value)continue;add({id:`s:${s.id}:${o.value}`,sec:'Settings',label:`${name}: ${o.text.replace(/^✓\s*/,'')}`,where,icon:'more',on:s.value===o.value&&!!o.value,tab:r.id,sel:'#'+s.id,run:()=>setControl(r.id,s.id,o.value)})}}
+      for(const c of tmp.querySelectorAll('input[type=color][id]'))add({id:'c:'+c.id,sec:'Settings',label:COLORS[c.id]||c.id,where,icon:'brush',tab:r.id,sel:'#'+c.id,run:()=>{reveal(r.id,'#'+c.id);setTimeout(()=>$(c.id)?.click(),60)}});
+      for(const t of tmp.querySelectorAll('[data-theme-apply]'))add({id:'th:'+t.dataset.themeApply,sec:'Settings',label:'Theme: '+t.title,where,icon:'theme',tab:r.id,sel:`[data-theme-apply="${t.dataset.themeApply}"]`,run:()=>{reveal(r.id);document.querySelector(`#ribbon [data-theme-apply="${t.dataset.themeApply}"]`)?.click()}})}}}
+  for(const f of FILE_MENU)if(f!=='-')add({id:'a:'+f[0],sec:'Commands',label:f[1].replace(/…$/,'…'),where:'File',icon:f[2],key:f[3]||'',kw:KW[f[0]]||'',run:()=>actions[f[0]]?.()});
+  for(const[a,l,kw='']of[['traceFrom','Trace path from the selected device'],['rerouteAll','Re-route all connectors'],['exportCsv','Inventory as CSV'],['repPoe','PoE budget report'],['repCctv','CCTV storage report'],['addLabel','Add a label to the selection'],['labelBg','Label background on / off'],
+    ['fitPageToDrawing','Fit the page to the drawing now'],['duplicatePage','Duplicate this page'],['deletePage','Delete this page'],['guideX','Add a vertical guide'],['guideY','Add a horizontal guide'],['clearGuides','Remove all guides'],['reverse','Reverse connector direction'],['toAuto','Switch connector to auto-routing'],
+    ['fillIp','Fill in the next free IP address','ipam'],['vlanFromZone','Create a VLAN from the zone'],['rotateLeft','Rotate 90° left'],['sameHeight','Same height'],['layoutSel','Auto-layout the selection'],['clusters','Layout: clusters by zone'],['nextFinding','Next finding','F8 problem issue'],['prevFinding','Previous finding','problem issue'],
+    ['reviewFindings','Check & review panel','findings issues'],['reviewChecklist','Review checklist'],['reviewChanges','Changes since the last review'],['reviewComplete','Complete review'],['checkConnections','Check connection integrity'],['checkLabels','Check labels & data consistency'],['checkReadability','Check readability'],['about','About Port Network Studio']])
+    if(actions[a])add({id:'a:'+a,sec:'Commands',label:l,where:'Command',icon:'command',kw:kw+' '+(KW[a]||''),run:()=>actions[a]()});
+  // panels
+  for(const[k,l]of[['shapes','Shapes panel'],['icons','Icons — search online icon sets'],['templates','Templates panel'],['layers','Layers panel'],['explorer','Explorer — everything in the drawing']])add({id:'p:'+k,sec:'Commands',label:l,where:'Left panel',icon:'panels',run:()=>{S.ltab=k;if(narrowScreen())overlayPanel('left');else if(!S.prefs.leftOpen)setChrome('leftOpen',true);renderLeft()}});
+  add({id:'p:page',sec:'Commands',label:'Page setup — paper, margin, background',where:'Inspector',icon:'page',kw:'size orientation landscape portrait colour',run:()=>{S.selected.clear();S.tab='page';if(S.side&&!S.reviewMode){S.side=null;ReviewUI.draw(true)}render()}});
+  // pages, shapes, the drawing, comments, shortcuts
+  S.doc.pages.forEach((p,i)=>add({id:'pg:'+p.id,sec:'Pages',label:'Go to '+p.name,where:p.isBackground?'Background page':'Page '+(i+1),icon:'page',run:()=>gotoPage(i)}));
+  for(const c of Shapes.catalog())for(const i of c.items)add({id:'sh:'+i.type,sec:'Shapes',label:'Insert '+i.name,where:c.name,type:i.type,kw:i.type,run:()=>{addNode(i.type,...centerOfView());bumpRecent(i.type)}});
+  S.doc.pages.forEach((p,pi)=>{for(const n of p.items){if(!(n.kind==='node'&&Shapes.isDevice(n)||n.kind==='zone'||n.kind==='edge'&&(n.labels?.length||n.data?.cableId)))continue;const nm=n.kind==='edge'?edgeName(n,p):Analysis.nameOf(n),d=n.data||{};
+    add({id:'it:'+n.id,sec:'In this drawing',label:nm,where:[n.kind==='node'?Shapes.nameOf(n.type):n.kind==='zone'?'Zone':'Link',d.ip,d.subnet,p.name].filter(Boolean).join(' · '),icon:n.kind==='edge'?'connect':n.kind==='zone'?'zone':null,type:n.kind==='node'?n.type:null,kw:[d.hostname,d.mgmtIp,d.model,d.vendor,d.serial,d.vlan&&'vlan '+d.vlan,d.cableId,...(n.labels||[]).map(l=>l.text)].filter(Boolean).join(' '),run:()=>goTo(pi,n)})}});
+  for(const c of S.doc.review?.comments||[])add({id:'cm:'+c.id,sec:'Comments',label:`#${c.n} ${c.text}`,where:`${Review.STATUS[c.status]} · ${S.doc.pages.find(p=>p.id===c.page)?.name||''}`,icon:'comment',kw:c.by,run:()=>ReviewUI.focusComment(c.id)});
+  const named=new Set(out.map(o=>o.label.toLowerCase().replace(/…$/,'')));
+  for(const[k,t]of SHORTCUTS)if(!named.has(t.toLowerCase()))add({id:'k:'+k,sec:'Shortcuts',label:t,where:k,icon:'keyboard',run:()=>actions.shortcuts()});
+  return out}
+
+function goTo(pi,n){if(pi!==S.pageIndex){S.pageIndex=pi;clearTransient();Constraints.sync(pg(),S.doc)}select([n.id]);S.highlights=new Set([n.id]);Ins.ensureVisible(n);render()}
+// Show where a tool lives: open its ribbon tab and make it pulse.
+function reveal(tab,sel){if(!tab)return null;if(S.prefs.ribbonCollapsed)document.body.classList.add('ribbonPeek');S.ribbonTab=tab;renderRibbon();const el=sel&&document.querySelector('#ribbon '+sel);if(!el)return null;
+  const box=el.closest('.rgroup[data-lv="4"],.rgroup[data-lv="5"]')?el.closest('.rgroup'):el.closest('.rbtn,.rsel,.rcolor,.themeSw')||el;box.classList.remove('found');void box.offsetWidth;box.classList.add('found');setTimeout(()=>box.classList.remove('found'),2600);return el}
+function setControl(tab,id,value){const el=reveal(tab,'#'+id);if(!el)return;el.value=value;el.dispatchEvent(new Event('change',{bubbles:true}))}
+
+// ---------- matching ----------
+function fuzzy(s,w){let i=0;for(const ch of s){if(ch===w[i])i++;if(i===w.length)return true}return false}
+function score(it,words){const L=it.label.toLowerCase(),H=(it.label+' '+(it.where||'')+' '+(it.kw||'')).toLowerCase();let s=0;
+  for(const w of words){const i=L.indexOf(w);if(i===0)s+=30;else if(i>0&&/[\s:·\-–(/▸]/.test(L[i-1]))s+=20;else if(i>0)s+=10;else if(new RegExp('(^|[\\s:·/(-])'+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).test(H))s+=6;else if(H.includes(w))s+=3;else if(w.length>=3&&L.split(/[\s:·/()–-]+/).some(x=>fuzzy(x,w)))s+=1;else return 0}
+  return s+(it.sec==='Commands'?3:it.sec==='Settings'?2:0)-(L.length/80)}
+const mark=(s,words)=>{let out=h(s);for(const w of words.filter(x=>x.length>1).sort((a,b)=>b.length-a.length)){const re=new RegExp('('+h(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');out=out.replace(/(<[^>]*>)|([^<]+)/g,(m,tag,text)=>tag||text.replace(re,'<mark>$1</mark>'))}return out};
+const CAP={Commands:12,Settings:8,'In this drawing':10,Shapes:8,Pages:6,Comments:6,Shortcuts:4};
+function results(all,q){const words=q.toLowerCase().split(/\s+/).filter(Boolean);
+  if(!words.length){const rec=(S.prefs.recentCmds||[]).map(id=>all.find(x=>x.id===id)).filter(Boolean),sug=SUGGEST.map(id=>all.find(x=>x.id===id)).filter(x=>x&&!rec.includes(x));return[...rec.slice(0,6).map(x=>({...x,sec:'Recent'})),...sug.map(x=>({...x,sec:'Suggested'}))]}
+  const scored=all.map(it=>({it,s:score(it,words)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s),by=new Map();
+  for(const{it,s}of scored){if(!by.has(it.sec))by.set(it.sec,{best:s,list:[]});const g=by.get(it.sec);if(g.list.length<(CAP[it.sec]||8))g.list.push(it)}
+  return[...by.values()].sort((a,b)=>b.best-a.best).flatMap(g=>g.list)}
+
+// ---------- the dialog ----------
+function open(){const all=sources();let list=[],sel=0;
+  const d=openDialog('Search','<div id="palList" class="palList" role="listbox"></div><div class="palFoot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> run</span><span><kbd>'+(IS_MAC?'⌥':'Alt')+'</kbd>+<kbd>Enter</kbd> show in the ribbon</span><span><kbd>Esc</kbd> close</span></div>',{cls:'cmdk',light:true});
+  d.querySelector('header').innerHTML=`<span class="cmdkIcon">${icon('search',18)}</span><input id="palInput" placeholder="Search tools, settings, shapes, devices, pages…" autocomplete="off" spellcheck="false" aria-label="Search"><button class="x" data-close title="Close (Esc)">×</button>`;
+  const draw=()=>{const q=$('palInput').value.trim();list=results(all,q);sel=Math.max(0,Math.min(sel,list.length-1));const words=q.toLowerCase().split(/\s+/).filter(Boolean);let last='';
+    $('palList').innerHTML=list.map((c,i)=>{const head=c.sec!==last?`<div class="palSec">${h(c.sec)}</div>`:'';last=c.sec;
+      return head+`<button data-cmd="${i}" class="${i===sel?'active':''}" role="option">${c.type?Shapes.iconSvg(c.type,{size:20}):icon(c.icon||'command',16)}<span class="palLabel">${mark(c.label,words)}${c.on?' <b class="palOn">current</b>':''}</span>${c.key?`<kbd>${h(c.key)}</kbd>`:''}<em ${c.tab?`data-where="${i}" title="Show it in the ribbon"`:''}>${h(c.where||'')}</em></button>`}).join('')||`<p class="muted pad">Nothing matches “${h(q)}”. Try another word — e.g. “pdf”, “vlan”, “overlap”, a device name or an IP address.</p>`;
+    $('palList').querySelector('.active')?.scrollIntoView({block:'nearest'})};
+  const run=(c,show)=>{if(!c)return;closeDialog();const r=(S.prefs.recentCmds||[]).filter(x=>x!==c.id);r.unshift(c.id);S.prefs.recentCmds=r.slice(0,8);savePrefs();
+    if(show&&c.tab){if(!reveal(c.tab,c.sel))notify(`It is under ${c.where}.`);return}c.run()};
+  draw();setTimeout(()=>$('palInput')?.focus(),20);$('palInput').oninput=()=>{sel=0;draw()};
+  $('palInput').onkeydown=e=>{if(e.key==='ArrowDown'){sel=Math.min(list.length-1,sel+1);draw();e.preventDefault()}else if(e.key==='ArrowUp'){sel=Math.max(0,sel-1);draw();e.preventDefault()}else if(e.key==='PageDown'){sel=Math.min(list.length-1,sel+8);draw();e.preventDefault()}else if(e.key==='PageUp'){sel=Math.max(0,sel-8);draw();e.preventDefault()}else if(e.key==='Enter'){e.preventDefault();run(list[sel],e.altKey)}};
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();const w=e.target.closest('[data-where]');if(w){run(list[+w.dataset.where],true);return}const b=e.target.closest('[data-cmd]');if(b)run(list[+b.dataset.cmd],e.altKey)}}
+
+return{open,results,score,reveal};
 })();
 
 </script>
@@ -7008,7 +7766,7 @@ async function boot(){
   if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
-  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();Quick.init();
+  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();Quick.init();ReviewUI.init();
   await Packs.loadAll();
   try{const lib=await Store.kvGet('library');if(Array.isArray(lib)&&!S.library.length)S.library=lib}catch{}
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();

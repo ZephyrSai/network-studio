@@ -125,7 +125,7 @@ async function boot(){
   if(/[?&#]reset\b/.test(location.search+location.hash)){Object.assign(S.prefs,{leftOpen:true,rightOpen:true,showHeader:true,ribbonCollapsed:false,showStatus:true});savePrefs();history.replaceState(null,'',location.pathname)}
   try{const lib=JSON.parse(localStorage.getItem('port-v3-library')||'[]');if(Array.isArray(lib))S.library=lib}catch{}
   $('paletteDisplay').value=S.prefs.paletteDisplay||'symbol';
-  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();Quick.init();
+  applyUiTheme();applyLayoutPrefs();wire();TplLib.init();Quick.init();ReviewUI.init();
   await Packs.loadAll();
   try{const lib=await Store.kvGet('library');if(Array.isArray(lib)&&!S.library.length)S.library=lib}catch{}
   let doc=null,recovered=false;const ws=await Workspace.restoreLast();

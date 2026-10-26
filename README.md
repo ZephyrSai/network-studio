@@ -20,7 +20,7 @@ No installation, no account, no server: everything runs in the browser, and draw
 | **Containers** | Network **zones** (plain / header / tab / outline) that carry their members, with subnet, VLAN, gateway and security level. **Racks** with U numbering; rack equipment snaps into U slots. |
 | **Shape data** | Hostname, IP, management IP, VLAN, model, vendor, serial, OS, location, status, owner, power, PoE budget/draw, stream bitrate, retention, storage, unit price, notes + custom fields. **Data graphics**: colour devices by status / VLAN / category / any field, show fields under names, `{{field}}` text, status marks (planned = dashed, to remove = ✕). |
 | **Network tools** | IP plan with subnet maths and next-free-IP, **auto-assign IPs** to a zone, **VLAN registry**, auto-numbering (`SW-{n:02}`), bulk data edit, generate interface points (`Gi1/0/1…48`). |
-| **Analysis** | **Design-rule check** (duplicate IPs/hostnames, IP outside zone subnet, network/broadcast address, gateway errors, overlapping subnets, loose/broken links, isolated devices, overlaps, off-page items, PoE over budget, rack U clashes, link over-utilisation), **single points of failure** (articulation points & bridges), **path trace** with alternative-route count, **camera stream traffic** with per-link utilisation, **PoE budget**, **CCTV storage sizing**, highlight-by-data filter. |
+| **Analysis** | **Design check** in a side panel, by category — *connection integrity* (unattached lines, dangling ends and the device they stop at, self-connections, reused ports, broken links), *labels & data* (free text that isn't attached to its device or link, empty `{{field}}` labels, duplicate names, hostnames, IPs, serial numbers and cable IDs, labels that disagree with the data), *readability* (overlapping labels or links, hidden or too-small text, links drawn through devices, content off the page) and *network design* (subnets, PoE, racks, utilisation). Click a finding to go to it, fix it in one click, or accept it as intentional; F8 steps through them, **single points of failure** (articulation points & bridges), **path trace** with alternative-route count, **camera stream traffic** with per-link utilisation, **PoE budget**, **CCTV storage sizing**, highlight-by-data filter. |
 | **Reports** | Device inventory, cable schedule, BOM (with prices), IP plan, rack elevations, PoE budget, CCTV storage, VLAN table — download CSV, copy for Excel, or drop as an editable table on a page. |
 | **Import** | **Visio** drawings (`.vsdx`) as editable pages and stencils (`.vssx`) as shape packs. **CSV / NetBox exports** (devices + cables, auto-zones by site), **diagram-as-text**, **Cisco CDP / LLDP** `show … neighbors [detail]` output → auto-laid-out topology. |
 | **Layout** | Auto-layout: top-down by tier, left-right, grid, hub-and-spoke, ring, organic — zone-aware (each zone laid out as a cluster). Fit page to drawing. |
@@ -28,7 +28,8 @@ No installation, no account, no server: everything runs in the browser, and draw
 | **Export** | **Visio `.vsdx`** (shapes, glued connectors, Shape Data, layers, hyperlinks; opens again in Port with its zones, devices and links), **draw.io**, SVG, PNG (2×/4×/transparent), copy page as image, PDF via print, native JSON, share link (drawing compressed into the URL hash). |
 | **Persistence** | Drawings auto-save to **IndexedDB** in your browser — including on GitHub Pages — with a **My drawings** manager (open / duplicate / download / delete, backup & restore all), optional **persistent storage** request, plus a quick localStorage recovery copy. Shape packs and your symbol library persist too. |
 | **Workspace layout** | View ▸ Layout or the buttons at the right of the tab row: hide the title bar, collapse the ribbon (tabs pop it open as an overlay; double-click a tab or Ctrl+F1 to pin it), hide the shapes panel / inspector (Ctrl+Alt+←/→), hide the status bar, or **Focus mode** (Ctrl+.) for canvas-only editing. Choices are remembered; View ▸ Layout ▸ Reset layout (or opening the app with `?reset`) restores the default, and the app resets itself if a layout ever leaves the canvas without room. |
-| **Productivity** | Ribbon UI, command palette (Ctrl+K), find & replace across text and data, format painter, smart guides, snapping, rulers, overview map (appears once you zoom in), explorer tree, dark mode, smooth trackpad pinch-zoom (Chrome, Edge, Firefox and Safari gestures), scrolling that stops just past the drawing, full keyboard shortcuts (press `?`). |
+| **Review** | **Review mode** locks the layout (click selects, drag pans) while you **pin comments** to a device, a link, an area or a point, with replies and open / resolved / accepted status. A **checklist** for connectivity, labels, device data, readability and design shows the findings still open in each. **Changes since the previous review** (or the last issued revision) are listed and highlighted, and the **review report** puts comments, flagged errors and unresolved items in one HTML / PDF / CSV document with the pages and their pins. |
+| **Productivity** | Ribbon UI, **universal search** in the title bar (Ctrl+K or `/`) — every command, setting, shape, page, device, IP and comment, showing where each tool lives in the ribbon, find & replace across text and data, format painter, smart guides, snapping, rulers, overview map (appears once you zoom in), explorer tree, dark mode, smooth trackpad pinch-zoom (Chrome, Edge, Firefox and Safari gestures), scrolling that stops just past the drawing, full keyboard shortcuts (press `?`). |
 
 ### Everything stays linked
 The drawing is kept consistent automatically after every edit:
@@ -66,10 +67,10 @@ Enterprise campus (with rack elevations) · Data-centre leaf-spine · SD-WAN bra
 * **Height in U.** Right-click a unit ▸ *Height* (1U–10U), or use the inspector. It keeps its top U if there's room, otherwise its bottom U, otherwise the nearest free run, and it never overlaps another unit. Units snap to free U slots when dragged or dropped in.
 * **Move and lock to a U.** *Move to U…* refuses taken slots and names what's in the way. *Lock in this U* (or *Lock all equipment* on the rack) keeps units where they are when dragged; moving the rack still carries them.
 * **Views.** Right-click a rack ▸ *Views*:
-  * *Rear*: fans, PSUs and ports; shallow front-mounted panels are shown faded.
+  * *Rear*: ports, fans and PSUs; shallow front-mounted panels are shown faded. Each unit has its own rear label — drag or edit it like the front one — and clicking a unit in the rear view selects it.
   * *Top*: plan of cabinet and rails, each unit's depth, the deepest unit and a warning if something is too deep.
 
-  They sit side by side with the front view.
+  They sit side by side with the front view; whatever stands to the right of the rack moves along to make room.
 * **Accessories:** cable managers (1U/2U), vented cable tray, shelf, drawer, KVM console, LCD monitor, KVM switch, patch and fibre panels, PDU, transfer switch (ATS), fan tray, blanking panels (1U/2U) and brush panel. Add them from the rack's right-click menu or inspector; they go in the next free U.
 * **Space & power** (rack right-click or inspector) shows:
   * U used and free;
@@ -137,7 +138,9 @@ Open or drop a Visio file anywhere (*File ▸ Import Visio drawing or stencil…
 * **Connect**: hover a device and drag from a blue point or a quick-connect arrow to another device. Choose link type and routing in *Home ▸ Connector*.
 * **Edit text**: double-click, `Enter` or `F2`. **Data**: right panel ▸ *Data* tab.
 * **Zones**: *Insert ▸ Zone* or select devices ▸ *Wrap in zone*. Set the zone's subnet/VLAN in its *Data* tab.
-* **Analyse**: *Analyze* ribbon tab. `Esc` clears highlights.
+* **Analyse**: *Analyze* ribbon tab, or the issue count in the status bar. `Esc` clears highlights, `F8` steps through findings.
+* **Review**: *Review ▸ Review mode*, then *Comment* (or `C`) and click or drag on the drawing. *Review report* exports everything.
+* **Find any tool**: the search box in the title bar, `Ctrl+K` or `/`.
 * **Your drawings**: *File ▸ My drawings* (stored in this browser) or *File ▸ Save* for a portable `.json`.
 * **Bring your own icons**: *Shapes ▸ ＋ Import shapes* (files / ZIP / draw.io library) or *Packs… ▸ Import folder*.
 
