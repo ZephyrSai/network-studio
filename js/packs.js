@@ -74,11 +74,13 @@ const Packs=(()=>{
     if(pack.categories.length>40){// very deep packs: collapse into one category
       const one='pack:'+pack.id;pack.categories=[{id:one,name:packName}];for(const s of Object.values(pack.shapes))s.cat=one}
     return{pack,skipped}}
-  async function unzip(blob){const buf=new Uint8Array(await blob.arrayBuffer()),dv=new DataView(buf.buffer),out=[];let eocd=-1;for(let i=buf.length-22;i>=Math.max(0,buf.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}if(eocd<0)throw Error('Not a ZIP file.');
+  // all=true: every file as {path, bytes}; otherwise only images, as {path, blob}
+  async function unzip(blob,all=false){const buf=new Uint8Array(await blob.arrayBuffer()),dv=new DataView(buf.buffer),out=[];let eocd=-1;for(let i=buf.length-22;i>=Math.max(0,buf.length-70000);i--)if(dv.getUint32(i,true)===0x06054b50){eocd=i;break}if(eocd<0)throw Error('Not a ZIP file.');
     const count=dv.getUint16(eocd+10,true);let p=dv.getUint32(eocd+16,true);const dec=new TextDecoder();
     for(let i=0;i<count;i++){if(dv.getUint32(p,true)!==0x02014b50)break;const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nlen=dv.getUint16(p+28,true),xlen=dv.getUint16(p+30,true),clen=dv.getUint16(p+32,true),lho=dv.getUint32(p+42,true),name=dec.decode(buf.subarray(p+46,p+46+nlen));p+=46+nlen+xlen+clen;
-      if(name.endsWith('/')||!/\.(svg|png|jpe?g|gif|webp)$/i.test(name))continue;const ln=dv.getUint16(lho+26,true),lx=dv.getUint16(lho+28,true),start=lho+30+ln+lx,data=buf.subarray(start,start+csize);
+      if(name.endsWith('/')||!all&&!/\.(svg|png|jpe?g|gif|webp)$/i.test(name))continue;const ln=dv.getUint16(lho+26,true),lx=dv.getUint16(lho+28,true),start=lho+30+ln+lx,data=buf.subarray(start,start+csize);
       let bytes;if(method===0)bytes=data;else if(method===8){bytes=new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())}else continue;
+      if(all){out.push({path:name,bytes});continue}
       out.push({path:name,blob:new Blob([bytes],{type:/\.svg$/i.test(name)?'image/svg+xml':'image/'+name.split('.').pop().toLowerCase().replace('jpg','jpeg')})})}
     return out}
   async function fromDrawioLibrary(text,packName){const m=/<mxlibrary>([\s\S]*)<\/mxlibrary>/.exec(text);if(!m)throw Error('Not a draw.io library (.xml exported from draw.io ▸ File ▸ Export library).');const arr=JSON.parse(m[1]);const entries=[];let skipped=0;
@@ -88,6 +90,8 @@ const Packs=(()=>{
   async function importAny(files,packName){
     files=[...files];if(!files.length)return;
     const first=files[0],lower=first.name.toLowerCase();
+    if(files.every(f=>Visio.isStencil(f.name))){let pack=null,skipped=0;for(const f of files){const r=await Visio.stencilToPack(f);skipped+=r.stats.skipped;if(!pack){pack=r.pack;pack.name=packName||pack.name;continue}pack.categories.push(...r.pack.categories);Object.assign(pack.shapes,r.pack.shapes)}return{pack,skipped}}
+    if(files.some(f=>Visio.isLegacy(f.name)))throw Error('Old binary Visio files (.vss / .vsd) cannot be read in a browser — open them in Visio and save as .vssx (stencil) or .vsdx (drawing).');
     if(files.length===1&&lower.endsWith('.json')){const d=JSON.parse(await first.text());if(!d.portPack)throw Error('Not a Port shape pack.');for(const s of Object.values(d.pack.shapes))if(!isSafeMarkup(s.svg))throw Error('Pack contains unsafe markup.');d.pack.id='u-'+hash(d.pack.name+Date.now());const old=Object.entries(d.pack.shapes);d.pack.shapes={};const remap={};for(const[cid]of(d.pack.categories||[]).entries()){}d.pack.categories=(d.pack.categories||[{name:d.pack.name}]).map(c=>{const id='pack:'+d.pack.id+':'+slug(c.name);remap[c.id]=id;return{id,name:c.name}});for(const[sid,s]of old)d.pack.shapes[sid.startsWith('u-')?sid:'u-'+hash(d.pack.id+sid)]={...s,cat:remap[s.cat]||d.pack.categories[0].id};return{pack:d.pack,skipped:0}}
     if(files.length===1&&(lower.endsWith('.xml')||lower.endsWith('.drawio')))return fromDrawioLibrary(await first.text(),packName||first.name.replace(/\.[^.]+$/,''));
     const entries=[];for(const f of files){const n=f.name.toLowerCase();if(n.endsWith('.zip'))entries.push(...await unzip(f));else entries.push({path:f.webkitRelativePath||f.name,blob:f})}
@@ -122,5 +126,5 @@ const Packs=(()=>{
   async function addOnline(full){let pack=packs.get('online');if(!pack){pack={id:'online',name:'Online picks',source:'iconify',categories:[{id:'pack:online',name:'Online picks'}],shapes:{}}}const id='i-'+slug(full.replace(':','-'));if(!pack.shapes[id]){const st=await fetchIcon(full);st.cat='pack:online';pack.shapes[id]=st;await save(pack)}else install(pack);return id}
   const thumbUrl=(full,color='#2f5ea8')=>{const[p,n]=full.split(':');return`${API}/${p}/${n}.svg?color=${encodeURIComponent(color)}`};
 
-  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,save,remove,loadAll,exportPack,search,loadIcons,iconPreview,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
+  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,stencilFrom,save,remove,loadAll,exportPack,search,loadIcons,iconPreview,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
 })();

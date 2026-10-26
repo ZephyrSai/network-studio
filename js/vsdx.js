@@ -503,6 +503,12 @@ const VsdxWriter = (() => {
     });
     return rows.length ? '<Section N="Property">' + rows.join('') + '</Section>' : '';
   }
+  /* User cells: what the item was in the editor (zone, device type), read back when the file is imported again. */
+  function userSection(user) {
+    const rows = Object.entries(user || {}).filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => '<Row N="' + escAttr(k) + '">' + cS('Value', String(v), 'STR') + cS('Prompt', '') + '</Row>');
+    return rows.length ? '<Section N="User">' + rows.join('') + '</Section>' : '';
+  }
   function hyperlinkSection(h) {
     if (!h) return '';
     const list = Array.isArray(h) ? h : [h];
@@ -701,7 +707,7 @@ const VsdxWriter = (() => {
       const tb = s.textBox ? boxOf(s.textBox) : { x: 0, y: 0, w, h };
       out += textCells(ti, textBoxLocal(ti, tb, h, 'grow', padIn), padIn, null);
     }
-    out += propSection(s.data) + hyperlinkSection(s.hyperlink);
+    out += propSection(s.data) + userSection(item.user || s.user) + hyperlinkSection(s.hyperlink);
     if (ti) out += textSections(ti);
     if (!isGroup) {
       if (buckets.length === 1) out += bucketGeometry(buckets[0], w, h);
@@ -743,7 +749,7 @@ const VsdxWriter = (() => {
     if (layer) out += layer;
     out += lineFillCells(b);
     if (ti) out += textCells(ti, textBoxLocal(ti, { x: 0, y: 0, w, h }, h, 'tolerant', padPt * PT), padPt * PT, null);
-    out += propSection(s.data) + hyperlinkSection(s.hyperlink);
+    out += propSection(s.data) + userSection(item.user || s.user) + hyperlinkSection(s.hyperlink);
     if (ti) out += textSections(ti);
     out += geomSection(0, [[0, 0], [w, 0], [w, h], [0, h]], true, !b.fill, !b.line, w, h);
     if (ti) out += textElement(ti);
@@ -833,7 +839,7 @@ const VsdxWriter = (() => {
       const tw = m.w * 1.15 + 2 * padIn + 0.04, th = m.h + 2 * padIn;
       out += textCells(ti, { cx: L[0] - B[0], cy: L[1] - B[1], w: tw, h: th }, padIn, '#FFFFFF', true);
     }
-    out += propSection(s.data) + hyperlinkSection(s.hyperlink);
+    out += propSection(s.data) + userSection(s.user) + hyperlinkSection(s.hyperlink);
     if (ti) out += textSections(ti);
     let g = '<Section N="Geometry" IX="0">' + cN('NoFill', 1) + cN('NoLine', 0) + cN('NoShow', 0) + cN('NoSnap', 0) + cN('NoQuickDrag', 0);
     P.forEach((p, i) => {
@@ -871,6 +877,7 @@ const VsdxWriter = (() => {
     let nextId = 1;
     const items = [];
     const idMap = {};
+    const anyId = {};
     for (const s of shapesIn) {
       if (!s || typeof s !== 'object') continue;
       const kind = inferKind(s);
@@ -892,7 +899,13 @@ const VsdxWriter = (() => {
       item.id = nextId++;
       if (kind === 'shape' && item.buckets.length > 1) item.memberIds = item.buckets.map(() => nextId++);
       if (kind !== 'connector' && s.id !== undefined && s.id !== null && idMap[String(s.id)] === undefined) idMap[String(s.id)] = item.id;
+      if (s.id !== undefined && s.id !== null && anyId[String(s.id)] === undefined) anyId[String(s.id)] = item.id;
       items.push(item);
+    }
+    // User.PortOwner names another IR shape: point it at that shape's Visio ID.
+    for (const it of items) {
+      const u = it.ir.user;
+      if (u && u.PortOwner !== undefined && u.PortOwner !== null) it.user = Object.assign({}, u, { PortOwner: anyId[String(u.PortOwner)] });
     }
     for (const it of items) {
       if (it.kind !== 'connector') continue;

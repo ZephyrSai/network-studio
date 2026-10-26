@@ -37,12 +37,15 @@ const Workspace=(()=>{
   async function importShapes(files,packName){
     if(!files?.length)return;const guess=packName||(files.length===1?files[0].name.replace(/\.[^.]+$/,''):(files[0].webkitRelativePath?.split('/')[0]||'My shapes'));
     const name=prompt('Name for this shape pack',guess);if(name===null)return;notify('Importing shapes…',2000);
-    try{const{pack,skipped}=await Packs.importAny(files,name.trim()||guess);const n=Object.keys(pack.shapes).length;if(!n)throw Error('No usable shapes found'+(skipped?` (${skipped} skipped)`:'')+'.');pack.name=name.trim()||guess;await Packs.save(pack);
+    try{const{pack,skipped}=await Packs.importAny(files,name.trim()||guess);const n=Object.keys(pack.shapes).length;if(!n)throw Error('No usable shapes found'+(skipped?` (${skipped} skipped)`:'')+'.');pack.name=name.trim()||guess;
+      // importing a pack again (an updated stencil) replaces the old one rather than duplicating it
+      const old=Packs.list().find(x=>x.id!==pack.id&&x.name===pack.name&&x.source===pack.source);if(old){if(!confirm(`Replace the existing “${old.name}” pack? Shapes already placed in drawings stay.`)){pack.name+=' (2)'}else await Packs.remove(old.id)}
+      await Packs.save(pack);
       S.prefs.catOpen??={};for(const c of pack.categories)S.prefs.catOpen[c.id]=true;savePrefs();S.ltab='shapes';renderLeft();notify(`Imported ${n} shape(s) into “${pack.name}”${skipped?` · ${skipped} skipped`:''}. They are saved in this browser and travel inside drawings that use them.`,6000)}
     catch(err){notify('Import failed: '+err.message,6000)}}
   function openPacks(){const list=Packs.list();const d=openDialog('Shape packs',`<p class="muted">Packs add shapes to the Shapes panel. Imported packs are stored in this browser; drawings carry copies of the pack shapes they use, so colleagues see them even without the pack.</p>
     <div class="list">${list.map(p=>`<div class="packRow"><div><b>${html(p.name)}</b><span class="muted">${Object.keys(p.shapes||{}).length} shapes · ${p.builtIn?'bundled':p.source==='iconify'?'online picks':'imported'}${p.licenses?' · '+Object.values(p.licenses).map(l=>html(l.name+' ('+l.spdx+')')).join(', '):''}</span></div><span class="spacer"></span>${p.builtIn?'':`<button data-pk-rename="${p.id}">Rename</button><button data-pk-export="${p.id}">Export</button><button data-pk-del="${p.id}">Remove</button>`}</div>`).join('')||'<p class="muted">No packs yet.</p>'}</div>
-    <h3 class="h3">Import</h3><p class="muted">Bring your own icon sets — e.g. vendor network/cloud icon ZIPs (Cisco, AWS, Azure, GCP, Fortinet, Hikvision…), SVG folders, draw.io libraries (.xml), PNG/JPG images or exported .portpack.json files. SVGs are cleaned of scripts and external references; single-colour icons become recolourable.</p>
+    <h3 class="h3">Import</h3><p class="muted">Bring your own icon sets — Visio stencils (.vssx), vendor network/cloud icon ZIPs (Cisco, AWS, Azure, GCP, Fortinet, Hikvision…), SVG folders, draw.io libraries (.xml), PNG/JPG images or exported .portpack.json files. SVGs are cleaned of scripts and external references; single-colour icons become recolourable.</p>
     <footer><button data-pk-folder>Import folder…</button><button data-pk-files class="primary">Import files / ZIP…</button></footer>`,{wide:false});
     d.onclick=async e=>{const t=e.target;if(t.closest('[data-close]'))return closeDialog();
       if(t.closest('[data-pk-files]')){closeDialog();$('shapeInput').click();return}if(t.closest('[data-pk-folder]')){closeDialog();$('folderInput').click();return}

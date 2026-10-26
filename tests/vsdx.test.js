@@ -614,6 +614,27 @@ test('connectors: glue formulas and Connects entries', () => {
   assert.equal(V(ls, 'ShapeRouteStyle'), '2', 'free (diagonal) route -> straight style');
 });
 
+test('user cells: Port item markers on shapes, text and connectors; owners follow renumbered IDs', () => {
+  const ir = oneShapeIR(null);
+  ir.pages[0].shapes = [
+    multiStyleShape({ id: 'a', user: { PortKind: 'node', PortType: 'router', PortProps: '{"ports":[[0,0.5,"Gi0/1"]]}' } }), // a group: its members take IDs too
+    { id: 'b', kind: 'shape', name: 'Zone', x: 0, y: 5, w: 4, h: 3, geoms: [{ closed: true, fill: '#eef', stroke: '#99a', weight: 1, points: rect(0, 0, 4, 3) }], user: { PortKind: 'zone', PortType: null } },
+    { id: 'c', kind: 'connector', points: [[2, 2], [2, 5]], from: 'a', to: 'b', user: { PortKind: 'edge', PortProps: '{"linkType":"fiber10g"}' } },
+    { id: 'd', kind: 'text', x: 3, y: 5, w: 2, h: 0.3, text: 'VLAN 10', user: { PortKind: 'auto', PortOwner: 'b' } },
+    { id: 'e', kind: 'text', x: 2, y: 3, w: 1, h: 0.3, text: 'Gi0/1', user: { PortKind: 'auto', PortOwner: 'c' } },
+  ];
+  const pkg = open(VsdxWriter.build(ir)), shapes = kids(kid(pkg.pages[0].xml, 'Shapes'), 'Shape');
+  const user = (sh) => Object.fromEntries(kids(sections(sh, 'User')[0] || { children: [] }, 'Row').map((r) => [r.attrs.N, V(r, 'Value')]));
+  const [router, zone, conn, cap, port] = shapes;
+  assert.deepEqual(user(router), { PortKind: 'node', PortType: 'router', PortProps: '{"ports":[[0,0.5,"Gi0/1"]]}' });
+  assert.deepEqual(user(zone), { PortKind: 'zone' }, 'empty values are left out');
+  assert.equal(user(conn).PortKind, 'edge');
+  assert.notEqual(zone.attrs.ID, '2', 'the group\'s members shifted the numbering');
+  assert.equal(user(cap).PortOwner, zone.attrs.ID, 'owner is the zone\'s Visio ID, not its IR id');
+  assert.equal(user(port).PortOwner, conn.attrs.ID, 'connectors can own text too');
+  for (const sh of [router, zone, conn, cap]) for (const r of kids(sections(sh, 'User')[0], 'Row')) assert.equal(cells(r).Value.U, 'STR');
+});
+
 test('text-only shape: fill/stroke box, alignment, valign, padding', () => {
   const t = { id: 1, kind: 'text', x: 2, y: 1, w: 3, h: 1, text: 'Hello', textColor: 'rgb(255, 0, 0)', textSize: 12, align: 'right', valign: 'top', fill: '#fffbe6', stroke: '#e0c060', underline: true };
   const sh = allShapes(open(VsdxWriter.build(oneShapeIR(t))).pages[0].xml)[0];
