@@ -434,6 +434,7 @@ const VsdxWriter = (() => {
       align: HALIGN[a] !== undefined ? HALIGN[a] : 1,
       valign: VALIGN[va] !== undefined ? VALIGN[va] : 1,
       padding: toNum(o.padding, null),
+      angle: toNum(o.textAngle, 0), // radians, counter-clockwise (Visio)
     };
   }
 
@@ -463,7 +464,7 @@ const VsdxWriter = (() => {
     // autoSize: label box follows text edits in Visio (like the Dynamic connector master).
     out.push(cN('TxtWidth', box.w, null, autoSize ? 'TEXTWIDTH(TheText)' : null),
       cN('TxtHeight', box.h, null, autoSize ? 'TEXTHEIGHT(TheText,TxtWidth)' : null));
-    out.push(cN('TxtLocPinX', box.w / 2, null, 'TxtWidth*0.5'), cN('TxtLocPinY', box.h / 2, null, 'TxtHeight*0.5'), cN('TxtAngle', 0));
+    out.push(cN('TxtLocPinX', box.w / 2, null, 'TxtWidth*0.5'), cN('TxtLocPinY', box.h / 2, null, 'TxtHeight*0.5'), cN('TxtAngle', ti.angle || 0));
     out.push(cN('LeftMargin', padIn, 'PT'), cN('RightMargin', padIn, 'PT'), cN('TopMargin', padIn, 'PT'), cN('BottomMargin', padIn, 'PT'));
     out.push(cN('VerticalAlign', ti.valign));
     if (bkgnd) out.push(cS('TextBkgnd', bkgnd), cN('TextBkgndTrans', 0));

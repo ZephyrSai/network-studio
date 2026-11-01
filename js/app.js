@@ -111,7 +111,7 @@ function beginPointer(e){
     S.activeLabel=kind==='label'?{owner:id,id:t.dataset.label}:null;S.segment=kind==='segment'?{id,index:+t.dataset.index}:null;S.bend=kind==='bend'?{id,index:+t.dataset.index}:null;
     remember();
     const set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
-    if(kind==='move'&&Racks.isItem(n)&&!set.some(x=>x.id===n.id)){const r=Racks.rackOf(n,items());notify(`${Analysis.nameOf(n)} is locked at U${Racks.uOf(r,n)} — right-click ▸ Unlock U position to move it.`,2600)}
+    if(kind==='move'&&Racks.isItem(n)&&!set.some(x=>x.id===n.id)){const r=Racks.rackOf(n,items());notify(Racks.isZeroU(n)?`${Analysis.nameOf(n)||Shapes.nameOf(n.type)} is locked in place (${Racks.position(r,n)}) — right-click ▸ Unlock to move it.`:`${Analysis.nameOf(n)} is locked at U${Racks.uOf(r,n)} — right-click ▸ Unlock U position to move it.`,2600)}
     // Ctrl- or Alt-drag duplicates (once the pointer really moves); Alt-click reaches what is underneath; clicking a
     // member of an already selected group picks just that member
     S.drag={kind,start:p,startClient:[e.clientX,e.clientY],id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set),
@@ -163,12 +163,15 @@ function previewRoute(d,t){const a=d.fromP,b=t.p;if(S.routeStyle==='straight'||S
 function snapMove(d,dx,dy,e){
   S.guideLines=[];S.spacing=null;d.rackSlot=null;const b=d.box,z=S.view.zoom,free=e.ctrlKey||e.metaKey;
   if(!free&&S.prefs.snap){dx=grid(b.x+dx)-b.x;dy=grid(b.y+dy)-b.y}
-  // rack equipment snaps into U slots
-  const movers=d.original.filter(x=>x.kind==='node');
-  if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy,rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack);let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));
+  // rack equipment snaps into U slots, a vertical 0U PDU into a side channel, a roof fan tray onto the roof
+  const movers=d.original.filter(x=>x.kind==='node'),mounts=new Set(movers.map(Racks.mountOf));
+  if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free&&mounts.size===1){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy;
+    // a long PDU is judged by where the pointer is, not by its centre
+    if(!mounts.has('u')){if(d.original.filter(x=>x.kind!=='edge').length>1)return[dx,dy];const slot=zeroUSlot(movers[0],d.start[0]+dx,d.start[1]+dy,b,dy,d)||zeroUSlot(movers[0],cx,cy,b,dy,d);d.rackSlot=slot;return slot&&!slot.full?[slot.x-b.x,slot.y-b.y]:[dx,dy]}
+    const rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack),hU=Math.max(1,Math.round(b.h/Shapes.RU));let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));
     // a single unit takes the nearest free U run instead of overlapping another one
-    if(movers.length===1){const hU=Math.max(1,Math.round(b.h/Shapes.RU)),want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return[dx,dy];ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
-    dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h};return[dx,dy]}}
+    if(movers.length===1){const want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return[dx,dy];ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
+    const u=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1;dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h,mount:'u',text:movers.length===1?`U${u}${hU>1?'–'+(u+hU-1):''}`:''};return[dx,dy]}}
   if(S.prefs.guides&&!free){const th=6/z,others=items().filter(t=>!d.original.some(o=>o.id===t.id)&&t.kind!=='edge'&&itemVisible(t,{doc:S.doc})),ps=C.pageSize(pg());const xs=[],ys=[];
     for(const t of others){if(t.kind==='zone')continue;const tb=C.box(t);xs.push(tb.x,tb.x+tb.w/2,tb.x+tb.w);ys.push(tb.y,tb.y+tb.h/2,tb.y+tb.h)}xs.push(ps.w/2);ys.push(ps.h/2);for(const g of pg().guideLines||[])(g.axis==='x'?xs:ys).push(g.pos);
     let bx=null,by=null;for(const v of[b.x,b.x+b.w/2,b.x+b.w])for(const x of xs){const off=x-v-dx;if(Math.abs(off)<th&&(bx===null||Math.abs(off)<Math.abs(bx.off)))bx={off,x}}
@@ -203,7 +206,7 @@ function pointerUp(e){
   else if(d.kind==='connect'){finishConnect(d,e,p)}
   else if(d.moved){if(['bend','segment'].includes(d.kind)){const edge=find(d.id);if(edge?.kind==='edge'){if(d.pending?.candidate){const t=commitPort(d.pending);edge.points[d.index]=t.p;if(d.index===0)edge.from=t.ref;else edge.to=t.ref}if(d.index===0||d.index===edge.points.length-1){const k=d.index===0?'from':'to',f=k==='from'?'fromIf':'toIf',o=d.original?.find(x=>x.id===edge.id),r=edge[k],n=r&&find(r.node),port=r?.port&&n?.ports.find(q=>q.id===r.port);if(o&&(o[k]?.node!==r?.node||o[k]?.port!==r?.port))edge[f]=port&&!genericPort(port.name)?port.name:''}
       if(d.pending?.glue||edge.routing==='auto'||edge.routing==='straight')Conn.markDirty(edge.id);Conn.orthogonalize(edge);edge.points=Conn.simplify(edge.points)}}
-    if(d.kind==='move'&&d.rackSlot)notify('Placed at U'+Shapes.rackU(items().find(r=>r.type==='rack'&&C.inside({x:d.rackSlot.x+1,y:d.rackSlot.y+1,w:0,h:0},Shapes.rackInner(r))),{y:d.rackSlot.y,h:d.rackSlot.h})+'.',1800);
+    if(d.kind==='move'&&d.rackSlot&&!d.rackSlot.full){const sl=d.rackSlot;if(sl.mount==='u'){if(sl.text)notify('Placed at '+sl.text+'.',1800)}else{const r=find(sl.rackId),m=find(sl.id);if(r&&m)RackUI.mountDropped(r,m,sl)}}
     S.snapPort=null;S.dropTarget=null;changed()}
   else if(d.kind==='move'&&(d.altClick||d.ctrlClick||d.subselect)){S.history.pop();if(d.altClick)Select.cycleAt(...d.startClient,d.prevSel);else if(d.ctrlClick==='remove')selection(d.id,true);else if(d.subselect){select([d.subselect]);notify('Picked one shape of the group — click outside to go back, Ctrl+Shift+G ungroups.',2200)}}
   else if(d.kind!=='pan'&&d.kind!=='autoconn'){if(S.duplicated){changed()}else S.history.pop()}
@@ -259,17 +262,32 @@ function openEditor(x,y,value,onCommit,{width=260,mono=false}={}){
   ed.onkeydown=ev=>{ev.stopPropagation();if(ev.key==='Escape'){finish(false)}else if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey||!ev.shiftKey&&value.indexOf('\n')<0&&!ed.value.includes('\n')&&!ev.altKey&&ed.dataset.single==='1')){ev.preventDefault();finish(true)}else if(ev.key==='Tab'){ev.preventDefault();finish(true);ed.dispatchEvent(new CustomEvent('tabnext',{detail:ev.shiftKey?-1:1}))}};ed.onblur=()=>finish(true)}
 function editLabel(owner,id,fresh=false){const n=find(owner),l=n?.labels?.find(x=>x.id===id);if(!l||isLocked(n))return;S.activeLabel={owner,id};S.selected=new Set([owner]);render('overlay');render('panel');$('inlineText').dataset.single='0';
   openEditor(l.x,l.y,fresh?'':l.text,v=>{if(fresh&&!v.trim()&&n.kind==='text'){pg().items=items().filter(i=>i.id!==n.id);S.selected.clear();changed();return}mutate(()=>l.text=v)},{width:Math.max(220,Math.min(420,(l.wrapWidth||0)*S.view.zoom))})}
+// Where a dragged 0U PDU / roof fan tray would land: the nearer side channel (or the roof) of the rack under the
+// pointer (cx, cy), worked out for the cabinet as it will be once the drop adds the channels or roof it lacks (ghost).
+function zeroUSlot(m,cx,cy,b,dy,d){const all=items(),side=Racks.mountOf(m)==='side',RA=Shapes.RACK,RU=Shapes.RU;
+  const rack=all.find(r=>{if(r.type!=='rack'||d.original.some(o=>o.id===r.id))return false;const f=Racks.frontRect(r),gx=side&&!r.sides?RA.side:0,gy=!side&&!r.roof?RA.roof:0;return cx>=f.x-gx&&cx<=f.x+f.w+gx&&cy>=f.y-gy&&cy<=f.y+f.h});if(!rack)return null;
+  const i=Shapes.rackInner(rack),F=Shapes.rackFrame(rack),units=rack.units||42,ex=new Set([m.id]),nm=Analysis.nameOf(rack);
+  if((side?!rack.sides:!rack.roof)&&isLocked(rack))return{full:true,x:side?rack.x-RA.side+4:i.x+10,y:side?i.y:rack.y-RA.roof+3,w:m.w,h:side?i.h:m.h,text:`Unlock ${nm} (or its layer) to add ${side?'side channels':'a roof'}`};
+  if(!side){const y=rack.roof?rack.y+3:rack.y-RA.roof+3;if(all.some(n=>n.id!==m.id&&Racks.isZeroU(n)&&Racks.mountOf(n)==='roof'&&Racks.rackOf(n,all)===rack&&Racks.where(rack,n).mount==='roof'))return{full:true,x:i.x+10,y,w:m.w,h:m.h,text:'This rack already has a roof fan tray'};
+    return{rackId:rack.id,id:m.id,mount:'roof',x:i.x+10,y,w:m.w,h:m.h,ghost:!rack.roof,text:`Roof · ${Racks.fansOf(m)} fans${rack.roof?'':' · adds a roof'}`}}
+  const len=Math.min(Racks.heightU(m),units),want=Math.max(1,Math.min(units-len+1,Math.round((i.y+i.h-(b.y+dy+b.h))/RU)+1));let sd=cx<i.x+i.w/2?'left':'right',u=want,note='';
+  if(rack.sides&&!Racks.sideFits(rack,all,sd,u,len,ex)){const f=Racks.findSide(rack,all,len,{prefer:sd,near:want,except:ex});if(!f)return{full:true,x:sd==='left'?rack.x+4:rack.x+F.w-RA.side+4,y:i.y,w:m.w,h:i.h,text:'No room on the left or right side'};if(f.side!==sd)note=` (${sd} is full)`;sd=f.side;u=f.u}
+  const x=rack.sides?Racks.channel(rack,sd).x+4:sd==='left'?rack.x-RA.side+4:rack.x+F.w+4;
+  return{rackId:rack.id,id:m.id,mount:'side',side:sd,u,len,x,y:i.y+i.h-(u-1)*RU-len*RU,w:m.w,h:len*RU,ghost:!rack.sides,text:`0U ${sd} · U${u}–${u+len-1}${note}${rack.sides?'':' · adds 0U side channels'}`}}
+
 function editCell(n,row,col){const x=n.x+n.cols.slice(0,col).reduce((a,b)=>a+b,0)+n.cols[col]/2,y=n.y+row*n.rowH+n.rowH/2;select([n.id]);$('inlineText').dataset.single='1';openEditor(x,y,String(n.rows[row][col]??''),v=>mutate(()=>{n.rows[row][col]=v}),{width:Math.max(140,n.cols[col]*S.view.zoom+20)});const ed=$('inlineText');ed.addEventListener('tabnext',ev=>{let c=col+ev.detail,r=row;if(c>=n.cols.length){c=0;r++}if(c<0){c=n.cols.length-1;r--}if(r>=0&&r<n.rows.length)setTimeout(()=>editCell(n,r,c),0)},{once:true})}
 
 // ---------- editing operations ----------
 function addNode(type,x,y,opts={}){if(S.reviewMode)return ReviewUI.blocked();
   if(type.startsWith('ann:'))return insertAnnotation(type.slice(4),x,y);
+  // a 0U PDU or fan tray dropped on a rack mounts there — or is refused when there is no room
+  const rk0=Racks.mountOf(type)!=='u'?RackUI.dropTarget(type,x,y):null;if(rk0?.refuse)return notify(rk0.refuse,3200);
   const n=mutate(()=>{const n=Shapes.make(type,0,0);C.move(n,grid(x-n.w/2)-n.x,grid(y-n.h/2)-n.y);if(Shapes.kindOf(type)==='device'&&S.prefs.newDisplay!=='symbol')n.display=S.prefs.newDisplay;if(opts.image)n.image=opts.image;n.layer=S.activeLayer;applyThemeToNew(n);
-    // dropped into a rack → snap to the slot under the pointer
-    if(Shapes.rackItems[type]){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Shapes.rackInner(r)));if(r){const i=Shapes.rackInner(r),hU=Racks.heightU(n),want=Math.round((i.y+i.h-(n.y+n.h))/Shapes.RU)+1,u=Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u!=null)Racks.placeAt(r,n,u)}}
+    // dropped into a rack → snap to the slot under the pointer (anywhere on the cabinet, its side channels and roof too)
+    if(Shapes.rackItems[type]&&Racks.mountOf(type)==='u'){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Racks.frontRect(r)));if(r){const i=Shapes.rackInner(r),hU=Racks.heightU(n),units=r.units||42,want=Math.max(1,Math.min(units-hU+1,Math.round((i.y+i.h-(n.y+n.h))/Shapes.RU)+1)),u=Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u!=null)Racks.placeAt(r,n,u)}}
     // dropped onto a connector → split it (Visio "drop on connector")
     const target=opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
-    items().push(n);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
+    items().push(n);if(rk0)RackUI.mountNew(rk0.r,n,rk0.prefer);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
     select([n.id]);return n});if(S.mode!=='select')setMode('select');return n}
 function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(t&&S.doc.theme!=='port'){if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
   // a style set for this type from the legend applies to new ones too
@@ -286,7 +304,10 @@ function titleBlock(){return mutate(()=>{const b=C.pageSize(pg()),m=pg().margin*
 function revisionTable(x,y){return mutate(()=>{const t={id:C.uid(),kind:'table',x:grid(x-200),y:grid(y-50),cols:[50,80,190,90],rowH:22,size:10.5,header:true,rows:[['Rev','Date','Description','By'],['{{doc.revision}}','{{date}}','Initial issue','{{doc.author}}'],['','','','']],labels:[],stroke:'#94a3b8',headerFill:'#eef2f7',layer:S.activeLayer};tableLayout(t);items().push(t);select([t.id]);return t})}
 function erase(){
   if(S.activeLabel){const n=find(S.activeLabel.owner);if(!n||isLocked(n))return;mutate(()=>{n.labels=n.labels.filter(l=>l.id!==S.activeLabel.id);S.activeLabel=null});return}
-  if(!ensureEditable())return;mutate(()=>{const gone=new Set(S.selected);if(S.prefs.deleteConnectors!==false)for(const e of items())if(e.kind==='edge'&&!isLocked(e)&&(e.from&&gone.has(e.from.node)||e.to&&gone.has(e.to.node)))gone.add(e.id);pg().items=items().filter(n=>!gone.has(n.id));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&gone.has(e[k].node))e[k]=null;for(const t of items())if(t.target&&gone.has(t.target))delete t.target;S.selected.clear();S.segment=null;S.bend=null})}
+  if(!ensureEditable())return;mutate(()=>{removeItems(pg(),S.selected);S.selected.clear();S.segment=null;S.bend=null})}
+// Delete items from a page, with the links on them (unless Preferences keep connectors) and what pointed at them.
+function removeItems(page,ids){const gone=new Set(ids);if(S.prefs.deleteConnectors!==false)for(const e of page.items)if(e.kind==='edge'&&!isLocked(e)&&(e.from&&gone.has(e.from.node)||e.to&&gone.has(e.to.node)))gone.add(e.id);
+  page.items=page.items.filter(n=>!gone.has(n.id));for(const e of page.items)if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&gone.has(e[k].node))e[k]=null;for(const t of page.items)if(t.target&&gone.has(t.target))delete t.target;return gone}
 function copySelection(){if(!S.selected.size)return false;const set=picked(),ids=new Set(set.map(n=>n.id));for(const e of items())if(e.kind==='edge'&&!ids.has(e.id)&&e.from&&e.to&&ids.has(e.from.node)&&ids.has(e.to.node))set.push(e);S.clipboard=C.copy(set);return JSON.stringify({portClipboard:3,items:S.clipboard})}
 function pasteItems(list,at=null){if(!list?.length)return;mutate(()=>{let a=C.duplicate(list,24,24);if(at){const b=C.bounds(a);a.forEach(n=>C.move(n,grid(at[0]-b.w/2)-b.x,grid(at[1]-b.h/2)-b.y))}a.forEach(n=>{if(!S.doc.layers.some(l=>l.id===n.layer))n.layer=S.activeLayer});items().push(...a);for(const e of a)if(e.kind==='edge')Conn.markDirty(e.id);S.clipboard=C.copy(a);select(a.map(n=>n.id))})}
 function align(kind){const list=editable().filter(n=>n.kind!=='edge');if(list.length<2&&S.alignRef!=='page')return notify('Select at least two shapes.');if(!list.length)return;const first=find([...S.selected].find(id=>find(id)?.kind!=='edge')),m=pg().margin*C.PX,ps=C.pageSize(pg()),b=S.alignRef==='page'?{x:m,y:m,w:ps.w-2*m,h:ps.h-2*m}:S.alignRef==='selection'?C.bounds(list):C.bounds([first]);mutate(()=>list.forEach(n=>{const nb=C.box(n);let dx=0,dy=0;if(kind===0)dx=b.x-nb.x;if(kind===1)dx=b.x+b.w/2-nb.x-nb.w/2;if(kind===2)dx=b.x+b.w-nb.x-nb.w;if(kind===3)dy=b.y-nb.y;if(kind===4)dy=b.y+b.h/2-nb.y-nb.h/2;if(kind===5)dy=b.y+b.h-nb.y-nb.h;C.move(n,dx,dy)}))}

@@ -15,7 +15,7 @@ function resolveLabel(owner,l,ctx=RCTX){
     if(k.startsWith('doc.')){const key=k.slice(4);return key==='name'?d.name:d.meta?.[key]??''}
     if(k.startsWith('page.')){const key=k.slice(5);return key==='name'?p.name:key==='number'?ctx.pageNumber:key==='count'?ctx.pageCount:p[key]}
     if(!owner)return null;if(k==='type')return Shapes.nameOf(owner.type);if(k==='name')return owner.labels?.[0]&&owner.labels[0]!==l?resolveLabel(owner,owner.labels[0],ctx):owner.data?.hostname??'';
-    if(k==='rackU'){const r=rackOf(owner,ctx.page);return r?'U'+Shapes.rackU(r,owner):''}
+    if(k==='rackU'){const r=rackOf(owner,ctx.page);return r?Racks.isZeroU(owner)?Racks.position(r,owner):'U'+Shapes.rackU(r,owner):''}
     // rack units linked to a drawing device: {{asset}} is its name, {{asset.ip}} its data; plain {{ip}} falls back to it
     const asset=owner.ref&&d.pages.flatMap(x=>x.items).find(x=>x.id===owner.ref);
     if(k==='asset')return asset?(asset.labels?.[0]?.text||asset.data?.hostname||Shapes.nameOf(asset.type)).split('\n')[0]:'(device removed)';if(k.startsWith('asset.'))return asset?.data?.[k.slice(6)]??'';
@@ -80,7 +80,7 @@ function drawNode(n,g,ctx){
   const kind=Shapes.kindOf(n.type),accent=colorFor(n,ctx)||n.stroke||'#2f5ea8',w=n.w,h=n.h;
   if(n.image){if(n.display==='card')el('rect',{x:0,y:0,width:w,height:h,rx:8,fill:n.fill||'#fff',stroke:accent,'stroke-width':1},t);el('image',{href:n.image,x:n.display==='card'?6:0,y:n.display==='card'?6:0,width:n.display==='card'?w-12:w,height:n.display==='card'?h-12:h,preserveAspectRatio:'xMidYMid meet'},t)}
   else if(kind==='basic'){const b=Shapes.basic[n.type];for(const p of b.paths(w,h))el('path',{d:p.d,fill:p.open||n.fill==='none'?'none':n.fill||'#fff',stroke:accent,'stroke-width':n.strokeWidth??1.75,'stroke-dasharray':n.dash||null,'stroke-linejoin':'round'},t)}
-  else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.find(l=>l.view!=='rear')||{text:''},ctx));
+  else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.find(l=>l.view!=='rear')||{text:''},ctx),Racks.extras(n,ctx.page.items),{interactive:ctx.interactive});
   else if(kind==='rackitem')Shapes.drawFace({...n,stroke:colorFor(n,ctx)||n.stroke},t);
   else{
     const s=Stencils?.shapes?.[n.type],mode=n.display||'symbol';
@@ -98,10 +98,10 @@ function drawNode(n,g,ctx){
   if(kind==='basic'&&ctx.interactive&&(n.fill==='none'||Shapes.basic[n.type].paths(w,h).every(q=>q.open)))for(const q of Shapes.basic[n.type].paths(w,h))el('path',{d:q.d,fill:'none',stroke:'transparent','stroke-width':14,'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':n.id,'data-role':'object'},t);
   else hitRect(n,t,ctx);
   // equipment seen in a rack's rear view picks (and drags) the unit itself
-  if(kind==='rack'&&ctx.interactive){const rd=Shapes.rackDims(n).rear;if(rd!=null)for(const it of Racks.contents(n,ctx.page.items))hitRect(it,t,ctx,rd+it.x-n.x,it.y-n.y)}
+  if(kind==='rack'&&ctx.interactive&&Shapes.rackDims(n).rear!=null)for(const it of[...Racks.contents(n,ctx.page.items),...Racks.extras(n,ctx.page.items)])hitRect(it,t,ctx,Shapes.rearX(n,it),it.y-n.y)
   if(ctx.interactive&&n.url){const b=el('g',{transform:`translate(${n.x+n.w-4} ${n.y-2})`,'pointer-events':'none'},g);el('circle',{cx:0,cy:0,r:6.5,fill:'#fff',stroke:'#376be5'},b);el('path',{d:'M-2.5 1.5l5-5M-1 -3.5h3.5V0',stroke:'#376be5','stroke-width':1.3,fill:'none'},b)}
 }
-function rackOf(n,page){if(!Shapes.rackItems[n.type])return null;const b=Core.box(n),c=[b.x+b.w/2,b.y+b.h/2];return page.items.find(r=>r.kind==='node'&&r.type==='rack'&&Core.inside({x:c[0],y:c[1],w:0,h:0},Shapes.rackInner(r)))||null}
+function rackOf(n,page){return Shapes.rackItems[n.type]?Racks.rackOf(n,page.items):null}
 
 // Fields shown under a device label: the document-wide ones plus the device's own (Show on drawing).
 function shownFields(n,display){const g=display?.fields||[],own=n.showFields;return own?.length?[...new Set([...g,...own])]:g}
@@ -191,7 +191,8 @@ function drawLabel(owner,l,parent,ctx){
   const text=resolveLabel(owner,l,ctx);if(!text&&!ctx.interactive)return;const m=Core.labelMetrics(l,text||' ');
   const g=el('g',{transform:l.rotation?`rotate(${l.rotation} ${l.x} ${l.y})`:null,'data-id':ctx.interactive?owner.id:null,'data-role':ctx.interactive?'label':null,'data-label':ctx.interactive||ctx.tag?l.id:null,cursor:ctx.interactive?'move':null},parent);
   if(l.background)el('rect',{x:l.x+m.left-4,y:l.y+m.top-3,width:m.w+8,height:m.h+6,rx:3,fill:l.bgColor||ctx.bg,'fill-opacity':.94},g);
-  else if(ctx.interactive&&!text)el('rect',{x:l.x-20,y:l.y-l.size,width:40,height:l.size*1.3,fill:'transparent'},g);
+  // an empty label stays clickable (double-click to type) — except on rack equipment, where it would hide the unit's own grip
+  else if(ctx.interactive&&!text&&!Shapes.rackItems[owner?.type])el('rect',{x:l.x-20,y:l.y-l.size,width:40,height:l.size*1.3,fill:'transparent'},g);
   const halo=!l.background&&owner&&(owner.kind==='node'||owner.kind==='edge')&&!Shapes.rackItems[owner.type]&&!(owner.kind==='node'&&Shapes.kindOf(owner.type)==='basic')?(ctx.bgAt?ctx.bgAt(l.x,l.y):ctx.bg):null;
   if(halo&&text)el('rect',{x:l.x+m.left-2,y:l.y+m.top-1,width:m.w+4,height:m.h+2,rx:2,fill:halo},g);
   const t=el('text',{x:l.x,y:l.y,'text-anchor':l.align||'middle','font-family':l.font||Core.FONT,'font-size':l.size,'font-weight':l.bold?650:null,'font-style':l.italic?'italic':null,'text-decoration':l.underline?'underline':null,fill:l.color||'#34465e'},g);
@@ -274,7 +275,7 @@ function renderOverlay(){
       // racks and rack units take their size from U counts (inspector / right-click), never from handles
       const ed=editable(),rackish=sel.some(x=>x.type==='rack'||Shapes.rackItems[x.type]);if(ed.length===sel.length&&!S.drag&&!rackish&&!S.reviewMode){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
         if(sel.length===1&&sel[0].kind==='node'&&sel[0].type!=='rack'&&!Shapes.rackItems[sel[0].type]){const cx=b.x+b.w/2,cy=b.y-24/z;el('line',{x1:cx,y1:b.y-4/z,x2:cx,y2:cy,stroke:blue,'stroke-width':sw,'pointer-events':'none'},o);el('circle',{cx,cy,r:5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'rotate',cursor:'grab'},o)}}
-      for(const n of sel){const r=Shapes.rackItems[n.type]&&rackOf(n,pg()),rd=r&&Shapes.rackDims(r).rear;if(rd!=null)el('rect',{x:n.x+rd-2/z,y:n.y-2/z,width:n.w+4/z,height:n.h+4/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o)}
+      for(const n of sel){const r=Shapes.rackItems[n.type]&&rackOf(n,pg());if(r&&Shapes.rackDims(r).rear!=null)el('rect',{x:r.x+Shapes.rearX(r,n)-2/z,y:n.y-2/z,width:n.w+4/z,height:n.h+4/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o)}
       if(sel.some(isLocked)){const t=el('text',{x:b.x,y:b.y-9/z,fill:'#8c97a8','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none'},o);t.textContent='🔒 Locked'}}
     if(S.prefs.showPorts&&sel.length===1&&sel[0].kind==='node')drawPorts(sel[0],o,z,true)}
   // active label
@@ -293,7 +294,9 @@ function renderOverlay(){
     if(d.kind==='box'&&w*z>40){const t=el('text',{x:x+4/z,y:y-5/z,'font-size':11/z,'font-family':Core.FONT,fill:col,'font-weight':600,'pointer-events':'none'},o);t.textContent=touch?`Touching (${ALTK})`:`Fully inside · hold ${ALTK} for touching`}}
   if(d?.kind==='lasso'&&d.pts.length>2)for(const id of Select.lassoSelect(d.pts,!!d.touch)){const n=find(id);if(!n||S.selected.has(id)||n.kind==='edge')continue;const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:d.touch?'#16a34a':blue,'fill-opacity':.1,stroke:d.touch?'#16a34a':blue,'stroke-width':sw,'pointer-events':'none'},o)}
   if(d?.kind==='lasso'&&d.pts.length>1){const col=d.touch?'#16a34a':blue;el('path',{d:'M'+d.pts.map(q=>q.join(' ')).join('L')+'Z',fill:col,'fill-opacity':.07,stroke:col,'stroke-width':sw,'stroke-dasharray':d.touch?`${5/z} ${3/z}`:null,'pointer-events':'none'},o)}
-  if(d?.kind==='move'&&d.rackSlot){const r=d.rackSlot;el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:'#25b889','fill-opacity':.25,stroke:'#159c70','stroke-width':sw,'pointer-events':'none'},o)}
+  // where a dragged rack unit will land; a ghost slot also adds the side channels / roof it needs, a full one says so
+  if(d?.kind==='move'&&d.rackSlot){const r=d.rackSlot,bad=r.full,col=bad?'#dc2626':'#159c70';el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:bad?'#dc2626':'#25b889','fill-opacity':bad?.08:.25,stroke:col,'stroke-width':sw,'stroke-dasharray':r.ghost||bad?`${4/z} ${3/z}`:null,'pointer-events':'none'},o);
+    if(r.text){const t=el('text',{x:r.x+r.w+6/z,y:r.y+12/z,fill:bad?'#b91c1c':'#128461','font-size':11/z,'font-weight':600,'font-family':Core.FONT,'pointer-events':'none',stroke:'#fff','stroke-width':3/z,'paint-order':'stroke'},o);t.textContent=r.text}}
   ReviewUI.drawOverlay(o,z)}
 function drawPorts(n,o,z,named=false){for(const p of n.ports||[]){const q=Core.portPoint(n,p);const c=el('circle',{cx:q[0],cy:q[1],r:4/z,fill:'#fff',stroke:'#3779db','stroke-width':1.5/z,'data-id':n.id,'data-role':'port','data-port':p.id,cursor:'crosshair'},o);const t=el('title',{},c);t.textContent=p.name||'Port';if(named&&p.name){const tx=el('text',{x:q[0]+6/z,y:q[1]-6/z,'font-size':9/z,fill:'#3779db','font-family':Core.FONT,'pointer-events':'none'},o);tx.textContent=p.name}}}
 function drawAutoArrows(n,o,z){const b=Core.box(n),gap=14/z,s=7/z;for(const[dir,x,y,rot]of[['up',b.x+b.w/2,b.y-gap,0],['right',b.x+b.w+gap,b.y+b.h/2,90],['down',b.x+b.w/2,b.y+b.h+gap+(n.labels?.length?Core.labelMetrics(n.labels[0],resolveLabel(n,n.labels[0])).h+8/z:0),180],['left',b.x-gap,b.y+b.h/2,270]]){const g=el('g',{transform:`translate(${x} ${y}) rotate(${rot})`,'data-role':'autoconnect','data-id':n.id,'data-dir':dir,cursor:'pointer'},o);el('circle',{cx:0,cy:0,r:s*1.5,fill:'transparent'},g);el('path',{d:`M${-s} ${s*.5}L0 ${-s*.7}L${s} ${s*.5}Z`,fill:'#3774e8','fill-opacity':.55},g);const t=el('title',{},g);t.textContent='Click: add a connected copy · Drag: connect'}}

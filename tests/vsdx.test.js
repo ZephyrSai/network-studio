@@ -674,3 +674,10 @@ test('number formatting helper', () => {
   assert.equal(fmt(0.1 + 0.2), '0.3'); assert.equal(fmt(10), '10'); assert.equal(fmt(-2.50), '-2.5'); assert.equal(fmt(1e21), '1000000000000');
   assert.equal(fmt(0.75 / 72), '0.0104166667');
 });
+
+test('turned text (a vertical PDU name) keeps its angle as TxtAngle', () => {
+  const sh = allShapes(open(VsdxWriter.build(oneShapeIR({ id: 1, kind: 'text', x: 1, y: 1, w: 1, h: 0.2, text: 'PDU A', textAngle: Math.PI / 2 }))).pages[0].xml)[0];
+  assert.ok(Math.abs(+V(sh, 'TxtAngle') - Math.PI / 2) < 1e-6);
+  const flat = allShapes(open(VsdxWriter.build(oneShapeIR({ id: 1, kind: 'text', x: 1, y: 1, w: 1, h: 0.2, text: 'Flat' }))).pages[0].xml)[0];
+  assert.equal(+V(flat, 'TxtAngle'), 0);
+});

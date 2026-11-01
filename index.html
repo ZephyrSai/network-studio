@@ -7,7 +7,7 @@
 <meta name="description" content="Browser-based, offline network diagram studio: Visio-style editing, network stencils, shape data, auto-routing, IP/VLAN planning, CCTV & PoE analysis, Visio and draw.io export.">
 <meta name="theme-color" content="#376be5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23376be5'/%3E%3Cpath d='M9 10h6v5H9zM17 17h6v5h-6zM12 15v4.5h5' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/app.css?v=9154743e">
+<link rel="stylesheet" href="css/app.css?v=2f38de74">
 <style id="printRules"></style>
 </head>
 <body>
@@ -75,7 +75,7 @@
 <div id="contextMenu" class="menu" hidden></div>
 <div id="fileMenu" class="menu fileMenu" hidden></div>
 <div id="ribbonPop" class="menu ribbonPop" hidden></div>
-<input id="fileInput" type="file" accept=".json,.vsdx,.vsdm,.vstx,.vssx,.vssm,.vsd,.vss,.csv,.txt,image/*" hidden>
+<input id="fileInput" type="file" accept=".json,.vsdx,.vsdm,.vstx,.vssx,.vssm,.vsd,.vss,.csv,.xlsx,.xls,.txt,image/*" hidden>
 <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
 <input id="libraryInput" type="file" accept=".json" hidden>
 <input id="shapeInput" type="file" accept=".vssx,.vssm,.svg,.zip,.xml,.drawio,.json,.png,.jpg,.jpeg,.gif,.webp" multiple hidden>
@@ -87,7 +87,7 @@
 <script src="js/core.js?v=3cca1d52"></script>
 <script src="js/stencils.js?v=51c82413"></script>
 <script src="js/packs/extended.js?v=05ccca0c"></script>
-<script src="js/shapes.js?v=6099618b"></script>
+<script src="js/shapes.js?v=bed49fe2"></script>
 <script src="js/icons.js?v=22dcf35a"></script>
 <script src="js/router.js?v=0c90e0a3"></script>
 <script src="js/layout.js?v=51056f31"></script>
@@ -96,30 +96,32 @@
 <script src="js/merge.js?v=5c93b5a8"></script>
 <script src="js/scale.js?v=39784bcb"></script>
 <script src="js/ports.js?v=80e5353e"></script>
-<script src="js/racks.js?v=048b4a27"></script>
+<script src="js/racks.js?v=9430ce12"></script>
+<script src="js/racksheet.js?v=818e4391"></script>
 <script src="js/revisions.js?v=3ef91001"></script>
 <script src="js/checks.js?v=3b96afd6"></script>
 <script src="js/review.js?v=4c4feb50"></script>
-<script src="js/vsdx.js?v=b99023c1"></script>
+<script src="js/vsdx.js?v=08a52e96"></script>
+<script src="js/xlsx.js?v=d91eeb2a"></script>
 <script src="js/visio.js?v=5f2977a0"></script>
-<script src="js/render.js?v=155f464b"></script>
-<script src="js/analysis.js?v=eea4c9df"></script>
-<script src="js/io.js?v=54cd4851"></script>
+<script src="js/render.js?v=7d9e54df"></script>
+<script src="js/analysis.js?v=b2000869"></script>
+<script src="js/io.js?v=55e195dd"></script>
 <script src="js/packs.js?v=e3c44150"></script>
 <script src="js/builder.js?v=b9669f82"></script>
 <script src="js/templates.js?v=6669f418"></script>
-<script src="js/app.js?v=4a8dff3e"></script>
-<script src="js/inspector.js?v=dd4d9060"></script>
-<script src="js/actions.js?v=c769deeb"></script>
-<script src="js/panels.js?v=aef888b9"></script>
+<script src="js/app.js?v=edea687a"></script>
+<script src="js/inspector.js?v=d80e0c98"></script>
+<script src="js/actions.js?v=f090a9f1"></script>
+<script src="js/panels.js?v=65009bbf"></script>
 <script src="js/workspace.js?v=c4909957"></script>
 <script src="js/tplpanel.js?v=20a3c26f"></script>
 <script src="js/quick.js?v=53f2cc39"></script>
-<script src="js/rackui.js?v=eef0dd1c"></script>
-<script src="js/inventory.js?v=7dcc7727"></script>
+<script src="js/rackui.js?v=e67e5bbe"></script>
+<script src="js/inventory.js?v=c9bc3f2d"></script>
 <script src="js/select.js?v=95d243ce"></script>
-<script src="js/reviewui.js?v=a9512c0e"></script>
-<script src="js/search.js?v=ffb2f1db"></script>
+<script src="js/reviewui.js?v=51011de6"></script>
+<script src="js/search.js?v=1ec4b992"></script>
 <script src="js/tour.js?v=b00c28ec"></script>
 <script src="js/main.js?v=3dd07505"></script>
 </body>
