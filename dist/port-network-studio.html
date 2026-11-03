@@ -6004,7 +6004,7 @@ function foreignImage(r,ctx){for(let x=r;x;x=x.master){const fd=kid(x.el,'Foreig
     // binary pictures are padded to a multiple of 3 bytes (decoders ignore trailing bytes): base64 then has no '=' that could read as on…= markup
     const raw=mime==='image/svg+xml'?bytes:new Uint8Array(bytes.length+(3-bytes.length%3)%3);if(raw!==bytes)raw.set(bytes);let bin='';for(let i=0;i<raw.length;i+=8192)bin+=String.fromCharCode(...raw.subarray(i,i+8192));return{url:`data:${mime};base64,${btoa(bin)}`}}return null}
 // A metafile (EMF / WMF) drawn by js/emf.js as one <svg> element; ids are prefixed by the picture's content hash.
-function metafile(bytes,part){try{const e=Emf.toSvg(bytes,{idPrefix:'vp'+hashBytes(bytes)}),vb=e.viewBox;return/^<svg\b/.test(e.svg)&&vb?.[2]>0&&vb?.[3]>0&&e.svg.length<8e6?{svg:repad(e.svg)}:null}catch(err){console.warn('Metafile picture',part,err);return null}}
+function metafile(bytes,part){try{const e=Emf.toSvg(bytes,{idPrefix:'vp'+hashBytes(bytes)}),vb=e.viewBox;return/^<svg\b/.test(e.svg)&&vb?.[2]>0&&vb?.[3]>0&&e.svg.length<8e6?{svg:repad(e.svg).replace(/^<svg\b/,'<svg data-picture="emf"')}:null}catch(err){console.warn('Metafile picture',part,err);return null}}
 // Bitmaps inside a metafile: base64 '=' padding can read as on…= to the markup filter, so their bytes are padded to a
 // multiple of 3 instead (image decoders ignore trailing bytes).
 const repad=svg=>svg.replace(/(data:image\/(?!svg)[\w.+-]+;base64,)([A-Za-z0-9+/]+)(=+)/g,(m,h,b,p)=>{const bin=atob(b+p);return h+btoa(bin+'\0'.repeat((3-bin.length%3)%3))});
@@ -6709,23 +6709,26 @@ async function buildIR(ids=null){
       if(n.kind==='edge'){const lab=(n.labels||[]).map(l=>resolveLabel(n,l,ctx)).join('\n');const id=sid++;idMap.set(n.id,id);shapes.push({id,kind:'connector',points:n.points.map(p=>[p[0]/IN,p[1]/IN]),stroke:n.stroke,weight:(n.strokeWidth||2)*.75,dash:n.dash?(n.dash.startsWith('1 ')||n.dash.startsWith('2 ')?2:1):0,beginArrow:n.startMarker||'none',endArrow:n.endMarker||'none',text:lab,textColor:n.labels?.[0]?.color||'#34465e',textSize:(n.labels?.[0]?.size||11)*.75,from:null,to:null,_from:n.from?.node,_to:n.to?.node,data:fieldsData(n,S.doc.linkFields),user:portUser(n,pageItems),layers});
         for(const t of g.querySelectorAll('text'))if(!t.closest('[data-label]'))pushText(t,shapes,inv,()=>sid++,layers,null,{PortKind:'auto',PortOwner:id});continue}
       const geoms=[],texts=[];
-      for(const shape of g.querySelectorAll('path,rect,circle,ellipse,line,polyline,polygon')){if(shape.closest('defs,marker,pattern,clipPath,title,[data-label]'))continue;const st=getComputedStyle(shape),fill=colorOf(st.fill),stroke=colorOf(st.stroke);if(!fill&&!stroke)continue;if(st.display==='none'||st.visibility==='hidden')continue;const op=(+st.opacity||1)*(+st.fillOpacity||1);
+      for(const shape of g.querySelectorAll('path,rect,circle,ellipse,line,polyline,polygon')){if(shape.closest('defs,marker,pattern,clipPath,title,[data-label],svg[data-picture]'))continue;const st=getComputedStyle(shape),fill=colorOf(st.fill),stroke=colorOf(st.stroke);if(!fill&&!stroke)continue;if(st.display==='none'||st.visibility==='hidden')continue;const op=(+st.opacity||1)*(+st.fillOpacity||1);
         const m=inv.multiply(shape.getScreenCTM()),sc=Math.sqrt(Math.abs(m.a*m.d-m.b*m.c));for(const pts of flatten(shape)){if(pts.length<2)continue;const g={closed:isClosed(shape,pts),fill:fill&&op>.05?fill:null,fillOpacity:op,stroke,weight:stroke?(parseFloat(st.strokeWidth)||1)*sc*.75:0,dash:st.strokeDasharray&&st.strokeDasharray!=='none'?1:0,points:pts.map(p=>{const q=new DOMPoint(p[0],p[1]).matrixTransform(m);return[q.x,q.y]})};
           // SVG fills an open outline as if it were closed: write that as a closed filled part plus the open line
           if(!g.closed&&g.fill&&pts.length>2){geoms.push({...g,closed:true,stroke:null,weight:0});if(stroke)geoms.push({...g,fill:null})}else geoms.push(g)}}
-      const images=[...g.querySelectorAll('image')];
-      if(!geoms.length&&!images.length&&!g.querySelector('text'))continue;
-      const all=geoms.flatMap(x=>x.points),bx=n.kind==='node'||n.kind==='zone'||n.kind==='text'||n.kind==='table'||n.kind==='legend'?C.box(n):null;
-      let x0=Math.min(...all.map(p=>p[0]),bx?.x??Infinity),y0=Math.min(...all.map(p=>p[1]),bx?.y??Infinity),x1=Math.max(...all.map(p=>p[0]),bx?bx.x+bx.w:-Infinity),y1=Math.max(...all.map(p=>p[1]),bx?bx.y+bx.h:-Infinity);if(!Number.isFinite(x0)){x0=bx.x;y0=bx.y;x1=bx.x+bx.w;y1=bx.y+bx.h}
+      const images=[...g.querySelectorAll('image')].filter(im=>!im.closest('svg[data-picture]')),pics=[...g.querySelectorAll('svg[data-picture]')].filter(p=>!p.parentNode.closest('svg[data-picture]'));
+      if(!geoms.length&&!images.length&&!pics.length&&!g.querySelector('text'))continue;
+      // bounds by loop: a shape can have hundreds of thousands of points (spreading them overflows the call stack)
+      const bx=n.kind==='node'||n.kind==='zone'||n.kind==='text'||n.kind==='table'||n.kind==='legend'?C.box(n):null;let x0=bx?bx.x:Infinity,y0=bx?bx.y:Infinity,x1=bx?bx.x+bx.w:-Infinity,y1=bx?bx.y+bx.h:-Infinity;
+      for(const gm of geoms)for(const q of gm.points){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1]}if(!Number.isFinite(x0)){x0=bx?.x||0;y0=bx?.y||0;x1=x0+(bx?.w||1);y1=y0+(bx?.h||1)}
       const id=sid++;idMap.set(n.id,id);const main=n.labels?.[0],mainText=main?resolveLabel(n,main,RCTX):'';
       const sh={id,kind:'shape',name:Shapes.nameOf(n.type||n.kind),x:x0/IN,y:y0/IN,w:Math.max(.01,(x1-x0)/IN),h:Math.max(.01,(y1-y0)/IN),angle:0,geoms:geoms.map(gm=>({...gm,points:gm.points.map(p=>[(p[0]-x0)/IN,(p[1]-y0)/IN])})),data:n.kind==='node'?fieldsData(n,S.doc.fields):n.kind==='zone'?fieldsData(n,C.ZONE_FIELDS):[],user:portUser(n,pageItems),hyperlink:n.url&&!n.url.startsWith('#')?n.url:null,layers};
       if(main&&mainText){const mm=C.labelMetrics(main,mainText);sh.text=mainText;sh.textColor=main.color||'#34465e';sh.textSize=main.size*.75;sh.bold=!!main.bold;sh.italic=!!main.italic;sh.align=main.align==='start'?'left':main.align==='end'?'right':'center';sh.textBox={x:(main.x+mm.left-x0-4)/IN,y:(main.y+mm.top-y0-2)/IN,w:(mm.w+8)/IN,h:(mm.h+4)/IN};
         // a rotated label (a vertical PDU's name): the text block turns about its own centre, which turns about the anchor
         if(main.rotation){const a=main.rotation*Math.PI/180,cx=main.x+mm.left+mm.w/2-main.x,cy=main.y+mm.top+mm.h/2-main.y,px=main.x+cx*Math.cos(a)-cy*Math.sin(a),py=main.y+cx*Math.sin(a)+cy*Math.cos(a);sh.textBox={...sh.textBox,x:(px-mm.w/2-4-x0)/IN,y:(py-mm.h/2-2-y0)/IN};sh.textAngle=-a}}
       if(geoms.length)shapes.push(sh);else if(sh.text)shapes.push({...sh,geoms:[]});
+      for(const pe of pics){const m=inv.multiply(pe.parentNode.getScreenCTM()),a=k=>+pe.getAttribute(k)||0,c=[[a('x'),a('y')],[a('x')+a('width'),a('y')+a('height')]].map(q=>new DOMPoint(q[0],q[1]).matrixTransform(m)),px=Math.min(c[0].x,c[1].x),py=Math.min(c[0].y,c[1].y),pw=Math.abs(c[1].x-c[0].x),ph=Math.abs(c[1].y-c[0].y);
+        const bin=pw>.5&&ph>.5?await picturePng(pe,pw,ph):null;if(bin)shapes.push({id:sid++,kind:'image',x:px/IN,y:py/IN,w:pw/IN,h:ph/IN,mime:bin.mime,data:bin.data,layers})}
       for(const im of images){const bb=im.getBBox(),m=inv.multiply(im.getScreenCTM()),p0=new DOMPoint(bb.x,bb.y).matrixTransform(m),p1=new DOMPoint(bb.x+bb.width,bb.y+bb.height).matrixTransform(m),href=im.getAttribute('href')||'';const bin=await imageBytes(href);if(bin)shapes.push({id:sid++,kind:'image',x:p0.x/IN,y:p0.y/IN,w:(p1.x-p0.x)/IN,h:(p1.y-p0.y)/IN,mime:bin.mime,data:bin.data,layers})}
       // text the item draws for itself (a zone's VLAN · subnet…): Port redraws it when the file comes back
-      for(const t of g.querySelectorAll('text'))if(!t.closest('[data-label]'))pushText(t,shapes,inv,()=>sid++,layers,null,{PortKind:'auto',PortOwner:id});
+      for(const t of g.querySelectorAll('text'))if(!t.closest('[data-label]')&&!t.closest('svg[data-picture]'))pushText(t,shapes,inv,()=>sid++,layers,null,{PortKind:'auto',PortOwner:id});
       // the main label already went out as the shape's text (with or without geometry): do not write it twice
       for(const lg of g.querySelectorAll('[data-label]')){if(main&&lg.dataset.label===main.id&&(geoms.length||sh.text))continue;for(const t of lg.querySelectorAll('text'))pushText(t,shapes,inv,()=>sid++,layers,lg.querySelector('rect'))}}
     for(const s of shapes)if(s.kind==='connector'){s.from=idMap.get(s._from)??null;s.to=idMap.get(s._to)??null;delete s._from;delete s._to}
@@ -6744,6 +6747,13 @@ async function exportDxf(all=false){
     if(files.length===1)download(files[0].name,files[0].dxf,'application/dxf');else download(safeName(S.doc.name)+' - AutoCAD.zip',new Blob([VsdxWriter.zip(files.map(f=>({name:f.name,data:f.dxf})))],{type:'application/zip'}));
     const img=files.reduce((s,f)=>s+(f.skipped?.images||0),0);notify(`${files.length>1?files.length+' AutoCAD files':'AutoCAD file'} exported (DXF, millimetres, one sheet each)${img?` — ${img} picture${img>1?'s were':' was'} left out: DXF cannot hold pictures`:''}.`,5000)
   }catch(err){console.error(err);notify('AutoCAD export failed: '+err.message)}}
+// A converted vendor picture (EMF → SVG, from a Visio stencil) goes out as a PNG, as it was a picture in Visio: its
+// vector detail would be tens of thousands of tiny segments. One render per distinct picture and size.
+const picCache=new Map();
+function picturePng(el,w,h){const src=new XMLSerializer().serializeToString(el),k=Math.min(4,2048/Math.max(w,h,1)),W=Math.max(1,Math.round(w*k)),H=Math.max(1,Math.round(h*k));let hs=2166136261;for(let i=0;i<src.length;i+=7)hs=Math.imul(hs^src.charCodeAt(i),16777619);const key=`${W}x${H}:${src.length}:${hs>>>0}`;
+  if(!picCache.has(key))picCache.set(key,(async()=>{const s=src.replace(/^<svg\b[^>]*>/,m=>m.replace(/\s(?:x|y|width|height)="[^"]*"/g,'').replace(/^<svg/,`<svg width="${W}" height="${H}"`)),url=URL.createObjectURL(new Blob([s],{type:'image/svg+xml'}));
+    try{const img=new Image();img.src=url;await img.decode();const c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(img,0,0,W,H);const b=await new Promise(r=>c.toBlob(r,'image/png'));return b?{mime:'image/png',data:new Uint8Array(await b.arrayBuffer())}:null}catch{return null}finally{URL.revokeObjectURL(url)}})());
+  return picCache.get(key)}
 // What an item is in Port, as Visio User cells: a drawing exported from Port opens again with real zones, devices and links.
 function portUser(n,pageItems){const portIx=r=>{const i=r?.port?pageItems.find(x=>x.id===r.node)?.ports?.findIndex(p=>p.id===r.port):-1;return i>=0?i:undefined};
   const props=n.kind==='zone'?{style:n.style,pin:n.pin,contain:n.contain,autoFit:n.autoFit,showMeta:n.showMeta,dash:n.dash}

@@ -104,7 +104,7 @@ function foreignImage(r,ctx){for(let x=r;x;x=x.master){const fd=kid(x.el,'Foreig
     // binary pictures are padded to a multiple of 3 bytes (decoders ignore trailing bytes): base64 then has no '=' that could read as on…= markup
     const raw=mime==='image/svg+xml'?bytes:new Uint8Array(bytes.length+(3-bytes.length%3)%3);if(raw!==bytes)raw.set(bytes);let bin='';for(let i=0;i<raw.length;i+=8192)bin+=String.fromCharCode(...raw.subarray(i,i+8192));return{url:`data:${mime};base64,${btoa(bin)}`}}return null}
 // A metafile (EMF / WMF) drawn by js/emf.js as one <svg> element; ids are prefixed by the picture's content hash.
-function metafile(bytes,part){try{const e=Emf.toSvg(bytes,{idPrefix:'vp'+hashBytes(bytes)}),vb=e.viewBox;return/^<svg\b/.test(e.svg)&&vb?.[2]>0&&vb?.[3]>0&&e.svg.length<8e6?{svg:repad(e.svg)}:null}catch(err){console.warn('Metafile picture',part,err);return null}}
+function metafile(bytes,part){try{const e=Emf.toSvg(bytes,{idPrefix:'vp'+hashBytes(bytes)}),vb=e.viewBox;return/^<svg\b/.test(e.svg)&&vb?.[2]>0&&vb?.[3]>0&&e.svg.length<8e6?{svg:repad(e.svg).replace(/^<svg\b/,'<svg data-picture="emf"')}:null}catch(err){console.warn('Metafile picture',part,err);return null}}
 // Bitmaps inside a metafile: base64 '=' padding can read as on…= to the markup filter, so their bytes are padded to a
 // multiple of 3 instead (image decoders ignore trailing bytes).
 const repad=svg=>svg.replace(/(data:image\/(?!svg)[\w.+-]+;base64,)([A-Za-z0-9+/]+)(=+)/g,(m,h,b,p)=>{const bin=atob(b+p);return h+btoa(bin+'\0'.repeat((3-bin.length%3)%3))});
