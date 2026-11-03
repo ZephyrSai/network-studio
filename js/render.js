@@ -56,7 +56,8 @@ function iconTemplate(type){let t=iconCache.get(type);if(t)return t;const s=Sten
 function drawScene(parent,page,ctx){
   RCTX=ctx;const list=page.items.filter(n=>itemVisible(n,ctx));
   const band=n=>n.kind==='zone'?0:n.kind==='node'&&n.type==='rack'?1:n.kind==='edge'?2:n.kind==='node'&&Shapes.rackItems[n.type]?3:4;
-  const area=n=>n.kind==='zone'?-(n.w*n.h):0,ordered=list.map((n,i)=>[n,i]).sort((a,b)=>band(a[0])-band(b[0])||area(a[0])-area(b[0])||a[1]-b[1]).map(a=>a[0]);
+  // stacking: by kind (zones at the back, links under devices) — or, on pages that keep it (Visio imports), the items' own order
+  const area=n=>n.kind==='zone'?-(n.w*n.h):0,ordered=page.stack==='doc'?list:list.map((n,i)=>[n,i]).sort((a,b)=>band(a[0])-band(b[0])||area(a[0])-area(b[0])||a[1]-b[1]).map(a=>a[0]);
   const defs=el('defs',{},parent),edgesSoFar=[],zones=list.filter(n=>n.kind==='zone'&&n.fill&&n.fill!=='none').sort((a,b)=>a.w*a.h-b.w*b.h);
   ctx.bgAt=(x,y)=>{for(const z of zones)if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return z.fill;return ctx.bg};
   for(const n of ordered){
@@ -193,7 +194,7 @@ function drawLabel(owner,l,parent,ctx){
   if(l.background)el('rect',{x:l.x+m.left-4,y:l.y+m.top-3,width:m.w+8,height:m.h+6,rx:3,fill:l.bgColor||ctx.bg,'fill-opacity':.94},g);
   // an empty label stays clickable (double-click to type) — except on rack equipment, where it would hide the unit's own grip
   else if(ctx.interactive&&!text&&!Shapes.rackItems[owner?.type])el('rect',{x:l.x-20,y:l.y-l.size,width:40,height:l.size*1.3,fill:'transparent'},g);
-  const halo=!l.background&&owner&&(owner.kind==='node'||owner.kind==='edge')&&!Shapes.rackItems[owner.type]&&!(owner.kind==='node'&&Shapes.kindOf(owner.type)==='basic')?(ctx.bgAt?ctx.bgAt(l.x,l.y):ctx.bg):null;
+  const halo=!l.background&&l.halo!==false&&owner&&(owner.kind==='node'||owner.kind==='edge')&&!Shapes.rackItems[owner.type]&&!(owner.kind==='node'&&Shapes.kindOf(owner.type)==='basic')?(ctx.bgAt?ctx.bgAt(l.x,l.y):ctx.bg):null;
   if(halo&&text)el('rect',{x:l.x+m.left-2,y:l.y+m.top-1,width:m.w+4,height:m.h+2,rx:2,fill:halo},g);
   const t=el('text',{x:l.x,y:l.y,'text-anchor':l.align||'middle','font-family':l.font||Core.FONT,'font-size':l.size,'font-weight':l.bold?650:null,'font-style':l.italic?'italic':null,'text-decoration':l.underline?'underline':null,fill:l.color||'#34465e'},g);
   m.lines.forEach((line,i)=>{const s=el('tspan',{x:l.x,dy:i?m.lh:null},t);s.textContent=line||' '})}
@@ -215,7 +216,7 @@ const need={scene:true,page:true,overlay:true,panel:true};let frame=0,frameTimer
 // rAF pauses in background tabs, so a timer backs it up
 function render(part){if(part)need[part]=true;else{need.scene=need.page=need.overlay=need.panel=true}if(!frame){frame=requestAnimationFrame(renderNow);frameTimer=setTimeout(renderNow,150)}}
 function renderNow(){
-  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;if(!Number.isFinite(S.view.x+S.view.y+S.view.zoom)){if(!(S.view.zoom>0&&S.view.zoom<=8))S.view.zoom=1;clampView()}const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
+  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;if(!Number.isFinite(S.view.x+S.view.y+S.view.zoom)){if(!(S.view.zoom>0&&S.view.zoom<=ZOOM.max))S.view.zoom=1;clampView()}const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
   svg.setAttribute('viewBox',`${S.view.x} ${S.view.y} ${cw/z} ${ch/z}`);
   // zooming only needs the page sheet (grid density, hairlines) and the overlay — not every shape
   if(need.scene||need.page)drawPageLayer(z);

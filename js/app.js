@@ -72,6 +72,8 @@ function moveSet(ids){
 function beginPointer(e){
   // on a Mac, Ctrl+click is the right-click: leave it to the context menu (⌘ takes Ctrl's role there)
   if(e.button===2||IS_MAC&&e.ctrlKey&&!e.metaKey)return;if(!$('inlineText').hidden){$('inlineText').blur();return}
+  // middle button: drag pans; a double-click zooms to the whole drawing (AutoCAD's zoom extents)
+  if(e.button===1){e.preventDefault();const t0=performance.now();if(t0-(S.midClick||0)<400){S.midClick=0;fit();return}S.midClick=t0}
   hideMenus();const p=point(e),t=e.target.closest('[data-role]'),role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id),now=Date.now(),key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
   if(S.lastClick&&now-S.lastClick.time<380&&S.lastClick.key===key&&Math.hypot(e.clientX-S.lastClick.x,e.clientY-S.lastClick.y)<6&&S.mode==='select'){S.lastClick=null;onDoubleClick(e,p,t,n);return}
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
@@ -325,8 +327,10 @@ function gotoPage(i){S.pageIndex=i;clearTransient();S.analysis=null;Constraints.
 // ---------- view ----------
 // The page plus everything on it (some drawings spill past the sheet).
 function drawingBounds(){const ps=C.pageSize(pg()),all=items();if(!all.length)return{x:0,y:0,...ps};const e=C.bounds(all,true),x=Math.min(0,e.x),y=Math.min(0,e.y);return{x,y,w:Math.max(ps.w,e.x+e.w)-x,h:Math.max(ps.h,e.y+e.h)-y}}
-function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const b=selection&&S.selected.size?C.bounds(picked(),true):drawingBounds();const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(.05,Math.min(8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
-function zoomAt(factor,p=null){if(!(factor>0)||!Number.isFinite(factor))return;const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight;if(!p?.every(Number.isFinite))p=[S.view.x+cw/2/S.view.zoom,S.view.y+ch/2/S.view.zoom];const z=Math.max(.05,Math.min(8,S.view.zoom*factor)),k=S.view.zoom/z;S.view.x=p[0]-(p[0]-S.view.x)*k;S.view.y=p[1]-(p[1]-S.view.y)*k;S.view.zoom=z;clampView();showZoom();render('page');render('overlay')}
+function fit(selection=false){const svg=$('canvas'),cw=svg.clientWidth||900,ch=svg.clientHeight||600;const b=selection&&S.selected.size?C.bounds(picked(),true):drawingBounds();const pad=selection?60:30,z=Math.min(cw/(b.w+pad*2),ch/(b.h+pad*2));S.view.zoom=Math.max(ZOOM.min,Math.min(selection?16:8,z));S.view.x=b.x+b.w/2-cw/2/S.view.zoom;S.view.y=b.y+b.h/2-ch/2/S.view.zoom;render()}
+// 2 % to 6400 %: far enough out for a campus, close enough in to read a single port on a vendor faceplate
+const ZOOM={min:.02,max:64};
+function zoomAt(factor,p=null){if(!(factor>0)||!Number.isFinite(factor))return;const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight;if(!p?.every(Number.isFinite))p=[S.view.x+cw/2/S.view.zoom,S.view.y+ch/2/S.view.zoom];const z=Math.max(ZOOM.min,Math.min(ZOOM.max,S.view.zoom*factor)),k=S.view.zoom/z;S.view.x=p[0]-(p[0]-S.view.x)*k;S.view.y=p[1]-(p[1]-S.view.y)*k;S.view.zoom=z;clampView();showZoom();render('page');render('overlay')}
 // Panning stays near the drawing. While all of it fits in the window it can move about but not leave; zoomed in,
 // scrolling stops a margin (up to 300 px) past its edges, so nobody gets lost in empty canvas.
 function clampView(){const svg=$('canvas'),cw=svg.clientWidth,ch=svg.clientHeight,z=S.view.zoom;if(!cw||!ch||!(z>0))return;const b=drawingBounds(),

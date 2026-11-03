@@ -21,3 +21,7 @@ Icons picked from the **Icons** tab are fetched from the public Iconify API at t
 ## Imported packs
 
 Shapes you import (vendor icon packs, SVG folders, draw.io libraries) stay in your browser and in drawings that use them. Make sure your use complies with the licence of the pack you import — for example, vendor network icon packs are typically licensed for use in diagrams but not for redistribution.
+
+## Binary Visio reader (js/vsdbin.js)
+
+Written independently for this project. The layout of the binary Visio formats (`.vsd` / `.vss`, versions 6 and 11) was learnt from the reverse-engineering in LibreOffice's [libvisio](https://github.com/LibreOffice/libvisio) (MPL-2.0), used as documentation only; no libvisio code is included.

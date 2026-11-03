@@ -118,7 +118,7 @@ function identifiers(doc,out,vis){
 function edgeName(e,byId){const a=byId?.get(e.from?.node),b=byId?.get(e.to?.node);return a&&b?`“${nameOf(a)}” – “${nameOf(b)}”`:a?`from “${nameOf(a)}”`:b?`to “${nameOf(b)}”`:'(unattached)'}
 const band=n=>n.kind==='zone'?0:n.kind==='node'&&n.type==='rack'?1:n.kind==='edge'?2:n.kind==='node'&&Shapes.rackItems[n.type]?3:4;
 function readability(items,add,page){
-  const byId=new Map(items.map(n=>[n.id,n])),z=new Map(items.map((n,i)=>[n.id,band(n)*1e6+i])),L=[];
+  const byId=new Map(items.map(n=>[n.id,n])),z=new Map(items.map((n,i)=>[n.id,(page?.stack==='doc'?0:band(n)*1e6)+i])),L=[];
   for(const n of items){if(n.kind==='table'||n.kind==='legend'||MARKUP.has(n.type))continue;for(const l of n.labels||[]){const b=labelBox(n,l);if(b&&b.w>0&&b.h>0)L.push({n,l,b,a:b.w*b.h})}}
   // overlapping labels
   const rank=x=>x.n.kind==='text'?0:x.n.kind==='edge'?1:x.n.kind==='zone'?3:2;

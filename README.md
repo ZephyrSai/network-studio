@@ -22,14 +22,14 @@ No installation, no account, no server: everything runs in the browser, and draw
 | **Network tools** | IP plan with subnet maths and next-free-IP, **auto-assign IPs** to a zone, **VLAN registry**, auto-numbering (`SW-{n:02}`), bulk data edit, generate interface points (`Gi1/0/1…48`). |
 | **Analysis** | **Design check** in a side panel, by category — *connection integrity* (unattached lines, dangling ends and the device they stop at, self-connections, reused ports, broken links), *labels & data* (free text that isn't attached to its device or link, empty `{{field}}` labels, duplicate names, hostnames, IPs, serial numbers and cable IDs, labels that disagree with the data), *readability* (overlapping labels or links, hidden or too-small text, links drawn through devices, content off the page) and *network design* (subnets, PoE, racks, utilisation). Click a finding to go to it, fix it in one click, or accept it as intentional; F8 steps through them, **single points of failure** (articulation points & bridges), **path trace** with alternative-route count, **camera stream traffic** with per-link utilisation, **PoE budget**, **CCTV storage sizing**, highlight-by-data filter. |
 | **Reports** | Device inventory, cable schedule, BOM (with prices), IP plan, rack elevations, PoE budget, CCTV storage, VLAN table — download CSV, copy for Excel, or drop as an editable table on a page. |
-| **Import** | **Visio** drawings (`.vsdx`) as editable pages and stencils (`.vssx`) as shape packs. **CSV / NetBox exports** (devices + cables, auto-zones by site), **diagram-as-text**, **Cisco CDP / LLDP** `show … neighbors [detail]` output → auto-laid-out topology. |
+| **Import** | **Visio** drawings (`.vsdx`, binary `.vsd`) as editable pages and stencils (`.vssx`, binary `.vss`) as shape packs, vendor EMF faceplates included. **CSV / NetBox exports** (devices + cables, auto-zones by site), **diagram-as-text**, **Cisco CDP / LLDP** `show … neighbors [detail]` output → auto-laid-out topology. |
 | **Layout** | Auto-layout: top-down by tier, left-right, grid, hub-and-spoke, ring, organic — zone-aware (each zone laid out as a cluster). Fit page to drawing. |
 | **Pages & print** | Multiple pages, **background pages** with border + title block (fields: doc, page, sheet n of m, date), layers (visible / locked / print), page hyperlinks for drill-down, print/PDF fit / actual size / **tiled** across sheets, presentation mode. |
-| **Export** | **Visio `.vsdx`** (shapes, glued connectors, Shape Data, layers, hyperlinks; opens again in Port with its zones, devices and links), **draw.io**, SVG, PNG (2×/4×/transparent), copy page as image, PDF via print, native JSON, share link (drawing compressed into the URL hash). |
+| **Export** | **Visio `.vsdx`** (shapes, glued connectors, Shape Data, layers, hyperlinks; opens again in Port with its zones, devices and links), **AutoCAD `.dxf`** (*File ▸ Export page to AutoCAD*, or all pages as a ZIP: AutoCAD 2004 DXF in millimetres at 1:1 with layers, true colours, line weights, dashes, solid fills, text and arrowheads; repeated devices become blocks; pictures are left out), **draw.io**, SVG, PNG (2×/4×/transparent), copy page as image, PDF via print, native JSON, share link (drawing compressed into the URL hash). |
 | **Persistence** | Drawings auto-save to **IndexedDB** in your browser — including on GitHub Pages — with a **My drawings** manager (open / duplicate / download / delete, backup & restore all), optional **persistent storage** request, plus a quick localStorage recovery copy. Shape packs and your symbol library persist too. |
 | **Workspace layout** | View ▸ Layout or the buttons at the right of the tab row: hide the title bar, collapse the ribbon (tabs pop it open as an overlay; double-click a tab or Ctrl+F1 to pin it), hide the shapes panel / inspector (Ctrl+Alt+←/→), hide the status bar, or **Focus mode** (Ctrl+.) for canvas-only editing. Choices are remembered; View ▸ Layout ▸ Reset layout (or opening the app with `?reset`) restores the default, and the app resets itself if a layout ever leaves the canvas without room. |
 | **Review** | **Review mode** locks the layout (click selects, drag pans) while you **pin comments** to a device, a link, an area or a point, with replies and open / resolved / accepted status. A **checklist** for connectivity, labels, device data, readability and design shows the findings still open in each. **Changes since the previous review** (or the last issued revision) are listed and highlighted, and the **review report** puts comments, flagged errors and unresolved items in one HTML / PDF / CSV document with the pages and their pins. |
-| **Productivity** | Ribbon UI, **universal search** in the title bar (Ctrl+K or `/`) — every command, setting, shape, page, device, IP and comment, showing where each tool lives in the ribbon, find & replace across text and data, format painter, smart guides, snapping, rulers, overview map (appears once you zoom in), explorer tree, dark mode, smooth trackpad pinch-zoom (Chrome, Edge, Firefox and Safari gestures), scrolling that stops just past the drawing, full keyboard shortcuts (press `?`). |
+| **Productivity** | Ribbon UI, **universal search** in the title bar (Ctrl+K or `/`) — every command, setting, shape, page, device, IP and comment, showing where each tool lives in the ribbon, find & replace across text and data, format painter, smart guides, snapping, rulers, overview map (appears once you zoom in), explorer tree, dark mode, **AutoCAD-style zoom** from 2 % to 6400 % (close enough to read a single port: a mouse wheel zooms at the pointer, Shift+wheel scrolls, middle-button drag pans, a middle double-click shows the whole drawing), smooth trackpad pinch-zoom (Chrome, Edge, Firefox and Safari gestures), scrolling that stops just past the drawing, full keyboard shortcuts (press `?`). |
 
 ### Everything stays linked
 The drawing is kept consistent automatically after every edit:
@@ -125,15 +125,16 @@ On the first visit, a short tour spotlights one area at a time (ribbon, shapes p
 
 ### Visio import
 Open or drop a Visio file anywhere (*File ▸ Import Visio drawing or stencil…*, *File ▸ Open*, or onto the canvas or the shapes panel).
-* **Stencils** (`.vssx`, `.vssm`) become a shape pack: one shape per master, drawn from the master's own geometry. Hidden masters and connectors are skipped. Importing the same stencil again replaces its pack.
-* **Drawings** (`.vsdx`, `.vsdm`, `.vstx`) open as a new drawing, or their pages are added to the one you have.
-  * Shapes keep their Visio look: lines, arcs, ellipses, curves and NURBS, groups, rotation and flips, fills and line styles, as defined by the shape, its master and its style sheets.
-  * Connectors become links glued to the shapes they connect, keeping Visio's route (or re-routed around shapes if you choose). Line colour, weight, dash and arrows carry over.
-  * Containers become zones. Pictures stay pictures, and text boxes become text with Visio's size, colour, alignment and wrapping.
+* **Stencils** (`.vssx`, `.vssm`, and the older binary `.vss`) become a shape pack: one shape per master, drawn from the master's own geometry. Hidden masters and connectors are skipped. Importing the same stencil again replaces its pack.
+* **Drawings** (`.vsdx`, `.vsdm`, `.vstx`, and the older binary `.vsd` / `.vst`) open as a new drawing, or their pages are added to the one you have.
+  * Shapes keep their Visio look: lines, arcs, ellipses, curves, polylines and NURBS, groups (including vendor shapes dropped into groups), rotation and flips, fills and line styles, as defined by the shape, its master and its style sheets, and in Visio's stacking order.
+  * **Vendor equipment pictures** — the EMF / WMF faceplates in Cisco, Fortinet, Palo Alto, Dell, Alcatel-Lucent, Meraki… stencils — are converted to vector drawings, so they look as in Visio and stay sharp at any zoom.
+  * Connectors become links glued to the shapes they connect, keeping Visio's route (or re-routed around shapes if you choose). Lines that Visio left unglued but that end on a device are glued to it where they end, so moving the device drags them. Line colour, weight, dash and arrows carry over, with plain crossings as in Visio.
+  * Containers become zones. Pictures stay pictures, and text — including text inside groups — keeps Visio's font, size, colour, alignment and wrapping; text Visio hides stays hidden.
   * Shape Data becomes device fields (IP, hostname, vendor, model, serial, OS…). Layers, page sizes and background pages carry over.
   * Optionally, recognised network shapes (router, switch, firewall, server, AP, camera…) become Port's own devices, so they get connection points, design checks and the legend.
   * A drawing exported from Port comes back with its zones, devices, link types, interface names and connection points.
-* **Limits:** old binary files (`.vsd`, `.vss`) can't be read in a browser, so save them as `.vsdx` / `.vssx` from Visio first. EMF/WMF pictures, common in older vendor stencils, can't be drawn by browsers and show as marked placeholders. Visio themes, gradients, shadows and formulas that refer to other shapes fall back to the stored values.
+* **Limits:** binary files from Visio 5 and earlier can't be read; Shape Data and connector glue are not read from binary `.vsd` files. Pictures stored only as EMF+ (no plain EMF copy) show as placeholders. Visio themes, gradients, shadows and formulas that refer to other shapes fall back to the stored values.
 
 ## Using it
 
@@ -174,6 +175,9 @@ js/analysis.js      SPOF, paths, traffic, PoE, racks, IP plan, design checks, re
 js/io.js            files, SVG/PNG, draw.io, Visio export, share links, print
 js/vsdx.js          dependency-free .vsdx writer (+ ZIP writer)
 js/visio.js         Visio import: .vssx stencils → shape packs, .vsdx drawings → pages (geometry, inheritance, glue, data)
+js/vsdbin.js        binary Visio (.vss / .vsd, versions 6 and 11) read into the same parts as a .vsdx (pure)
+js/emf.js           EMF / WMF pictures → SVG (vendor faceplates in Visio stencils) (pure)
+js/dxf.js           AutoCAD DXF writer (AC1018, millimetres, layers, blocks, hatches, text) (pure)
 js/packs.js         shape packs, SVG sanitiser, importers, Iconify search, IndexedDB store
 js/builder.js       auto-layout glue, CSV / NetBox / text / CDP / LLDP importers
 js/templates.js     starter drawings
@@ -191,7 +195,7 @@ js/rackui.js        add to rack, unit and rack commands, views, accessories, 0U 
 js/racksheet.js     a rack as an Excel / CSV table and back: export, matching, import plan, apply (pure)
 js/xlsx.js          dependency-free .xlsx writer and reader (drop-down lists, frozen header, text columns)
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
-tests/              node:test suites (router, layout, vsdx, visio, core/importers, merge, scale, revisions, ports, racks, rack sheets, xlsx)
+tests/              node:test suites (router, layout, vsdx, visio, binary Visio, EMF, DXF, core/importers, merge, scale, revisions, ports, racks, rack sheets, xlsx)
 tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview
 ```
 

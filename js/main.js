@@ -5,12 +5,17 @@ function wire(){
   const cv=$('canvas');
   cv.addEventListener('pointerdown',beginPointer);cv.addEventListener('pointermove',pointerMove);cv.addEventListener('pointerup',pointerUp);cv.addEventListener('pointercancel',()=>{S.drag=null;S.guideLines=[];render()});
   cv.addEventListener('pointerleave',()=>{if(!S.drag&&S.hoverId){S.hoverId=null;render('overlay')}S.cursor=null;renderRulers()});
-  // Wheel / trackpad: pinch (ctrl+wheel) zooms around the fingers, two-finger scroll pans. Events are folded
-  // into one update per frame so fast trackpads stay smooth.
-  let wz=0,wx=0,wy=0,wAt=null,wFrame=0,gz=null,gAt=null,cursor=null;
+  // Wheel / trackpad: a mouse wheel zooms at the pointer (as in AutoCAD; Shift+wheel scrolls), a trackpad's two-finger
+  // scroll pans and its pinch (ctrl+wheel) zooms around the fingers; View ▸ Wheel always zooms makes every wheel zoom.
+  // Events are folded into one update per frame so fast trackpads stay smooth.
+  let wz=0,wx=0,wy=0,wAt=null,wFrame=0,gz=null,gAt=null,cursor=null,wKind=null,wLast=0;
+  // A gesture is judged by its first event: whole wheel notches (line mode, wheelDelta in steps of 120, or a whole step of
+  // 40 px or more) with no sideways part come from a mouse; a trackpad starts finer, and stays one until the fingers rest.
+  const fromMouse=e=>{const now=performance.now();if(now-wLast>300)wKind=null;wLast=now;if(wKind==null){const wd=Math.abs(e.wheelDeltaY||0);wKind=e.deltaMode===1||!e.deltaX&&(wd>=120&&wd%120===0||Number.isInteger(e.deltaY)&&Math.abs(e.deltaY)>=40)?'mouse':'pad'}return wKind==='mouse'};
   const flushWheel=()=>{wFrame=0;if(wz){zoomAt(Math.exp(-wz),wAt);wz=0}if(wx||wy){S.view.x+=wx/S.view.zoom;S.view.y+=wy/S.view.zoom;wx=wy=0;clampView();render('overlay')}};
   cv.addEventListener('wheel',e=>{e.preventDefault();cursor=[e.clientX,e.clientY];if(gz&&e.ctrlKey)return;const k=e.deltaMode===1?16:e.deltaMode===2?400:1,dx=e.deltaX*k,dy=e.deltaY*k;
-    if(e.ctrlKey||e.metaKey||S.prefs.wheelZoom&&!e.shiftKey){const pinch=e.ctrlKey&&!e.metaKey&&Math.abs(dy)<50;wz+=dy*(pinch?.011:.0018);wAt=point(e)}
+    const mouse=fromMouse(e);
+    if(e.ctrlKey||e.metaKey||(S.prefs.wheelZoom||mouse)&&!e.shiftKey){const pinch=e.ctrlKey&&!e.metaKey&&Math.abs(dy)<50;wz+=mouse&&!e.ctrlKey&&!e.metaKey?Math.sign(dy)*Math.min(3,Math.max(1,Math.abs(e.deltaMode===1?e.deltaY/3:dy/100)))*.18:dy*(pinch?.011:.0018);wAt=point(e)}
     else{wx+=e.shiftKey&&!dx?dy:dx;wy+=e.shiftKey&&!dx?0:dy}
     if(!wFrame)wFrame=requestAnimationFrame(flushWheel)},{passive:false});
   // Safari reports a trackpad pinch as GestureEvents (scale since the pinch began) instead of ctrl+wheel. They carry no

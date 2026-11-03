@@ -6,7 +6,7 @@ const docJSON=()=>JSON.stringify(Packs.embedUsed(S.doc),null,1);
 
 async function save(skipRev){if(!skipRev&&!(await Quick.beforeSave()))return;if(S.fileHandle){try{const w=await S.fileHandle.createWritable();await w.write(docJSON());await w.close();S.dirty=false;setSaveState('Saved to '+S.fileHandle.name);return}catch(err){if(err.name==='AbortError')return;notify('Could not write the file ('+err.message+'). Downloading instead.')}}if(FS_OK)return saveAs(true);download(safeName(S.doc.name)+'.json',docJSON(),'application/json');S.dirty=false;setSaveState('Drawing downloaded')}
 async function saveAs(skipRev){if(!skipRev&&!(await Quick.beforeSave()))return;if(FS_OK){try{const h=await showSaveFilePicker({suggestedName:safeName(S.doc.name)+'.json',types:[{description:'Port network drawing',accept:{'application/json':['.json']}}]});S.fileHandle=h;return save(true)}catch(err){if(err.name==='AbortError')return}}download(safeName(S.doc.name)+'.json',docJSON(),'application/json');S.dirty=false;setSaveState('Drawing downloaded')}
-async function openFile(){if(FS_OK&&'showOpenFilePicker' in window){try{const[h]=await showOpenFilePicker({types:[{description:'Drawings, Visio, CSV, images',accept:{'application/json':['.json'],'application/vnd.ms-visio.drawing':['.vsdx','.vsdm','.vstx'],'application/vnd.ms-visio.stencil':['.vssx','.vssm'],'text/csv':['.csv'],'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx'],'text/plain':['.txt'],'image/*':['.png','.jpg','.jpeg','.svg','.webp']}}]});const f=await h.getFile();return handleFile(f,h)}catch(err){if(err.name==='AbortError')return}}$('fileInput').click()}
+async function openFile(){if(FS_OK&&'showOpenFilePicker' in window){try{const[h]=await showOpenFilePicker({types:[{description:'Drawings, Visio, CSV, images',accept:{'application/json':['.json'],'application/vnd.ms-visio.drawing':['.vsdx','.vsdm','.vstx','.vsd','.vst'],'application/vnd.ms-visio.stencil':['.vssx','.vssm','.vss'],'text/csv':['.csv'],'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx'],'text/plain':['.txt'],'image/*':['.png','.jpg','.jpeg','.svg','.webp']}}]});const f=await h.getFile();return handleFile(f,h)}catch(err){if(err.name==='AbortError')return}}$('fileInput').click()}
 async function handleFile(file,handle=null,at=null){
   const name=file.name.toLowerCase();
   try{
@@ -60,12 +60,13 @@ function nodeSvg(n,ctx){const root=document.createElementNS(NS,'svg');root.setAt
 function itemSvg(n,page){return sceneSvg({...page,items:[{...n,labels:n.labels}],background:null},{pad:0,area:C.box(n)})}
 
 // ---------- Visio .vsdx (flattened via the rendered SVG) ----------
-async function exportVsdx(){
-  if(typeof VsdxWriter==='undefined')return notify('Visio writer not loaded.');notify('Preparing Visio file…',2500);
+// The drawing flattened for Visio and AutoCAD: each sheet drawn off-screen and read back as plain geometry and text
+// (inches, origin top-left, Y down), shapes keeping their data, layers, links and hyperlinks. ids: only those pages.
+async function buildIR(ids=null){
   const host=document.createElement('div');host.style.cssText='position:fixed;left:-30000px;top:0;opacity:0;pointer-events:none';document.body.append(host);
   const IN=96,pages=[],layerIndex=new Map(S.doc.layers.map((l,i)=>[l.id,i]));
   // background pages are flattened into each sheet so per-page fields ({{page.name}}, sheet numbers) stay correct
-  const fgPages=S.doc.pages.filter(p=>!p.isBackground);
+  const fgPages=S.doc.pages.filter(p=>!p.isBackground&&(!ids||ids.includes(p.id)));
   try{for(const page of fgPages){
     const ps=C.pageSize(page),svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox',`0 0 ${ps.w} ${ps.h}`);svg.setAttribute('width',ps.w);svg.setAttribute('height',ps.h);host.append(svg);
     const bgSrc=page.background&&S.doc.pages.find(p=>p.id===page.background),bgPage=bgSrc?Constraints.bgView(bgSrc,page):null;
@@ -78,7 +79,9 @@ async function exportVsdx(){
         for(const t of g.querySelectorAll('text'))if(!t.closest('[data-label]'))pushText(t,shapes,inv,()=>sid++,layers,null,{PortKind:'auto',PortOwner:id});continue}
       const geoms=[],texts=[];
       for(const shape of g.querySelectorAll('path,rect,circle,ellipse,line,polyline,polygon')){if(shape.closest('defs,marker,pattern,clipPath,title,[data-label]'))continue;const st=getComputedStyle(shape),fill=colorOf(st.fill),stroke=colorOf(st.stroke);if(!fill&&!stroke)continue;if(st.display==='none'||st.visibility==='hidden')continue;const op=(+st.opacity||1)*(+st.fillOpacity||1);
-        const m=inv.multiply(shape.getScreenCTM()),sc=Math.sqrt(Math.abs(m.a*m.d-m.b*m.c));for(const pts of flatten(shape))if(pts.length>1)geoms.push({closed:isClosed(shape,pts),fill:fill&&op>.05?fill:null,fillOpacity:op,stroke,weight:stroke?(parseFloat(st.strokeWidth)||1)*sc*.75:0,dash:st.strokeDasharray&&st.strokeDasharray!=='none'?1:0,points:pts.map(p=>{const q=new DOMPoint(p[0],p[1]).matrixTransform(m);return[q.x,q.y]})})}
+        const m=inv.multiply(shape.getScreenCTM()),sc=Math.sqrt(Math.abs(m.a*m.d-m.b*m.c));for(const pts of flatten(shape)){if(pts.length<2)continue;const g={closed:isClosed(shape,pts),fill:fill&&op>.05?fill:null,fillOpacity:op,stroke,weight:stroke?(parseFloat(st.strokeWidth)||1)*sc*.75:0,dash:st.strokeDasharray&&st.strokeDasharray!=='none'?1:0,points:pts.map(p=>{const q=new DOMPoint(p[0],p[1]).matrixTransform(m);return[q.x,q.y]})};
+          // SVG fills an open outline as if it were closed: write that as a closed filled part plus the open line
+          if(!g.closed&&g.fill&&pts.length>2){geoms.push({...g,closed:true,stroke:null,weight:0});if(stroke)geoms.push({...g,fill:null})}else geoms.push(g)}}
       const images=[...g.querySelectorAll('image')];
       if(!geoms.length&&!images.length&&!g.querySelector('text'))continue;
       const all=geoms.flatMap(x=>x.points),bx=n.kind==='node'||n.kind==='zone'||n.kind==='text'||n.kind==='table'||n.kind==='legend'?C.box(n):null;
@@ -92,12 +95,24 @@ async function exportVsdx(){
       for(const im of images){const bb=im.getBBox(),m=inv.multiply(im.getScreenCTM()),p0=new DOMPoint(bb.x,bb.y).matrixTransform(m),p1=new DOMPoint(bb.x+bb.width,bb.y+bb.height).matrixTransform(m),href=im.getAttribute('href')||'';const bin=await imageBytes(href);if(bin)shapes.push({id:sid++,kind:'image',x:p0.x/IN,y:p0.y/IN,w:(p1.x-p0.x)/IN,h:(p1.y-p0.y)/IN,mime:bin.mime,data:bin.data,layers})}
       // text the item draws for itself (a zone's VLAN · subnet…): Port redraws it when the file comes back
       for(const t of g.querySelectorAll('text'))if(!t.closest('[data-label]'))pushText(t,shapes,inv,()=>sid++,layers,null,{PortKind:'auto',PortOwner:id});
-      for(const lg of g.querySelectorAll('[data-label]')){if(main&&lg.dataset.label===main.id&&geoms.length)continue;for(const t of lg.querySelectorAll('text'))pushText(t,shapes,inv,()=>sid++,layers,lg.querySelector('rect'))}}
+      // the main label already went out as the shape's text (with or without geometry): do not write it twice
+      for(const lg of g.querySelectorAll('[data-label]')){if(main&&lg.dataset.label===main.id&&(geoms.length||sh.text))continue;for(const t of lg.querySelectorAll('text'))pushText(t,shapes,inv,()=>sid++,layers,lg.querySelector('rect'))}}
     for(const s of shapes)if(s.kind==='connector'){s.from=idMap.get(s._from)??null;s.to=idMap.get(s._to)??null;delete s._from;delete s._to}
-    RCTX=null;const[wmm,hmm]=C.dimensions(page);pages.push({name:page.name,width:wmm/25.4,height:hmm/25.4,background:false,backPage:null,layers:S.doc.layers.map(l=>({name:l.name,visible:l.visible!==false,print:l.print!==false,locked:!!l.locked})),shapes});svg.remove()}
-    const bytes=VsdxWriter.build({title:S.doc.name,author:S.doc.meta.author||'',company:S.doc.meta.company||'',description:S.doc.meta.description||'',pages});
+    RCTX=null;const[wmm,hmm]=C.dimensions(page);pages.push({id:page.id,name:page.name,width:wmm/25.4,height:hmm/25.4,background:false,backPage:null,layers:S.doc.layers.map(l=>({name:l.name,visible:l.visible!==false,print:l.print!==false,locked:!!l.locked})),shapes});svg.remove()}
+    return{title:S.doc.name,author:S.doc.meta.author||'',company:S.doc.meta.company||'',description:S.doc.meta.description||'',pages}}finally{host.remove();RCTX=null}}
+async function exportVsdx(){
+  if(typeof VsdxWriter==='undefined')return notify('Visio writer not loaded.');notify('Preparing Visio file…',2500);
+  try{const bytes=VsdxWriter.build(await buildIR());
     download(safeName(S.doc.name)+'.vsdx',new Blob([bytes],{type:'application/vnd.ms-visio.drawing'}));notify('Visio file exported: shapes keep their Shape Data, layers and hyperlinks; connectors stay glued.')
-  }catch(err){console.error(err);notify('Visio export failed: '+err.message)}finally{host.remove();RCTX=null}}
+  }catch(err){console.error(err);notify('Visio export failed: '+err.message)}}
+// AutoCAD: one DXF per sheet in millimetres (this page, or every page in a ZIP). Pictures cannot go into a DXF.
+async function exportDxf(all=false){
+  if(typeof DxfWriter==='undefined')return notify('AutoCAD writer not loaded.');notify('Preparing AutoCAD file…',2500);
+  try{const fg=S.doc.pages.filter(p=>!p.isBackground),list=all?fg:[pg().isBackground?fg[0]:pg()],ir=await buildIR(list.map(p=>p.id)),used=new Set();
+    const files=ir.pages.map((p,i)=>{const r=DxfWriter.build(ir,{page:i});let base=safeName(`${S.doc.name} - ${p.name}`),name=base+'.dxf';for(let k=2;used.has(name);k++)name=`${base} ${k}.dxf`;used.add(name);return{...r,name}});
+    if(files.length===1)download(files[0].name,files[0].dxf,'application/dxf');else download(safeName(S.doc.name)+' - AutoCAD.zip',new Blob([VsdxWriter.zip(files.map(f=>({name:f.name,data:f.dxf})))],{type:'application/zip'}));
+    const img=files.reduce((s,f)=>s+(f.skipped?.images||0),0);notify(`${files.length>1?files.length+' AutoCAD files':'AutoCAD file'} exported (DXF, millimetres, one sheet each)${img?` — ${img} picture${img>1?'s were':' was'} left out: DXF cannot hold pictures`:''}.`,5000)
+  }catch(err){console.error(err);notify('AutoCAD export failed: '+err.message)}}
 // What an item is in Port, as Visio User cells: a drawing exported from Port opens again with real zones, devices and links.
 function portUser(n,pageItems){const portIx=r=>{const i=r?.port?pageItems.find(x=>x.id===r.node)?.ports?.findIndex(p=>p.id===r.port):-1;return i>=0?i:undefined};
   const props=n.kind==='zone'?{style:n.style,pin:n.pin,contain:n.contain,autoFit:n.autoFit,showMeta:n.showMeta,dash:n.dash}
@@ -114,7 +129,9 @@ function flatten(sh){const t=sh.tagName,num=a=>parseFloat(sh.getAttribute(a))||0
   if(t==='polyline'||t==='polygon'){const v=(sh.getAttribute('points')||'').trim().split(/[\s,]+/).map(Number),pts=[];for(let i=0;i+1<v.length;i+=2)pts.push([v[i],v[i+1]]);if(t==='polygon'&&pts.length)pts.push(pts[0]);return[pts]}
   const d=sh.getAttribute('d')||'';
   if(!/[CcSsQqTtAa]/.test(d))return parseLinear(d);
-  const len=sh.getTotalLength();if(!len)return[];const step=Math.max(.6,len/400),out=[];let cur=[],prev=null;for(let s=0;s<=len+1e-6;s+=step){const p=sh.getPointAtLength(Math.min(s,len));if(prev&&Math.hypot(p.x-prev.x,p.y-prev.y)>step*3){if(cur.length>1)out.push(cur);cur=[]}cur.push([p.x,p.y]);prev=p}if(cur.length>1)out.push(cur);return out}
+  const len=sh.getTotalLength();if(!len)return[];const n=Math.ceil(len/Math.max(.6,len/400)),step=len/n,at=s=>sh.getPointAtLength(Math.min(s,len)),out=[];let cur=[],prev=null;
+  // a jump is a moveto: bisect for where this subpath ends (and the next starts), so a subpath closed with z closes
+  for(let k=0;k<=n;k++){const s=k*step,p=at(s);if(prev&&Math.hypot(p.x-prev.x,p.y-prev.y)>step*3){let lo=s-step,hi=s,pl=prev;while(hi-lo>1e-3){const m=(lo+hi)/2,q=at(m);if(Math.hypot(q.x-pl.x,q.y-pl.y)<=(m-lo)*1.001+1e-4){lo=m;pl=q}else hi=m}if(lo>s-step)cur.push([pl.x,pl.y]);if(cur.length>1)out.push(cur);const q=at(hi);cur=[[q.x,q.y]]}cur.push([p.x,p.y]);prev=p}if(cur.length>1)out.push(cur);return out}
 function parseLinear(d){const tok=d.match(/[MLHVZmlhvz]|-?\d*\.?\d+(?:e-?\d+)?/g)||[],out=[];let cur=[],x=0,y=0,sx=0,sy=0,cmd='M',i=0;const n=()=>parseFloat(tok[i++]);
   while(i<tok.length){if(/[a-z]/i.test(tok[i]))cmd=tok[i++];const rel=cmd===cmd.toLowerCase(),c=cmd.toUpperCase();
     if(c==='Z'){if(cur.length){cur.push([sx,sy]);out.push(cur)}cur=[];x=sx;y=sy;continue}

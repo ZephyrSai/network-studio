@@ -2,20 +2,25 @@
 // become editable pages: shapes keep their Visio look (geometry converted to SVG), connectors become links glued to
 // their shapes, containers become zones, pictures stay pictures, text-only shapes become text, shape data becomes fields.
 // Cell values follow Visio's inheritance: the shape, then its master shape, then its style sheets, then defaults.
-// Legacy binary files (.vsd / .vss) are not readable in a browser: save them as .vsdx / .vssx from Visio first.
+// Legacy binary files (.vsd / .vss / .vst, Visio 2000–2003) are turned into the same package parts by js/vsdbin.js, and EMF /
+// WMF pictures (most vendor stencils) are drawn as SVG by js/emf.js.
 const Visio=(()=>{
 const C=Core;
 const XNS='http://schemas.microsoft.com/office/visio/2012/main';
 const PALETTE=['#000000','#ffffff','#ff0000','#00ff00','#0000ff','#ffff00','#ff00ff','#00ffff','#800000','#008000','#000080','#808000','#800080','#008080','#c0c0c0','#e6e6e6','#cdcdcd','#b3b3b3','#9a9a9a','#808080','#666666','#4d4d4d','#333333','#1a1a1a'];
 
 // ---------- package ----------
-async function readPackage(blob){const files=await Packs.unzip(blob,true),map=new Map(files.map(f=>[f.path.replace(/^\/+/,''),f.bytes]));
+// An OLE compound file (D0 CF 11 E0) is a binary .vsd / .vss / .vst: read into package parts; a zip (PK) is a .vsdx package.
+async function readPackage(blob){const head=new Uint8Array(await blob.slice(0,8).arrayBuffer()),binary=head[0]===0xd0&&head[1]===0xcf&&head[2]===0x11&&head[3]===0xe0;
+  if(!binary&&!(head[0]===0x50&&head[1]===0x4b))throw Error(blob.size?'This is not a Visio file (.vsdx / .vssx / .vsd / .vss).':'This file is empty.');
+  if(binary&&typeof VsdBin==='undefined')throw Error('Old binary Visio files (.vsd / .vss) need the legacy Visio reader, which is not loaded.');
+  const files=binary?VsdBin.toParts(new Uint8Array(await blob.arrayBuffer())).parts:await Packs.unzip(blob,true),map=new Map(files.map(f=>[f.path.replace(/^\/+/,''),f.bytes]));
   const text=p=>{const b=map.get(p);return b?new TextDecoder().decode(b):null};
   const xml=p=>{const t=text(p);if(!t)return null;const d=new DOMParser().parseFromString(t,'application/xml');return d.querySelector('parsererror')?null:d};
   const norm=(base,target)=>{if(target.startsWith('/'))return target.slice(1);const parts=base.split('/').slice(0,-1);for(const seg of target.split('/')){if(seg==='..')parts.pop();else if(seg!=='.')parts.push(seg)}return parts.join('/')};
   const rels=part=>{const i=part.lastIndexOf('/'),rp=part.slice(0,i+1)+'_rels/'+part.slice(i+1)+'.rels',d=xml(rp),out={};if(d)for(const r of d.getElementsByTagName('Relationship'))out[r.getAttribute('Id')]={target:norm(part,r.getAttribute('Target')),type:r.getAttribute('Type')||''};return out};
   const root=xml('_rels/.rels');let docPart='visio/document.xml';if(root)for(const r of root.getElementsByTagName('Relationship'))if(/\/document$/.test(r.getAttribute('Type')||''))docPart=r.getAttribute('Target').replace(/^\/+/,'');
-  if(!map.has(docPart))throw Error('This is not a Visio file (.vsdx / .vssx). Older .vsd / .vss files must be saved as .vsdx / .vssx from Visio first.');
+  if(!map.has(docPart))throw Error('This is not a Visio file (.vsdx / .vssx / .vsd / .vss).');
   return{map,text,xml,rels,docPart,bytes:p=>map.get(p)}}
 
 // ---------- cells, sections, inheritance ----------
@@ -49,7 +54,9 @@ const cv=(cells,n,env,def=0)=>{const c=cells[n];if(!c)return def;if(c.inh){const
 
 // ---------- geometry → SVG path (shape-local inches, y up) ----------
 const fmt=v=>+(+v).toFixed(4);
-function nurbsPoints(p0,row,env){const f=row.cells.E?.getAttribute('F')||row.cells.E?.getAttribute('V')||'',m=/NURBS\(([^)]*)\)/i.exec(f);const X=cv(row.cells,'X',env),Y=cv(row.cells,'Y',env);if(!m)return[[X,Y]];
+// A cell's NURBS() / POLYLINE() text: the formula, or the stored value where the formula is only 'Inh' (on instances).
+const fnText=(c,fn)=>[c?.getAttribute('F'),c?.getAttribute('V')].find(t=>new RegExp(fn+'\\s*\\(','i').test(t||''))||'';
+function nurbsPoints(p0,row,env){const f=fnText(row.cells.E,'NURBS'),m=/NURBS\(([^)]*)\)/i.exec(f);const X=cv(row.cells,'X',env),Y=cv(row.cells,'Y',env);if(!m)return[[X,Y]];
   const a=m[1].split(',').map(Number),deg=Math.max(1,Math.round(a[1])),xT=a[2],yT=a[3],pts=[p0],w=[cv(row.cells,'D',env,1)];for(let i=4;i+3<a.length;i+=4){pts.push([xT===0?a[i]*env.W:a[i],yT===0?a[i+1]*env.H:a[i+1]]);w.push(a[i+3]||1)}pts.push([X,Y]);w.push(cv(row.cells,'B',env,1));
   // clamped uniform rational B-spline through the control points (close enough for icons)
   const n=pts.length-1,d=Math.min(deg,n),knots=[];for(let i=0;i<=n+d+1;i++)knots.push(i<=d?0:i>=n+1?1:(i-d)/(n-d+1));const out=[],steps=Math.max(8,n*6);
@@ -75,7 +82,7 @@ function geomPath(sec,env,info={}){let d='',cur=[0,0],start=[0,0];const W=env.W,
       case'RelCubBezTo':{const p=[X*W,Y*H];d+=`C${fmt(c(row,'A')*W)} ${fmt(c(row,'B')*H)} ${fmt(c(row,'C')*W)} ${fmt(c(row,'D')*H)} ${fmt(p[0])} ${fmt(p[1])}`;cur=p;break}
       case'RelQuadBezTo':{const p=[X*W,Y*H];d+=`Q${fmt(c(row,'A')*W)} ${fmt(c(row,'B')*H)} ${fmt(p[0])} ${fmt(p[1])}`;cur=p;break}
       case'NURBSTo':{for(const p of nurbsPoints(cur,row,env))d+=`L${fmt(p[0])} ${fmt(p[1])}`;cur=[X,Y];break}
-      case'PolylineTo':{const f=row.cells.A?.getAttribute('F')||'',m=/POLYLINE\(([^)]*)\)/i.exec(f);if(m){const a=m[1].split(',').map(Number);for(let i=2;i+1<a.length;i+=2)d+=`L${fmt(a[0]===0?a[i]*W:a[i])} ${fmt(a[1]===0?a[i+1]*H:a[i+1])}`}d+=`L${fmt(X)} ${fmt(Y)}`;cur=[X,Y];break}
+      case'PolylineTo':{const f=fnText(row.cells.A,'POLYLINE'),m=/POLYLINE\(([^)]*)\)/i.exec(f);if(m){const a=m[1].split(',').map(Number);for(let i=2;i+1<a.length;i+=2)d+=`L${fmt(a[0]===0?a[i]*W:a[i])} ${fmt(a[1]===0?a[i+1]*H:a[i+1])}`}d+=`L${fmt(X)} ${fmt(Y)}`;cur=[X,Y];break}
       case'Ellipse':{const cx=X,cy=Y,a=[c(row,'A')-cx,c(row,'B')-cy],b=[c(row,'C')-cx,c(row,'D')-cy],rx=Math.hypot(...a),ry=Math.hypot(...b),rt=Math.atan2(a[1],a[0])*180/Math.PI;
         d+=`M${fmt(cx+a[0])} ${fmt(cy+a[1])}A${fmt(rx)} ${fmt(ry)} ${fmt(rt)} 1 1 ${fmt(cx-a[0])} ${fmt(cy-a[1])}A${fmt(rx)} ${fmt(ry)} ${fmt(rt)} 1 1 ${fmt(cx+a[0])} ${fmt(cy+a[1])}Z`;break}
       case'SplineStart':case'SplineKnot':d+=`L${fmt(X)} ${fmt(Y)}`;cur=[X,Y];break;
@@ -88,12 +95,19 @@ function geomPoints(r,env){const out=[];for(const sec of mergedSections(r,'Geome
 function lineStyle(r,env){const pat=num(r,'LinePattern',1,'LineStyle'),w=num(r,'LineWeight',.01,'LineStyle'),col=color(str(r,'LineColor','#000000','LineStyle'),'#000000'),tr=num(r,'LineColorTrans',0,'LineStyle');
   return{none:pat===0,stroke:col,width:Math.max(.003,w),dash:pat>1?(pat%4===2?`${fmt(w*4)} ${fmt(w*3)}`:pat%4===3?`${fmt(w)} ${fmt(w*2)}`:`${fmt(w*6)} ${fmt(w*2)} ${fmt(w)} ${fmt(w*2)}`):'',opacity:1-tr}}
 function fillStyle(r){const pat=num(r,'FillPattern',1,'FillStyle'),fg=color(str(r,'FillForegnd','#ffffff','FillStyle'),'#ffffff'),tr=num(r,'FillForegndTrans',0,'FillStyle');return{none:pat===0,fill:fg,opacity:1-tr}}
-// Pictures inside the package: data URLs for PNG / JPEG / GIF / SVG; EMF / WMF cannot be shown in a browser.
+// Pictures inside the package: data URLs for PNG / JPEG / GIF / BMP / SVG; EMF / WMF are drawn as SVG by js/emf.js.
 function foreignImage(r,ctx){for(let x=r;x;x=x.master){const fd=kid(x.el,'ForeignData');if(!fd)continue;const rel=kid(fd,'Rel'),rid=rel?.getAttribute('r:id')||rel?.getAttributeNS?.('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
     const part=rid&&(x.partRels||ctx.partRels)?.[rid]?.target,bytes=part&&ctx.pkg.bytes(part),ext=(part||'').split('.').pop().toLowerCase();
     if(!bytes){const b64=fd.textContent.trim();if(b64&&fd.getAttribute('ForeignType')==='Bitmap')return{url:'data:image/png;base64,'+b64.replace(/\s+/g,'')};return{unsupported:true}}
+    if(typeof Emf!=='undefined'&&(Emf.isEmf(bytes)||Emf.isWmf?.(bytes))){const cache=ctx.pkg.pictures??=new Map();if(!cache.has(part))cache.set(part,metafile(bytes,part));return cache.get(part)||{unsupported:ext||'emf'}}
     const mime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',bmp:'image/bmp',svg:'image/svg+xml',webp:'image/webp'}[ext];if(!mime)return{unsupported:ext||'image'};
-    let bin='';for(let i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode(...bytes.subarray(i,i+8192));return{url:`data:${mime};base64,${btoa(bin)}`}}return null}
+    // binary pictures are padded to a multiple of 3 bytes (decoders ignore trailing bytes): base64 then has no '=' that could read as on…= markup
+    const raw=mime==='image/svg+xml'?bytes:new Uint8Array(bytes.length+(3-bytes.length%3)%3);if(raw!==bytes)raw.set(bytes);let bin='';for(let i=0;i<raw.length;i+=8192)bin+=String.fromCharCode(...raw.subarray(i,i+8192));return{url:`data:${mime};base64,${btoa(bin)}`}}return null}
+// A metafile (EMF / WMF) drawn by js/emf.js as one <svg> element; ids are prefixed by the picture's content hash.
+function metafile(bytes,part){try{const e=Emf.toSvg(bytes,{idPrefix:'vp'+hashBytes(bytes)}),vb=e.viewBox;return/^<svg\b/.test(e.svg)&&vb?.[2]>0&&vb?.[3]>0&&e.svg.length<8e6?{svg:repad(e.svg)}:null}catch(err){console.warn('Metafile picture',part,err);return null}}
+// Bitmaps inside a metafile: base64 '=' padding can read as on…= to the markup filter, so their bytes are padded to a
+// multiple of 3 instead (image decoders ignore trailing bytes).
+const repad=svg=>svg.replace(/(data:image\/(?!svg)[\w.+-]+;base64,)([A-Za-z0-9+/]+)(=+)/g,(m,h,b,p)=>{const bin=atob(b+p);return h+btoa(bin+'\0'.repeat((3-bin.length%3)%3))});
 function placement(r,env){const px=num(r,'PinX',0,null,env.parent),py=num(r,'PinY',0,null,env.parent),lx=num(r,'LocPinX',env.W/2,null,env),ly=num(r,'LocPinY',env.H/2,null,env),a=num(r,'Angle',0),fx=num(r,'FlipX',0),fy=num(r,'FlipY',0);
   return{px,py,lx,ly,a,fx,fy,svg:`translate(${fmt(px)} ${fmt(py)})${a?` rotate(${fmt(a*180/Math.PI)})`:''}${fx||fy?` scale(${fx?-1:1} ${fy?-1:1})`:''} translate(${fmt(-lx)} ${fmt(-ly)})`}}
 function apply(p,pt){let x=pt[0]-p.lx,y=pt[1]-p.ly;if(p.fx)x=-x;if(p.fy)y=-y;const c=Math.cos(p.a),s=Math.sin(p.a);return[p.px+x*c-y*s,p.py+x*s+y*c]}
@@ -104,13 +118,19 @@ function shapeSvg(r,ctx,stats){const W=num(r,'Width',1),H=num(r,'Height',1),env=
     const noFill=cv(sec.cells,'NoFill',env)===1||fl.none||!info.closed,noLine=cv(sec.cells,'NoLine',env)===1||ln.none;if(noFill&&noLine)continue;
     out+=`<path d="${d}" fill="${noFill?'none':fl.fill}"${!noFill&&fl.opacity<1?` fill-opacity="${fmt(fl.opacity)}"`:''} stroke="${noLine?'none':ln.stroke}" stroke-width="${fmt(ln.width)}"${ln.dash&&!noLine?` stroke-dasharray="${ln.dash}"`:''}${ln.opacity<1&&!noLine?` stroke-opacity="${fmt(ln.opacity)}"`:''} stroke-linejoin="round" fill-rule="evenodd"/>`}
   const img=foreignImage(r,ctx);if(img?.url){const iw=num(r,'ImgWidth',W,null,env),ih=num(r,'ImgHeight',H,null,env),ix=num(r,'ImgOffsetX',0,null,env),iy=num(r,'ImgOffsetY',0,null,env);out+=`<image href="${img.url}" x="${fmt(ix)}" y="${fmt(iy)}" width="${fmt(iw)}" height="${fmt(ih)}" preserveAspectRatio="none" transform="matrix(1 0 0 -1 0 ${fmt(2*iy+ih)})"/>`}
-  else if(img?.unsupported){stats.emf++;const s=Math.min(W,H)*.45,cx=W/2,cy=H/2,sw=fmt(Math.min(W,H)*.02);// EMF/WMF: browsers can't draw them, so a marked picture placeholder
+  else if(img?.svg){const iw=num(r,'ImgWidth',W,null,env),ih=num(r,'ImgHeight',H,null,env),ix=num(r,'ImgOffsetX',0,null,env),iy=num(r,'ImgOffsetY',0,null,env);stats.pictures=(stats.pictures||0)+1;// the metafile's <svg>, stretched over the image box (y-down inside)
+    out+=`<g transform="matrix(1 0 0 -1 0 ${fmt(2*iy+ih)})">${img.svg.replace(/^<svg\b([^>]*)>/,(m,a)=>`<svg${a.replace(/\s(?:x|y|width|height)="[^"]*"/g,'')} x="${fmt(ix)}" y="${fmt(iy)}" width="${fmt(iw)}" height="${fmt(ih)}">`)}</g>`}
+  else if(img?.unsupported){stats.emf++;const s=Math.min(W,H)*.45,cx=W/2,cy=H/2,sw=fmt(Math.min(W,H)*.02);// a picture that could not be drawn (js/emf.js missing or failed): a marked placeholder
     out+=`<rect x="0" y="0" width="${fmt(W)}" height="${fmt(H)}" fill="#f1f5f9" stroke="#94a3b8" stroke-width="${sw}" stroke-dasharray="${fmt(W*.04)} ${fmt(W*.03)}"/><path d="M${fmt(cx-s/2)} ${fmt(cy-s/3)}L${fmt(cx-s/6)} ${fmt(cy+s/6)}L${fmt(cx+s/12)} ${fmt(cy-s/12)}L${fmt(cx+s/4)} ${fmt(cy+s/12)}L${fmt(cx+s/2)} ${fmt(cy-s/3)}Z" fill="#cbd5e1" stroke="#94a3b8" stroke-width="${sw}" stroke-linejoin="round"/><circle cx="${fmt(cx+s/4)}" cy="${fmt(cy+s/3)}" r="${fmt(s/10)}" fill="#cbd5e1"/>`}
   for(const c of children(r,ctx)){const cw=num(c,'Width',1),ch=num(c,'Height',1),p=placement(c,{W:cw,H:ch,parent:env});out+=`<g transform="${p.svg}">${shapeSvg(c,ctx,stats)}</g>`}
   return out}
 // Sub-shapes: the shape's own, matched to the master's by MasterShape; the master's when the shape lists none.
+// A sub-shape can also be an instance of another master (a vendor faceplate dropped into a group): it inherits from that.
 function children(r,ctx){const own=kids(kid(r.el,'Shapes'),'Shape'),mkids=r.master?children(r.master,ctx):[];
-  if(!own.length)return mkids;return own.map(el=>{const ms=el.getAttribute('MasterShape'),mm=ms!=null?mkids.find(k=>k.el.getAttribute('ID')===ms):null;const x=rec(el,mm,r.styles);x.partRels=r.partRels;return x})}
+  if(!own.length)return mkids;return own.map(el=>{const ms=el.getAttribute('MasterShape'),mid=el.getAttribute('Master'),m=mid!=null?ctx.v?.masters?.get(mid):null;
+    const mm=m?(ms!=null&&m.shapes.find(k=>k.el.getAttribute('ID')===ms))||m.shapes[0]||null:ms!=null?mkids.find(k=>k.el.getAttribute('ID')===ms):null;const x=rec(el,mm,r.styles);x.partRels=r.partRels;return x})}
+// A 1-D shape is a connector or line, unless it is a group or a picture (rack-mount devices are 1-D groups that snap to rails).
+function isLine(r,ctx){if(!(cellRaw(r,'BeginX')&&cellRaw(r,'EndX')))return false;for(let x=r;x;x=x.master)if(kid(x.el,'ForeignData'))return false;return!children(r,ctx).length}
 function textOf(r){for(let x=r;x;x=x.master){const t=kid(x.el,'Text');if(t){let s='';const walk=n=>{for(const c of n.childNodes){if(c.nodeType===3)s+=c.nodeValue;else if(c.nodeType===1&&c.localName==='fld')s+=c.textContent;else if(c.nodeType===1)walk(c)}};walk(t);return s.replace(/\r\n?/g,'\n').replace(/\n+$/,'').trim()}}return''}
 function dataOf(r,fields=C.FIELDS){const out={},own=new Map(fields.map(f=>[f.label.toLowerCase(),f])),KEYS=[[/^(ip|ip ?address|ipv4)$/i,'ip'],[/host ?name|network name|^name$/i,'hostname'],[/manufacturer|vendor|make/i,'vendor'],[/model|product (number|name)/i,'model'],[/serial/i,'serial'],[/mac/i,'mac'],[/location|building|room|floor/i,'location'],[/operating system|^os$|firmware/i,'os'],[/asset/i,'asset'],[/owner|department/i,'owner'],[/^status$/i,'status'],[/power/i,'power']];
   for(const sec of mergedSections(r,'Property'))for(const row of sec.rows.values()){const lab=row.cells.Label?.getAttribute('V')||row.N?.replace(/^Prop\./,'')||'',val=row.cells.Value?.getAttribute('V');if(!lab||val==null||val===''||row.cells.Invisible?.getAttribute('V')==='1')continue;
@@ -119,17 +139,21 @@ function dataOf(r,fields=C.FIELDS){const out={},own=new Map(fields.map(f=>[f.lab
 function firstRow(r,name){for(const sec of mergedSections(r,name)){const row=[...sec.rows.values()][0];if(row)return row.cells}
   let id=styleId(r,'TextStyle');for(let g=0;id!=null&&g<12;g++){const st=r.styles?.get(id);if(!st)break;const sec=kids(st.el,'Section').find(x=>x.getAttribute('N')===name),row=sec&&kids(sec,'Row')[0];if(row)return cellsOf(row);id=st.el.getAttribute('TextStyle')}return{}}
 function textStyle(r){const ch=firstRow(r,'Character'),pa=firstRow(r,'Paragraph'),v=(c,n)=>c[n]?.getAttribute('V'),st=+v(ch,'Style')||0,ha=v(pa,'HorzAlign');
-  return{size:+v(ch,'Size')>0?+v(ch,'Size'):12/72,color:color(v(ch,'Color'),null),bold:!!(st&1),italic:!!(st&2),align:ha==='0'?'start':ha==='2'?'end':'middle'}}
+  return{size:+v(ch,'Size')>0?+v(ch,'Size'):12/72,color:color(v(ch,'Color'),null),bold:!!(st&1),italic:!!(st&2),align:ha==='0'?'start':ha==='2'?'end':'middle',font:fontStack(v(ch,'Font'))}}
+// Visio's font, with a close fallback where it is not installed (Cambria → Georgia, Calibri → sans…)
+function fontStack(f){f=String(f||'').replace(/["'<>;{}]/g,'').trim();if(!f||/^\d+$/.test(f)||/^themed$/i.test(f))return null;
+  return/cambria|times|georgia|garamond|book antiqua|palatino|century|serif$/i.test(f)?`"${f}", Georgia, "Times New Roman", serif`:`"${f}", ${C.FONT}`}
 const charSize=r=>textStyle(r).size;
 // The text block in the shape's local inches (y up), with its margins and vertical alignment.
 function textBlock(r,env){const tw=num(r,'TxtWidth',env.W,null,env),th=num(r,'TxtHeight',env.H,null,env),te={...env,TW:tw,TH:th},m=n=>num(r,n,4/72,'TextStyle');
   return{x:num(r,'TxtPinX',env.W/2,null,env)-num(r,'TxtLocPinX',tw/2,null,te),y:num(r,'TxtPinY',env.H/2,null,env)-num(r,'TxtLocPinY',th/2,null,te),w:tw,h:th,ml:m('LeftMargin'),mr:m('RightMargin'),mt:m('TopMargin'),mb:m('BottomMargin'),valign:num(r,'VerticalAlign',1,'TextStyle')}}
 // Lay a label out the way Visio lays out the shape's text: styled, aligned in its text block and wrapped to its width.
 function placeLabel(l,r,env,p,X,Y,k,text){const tb=textBlock(r,env),ts=textStyle(r);
-  Object.assign(l,{text,size:Math.max(6,Math.min(96,+(ts.size*k).toFixed(1))),bold:ts.bold,italic:ts.italic,align:ts.align,rotation:0});if(ts.color)l.color=ts.color;
-  l.wrapWidth=Math.max(30,Math.max(.05,tb.w-tb.ml-tb.mr)*k*1.1);// a little slack: browser fonts run slightly wider than Visio's
+  // Visio's text as drawn: its font and size, no halo; a little slack so browser fonts do not wrap where Visio did not
+  Object.assign(l,{text,size:Math.max(1,Math.min(96,+(ts.size*k).toFixed(2))),bold:ts.bold,italic:ts.italic,align:ts.align,rotation:0,halo:false});if(ts.color)l.color=ts.color;if(ts.font)l.font=ts.font;
+  l.wrapWidth=Math.max(4,Math.max(.01,tb.w-tb.ml-tb.mr)*k*1.3);// a little slack: browser fonts run slightly wider than Visio's
   const hIn=C.labelMetrics(l,text).h/k,ax=ts.align==='start'?tb.x+tb.ml:ts.align==='end'?tb.x+tb.w-tb.mr:tb.x+tb.w/2,top=tb.valign===0?tb.y+tb.h-tb.mt:tb.valign===2?tb.y+tb.mb+hIn:tb.y+tb.h/2+hIn/2;
-  const q=apply(p,[ax,top]);l.x=X(q[0]);l.y=Y(q[1])+.95*l.size}
+  const q=typeof p==='function'?p([ax,top]):apply(p,[ax,top]);l.x=X(q[0]);l.y=Y(q[1])+.95*l.size}
 function userCell(r,name){for(const sec of mergedSections(r,'User'))for(const row of sec.rows.values())if(row.N===name||row.N==='User.'+name)return row.cells.Value?.getAttribute('V')||'';return''}
 // Port's own description of an item (User.PortProps, written by Port's Visio export), checked field by field.
 function portProps(r,kind){let o;try{o=JSON.parse(userCell(r,'PortProps')||'{}')}catch{o={}}if(!o||typeof o!=='object')return{};const out={},is=(k,re)=>typeof o[k]==='string'&&re.test(o[k]);
@@ -139,6 +163,7 @@ function portProps(r,kind){let o;try{o=JSON.parse(userCell(r,'PortProps')||'{}')
   if(kind==='edge'){if(typeof o.linkType==='string'&&Shapes.linkTypes[o.linkType])out.linkType=o.linkType;for(const k of['fromIf','toIf'])if(typeof o[k]==='string')out[k]=o[k].slice(0,60);if(is('routing',/^(auto|hv|vh|free|straight)$/))out.routing=o.routing;for(const k of['fromPort','toPort'])if(Number.isInteger(o[k])&&o[k]>=0)out[k]=o[k]}
   return out}
 const hashStr=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};
+const hashBytes=b=>{let h=2166136261^b.length;for(let i=0;i<b.length;i++){h^=b[i];h=Math.imul(h,16777619)}return(h>>>0).toString(36)};
 
 // ---------- document parts ----------
 async function load(blob){const pkg=await readPackage(blob),docRels=pkg.rels(pkg.docPart),doc=pkg.xml(pkg.docPart);
@@ -158,15 +183,17 @@ const instance=(el,v,partRels)=>{const mid=el.getAttribute('Master'),m=mid!=null
 
 // ---------- stencil → pack ----------
 function masterSvg(m,ctx,stats){if(!m.shapes.length)return null;let out='',bb=null;const grow=p=>{bb=bb?{x0:Math.min(bb.x0,p[0]),y0:Math.min(bb.y0,p[1]),x1:Math.max(bb.x1,p[0]),y1:Math.max(bb.y1,p[1])}:{x0:p[0],y0:p[1],x1:p[0],y1:p[1]}};
-  for(const r of m.shapes){if(cellRaw(r,'BeginX'))continue;const W=num(r,'Width',1),H=num(r,'Height',1),p=placement(r,{W,H,parent:{W:1,H:1}});for(const c of[[0,0],[W,0],[0,H],[W,H]])grow(apply(p,c));out+=`<g transform="${p.svg}">${shapeSvg(r,ctx,stats)}</g>`}
+  for(const r of m.shapes){if(isLine(r,ctx))continue;const W=num(r,'Width',1),H=num(r,'Height',1),p=placement(r,{W,H,parent:{W:1,H:1}});for(const c of[[0,0],[W,0],[0,H],[W,H]])grow(apply(p,c));out+=`<g transform="${p.svg}">${shapeSvg(r,ctx,stats)}</g>`}
   if(!bb||!out)return null;const pad=Math.max(bb.x1-bb.x0,bb.y1-bb.y0)*.03,x=bb.x0-pad,y=bb.y0-pad,w=bb.x1-bb.x0+2*pad,h=bb.y1-bb.y0+2*pad;
   return{vb:`${fmt(x)} ${fmt(-(y+h))} ${fmt(w)} ${fmt(h)}`,svg:`<g transform="scale(1 -1)">${out}</g>`}}
-async function stencilToPack(file){const v=await load(file),name=file.name.replace(/\.[^.]+$/,''),stats={nurbs:0,emf:0,skipped:0};if(!v.masters.size)throw Error('No master shapes found in this stencil.');
+async function stencilToPack(file){const v=await load(file),name=file.name.replace(/\.[^.]+$/,''),stats={nurbs:0,emf:0,skipped:0,lines:0,hidden:0};if(!v.masters.size)throw Error('No master shapes found in this stencil.');
   const pack={id:'u-'+hashStr(name+Date.now()),name,source:'visio',created:new Date().toISOString(),categories:[{id:'pack:vs-'+hashStr(name),name}],shapes:{}};const catId=pack.categories[0].id;
-  for(const m of v.masters.values()){if(m.hidden){stats.skipped++;continue}const ctx={pkg:v.pkg,partRels:m.shapes[0]?.partRels||{}},s=masterSvg(m,ctx,stats);if(!s){stats.skipped++;continue}
+  for(const m of v.masters.values()){if(m.hidden){stats.skipped++;stats.hidden++;continue}const ctx={v,pkg:v.pkg,partRels:m.shapes[0]?.partRels||{}};
+    if(m.shapes.length&&m.shapes.every(r=>isLine(r,ctx))){stats.skipped++;stats.lines++;continue}// connectors and lines become links, not shapes
+    const s=masterSvg(m,ctx,stats);if(!s){stats.skipped++;continue}
     if(!Packs.isSafeMarkup(s.svg)){stats.skipped++;continue}
     pack.shapes['vs-'+hashStr(name+'|'+m.id+'|'+m.name)]=Packs.stencilFrom(m.name,s.vb,s.svg,{cat:catId,tags:'visio '+name,source:file.name,recolor:false})}
-  if(!Object.keys(pack.shapes).length)throw Error('None of the masters in this stencil could be drawn (they may use EMF pictures, which browsers cannot show).');
+  if(!Object.keys(pack.shapes).length)throw Error(stats.lines&&stats.lines+stats.hidden===stats.skipped?'This stencil only has connectors and lines: in Port these are links, so there are no shapes to import.':'None of the masters in this stencil could be drawn.');
   return{pack,stats,count:Object.keys(pack.shapes).length}}
 
 // ---------- drawing → document ----------
@@ -178,15 +205,15 @@ async function drawingToDoc(file,opt={}){const v=await load(file),k=25.4*C.PX,st
   const layerIds=new Map();const layerFor=(pv,idx)=>{const L=pv.layers[idx];if(!L)return doc.layers[0].id;if(!layerIds.has(L.name)){let l=doc.layers.find(x=>x.name===L.name);if(!l){l={id:C.uid(),name:L.name,visible:L.visible,locked:false,print:L.print};doc.layers.push(l)}layerIds.set(L.name,l.id)}return layerIds.get(L.name)};
   const pageMap=new Map();
   for(const pv of v.pages){const page=C.page(pv.name);page.paper='Custom';page.customW=Math.round(pv.W*25.4);page.customH=Math.round(pv.H*25.4);page.orientation=pv.W>=pv.H?'landscape':'portrait';page.margin=0;page.autoSize=false;page.isBackground=pv.background;page.items=[];pageMap.set(pv.id,page);doc.pages.push(page);
-    if(!pv.content)continue;const ctx={pkg:v.pkg,partRels:pv.partRels},X=x=>x*k,Y=y=>(pv.H-y)*k,idMap=new Map(),edges=[],shapes=kids(kid(pv.content.documentElement,'Shapes'),'Shape');
-    for(const el of shapes){const r=instance(el,v,pv.partRels);const W=num(r,'Width',0),H=num(r,'Height',0),env={W,H},text=textOf(r),mname=r.masterInfo?.name||'',layerIdx=+(str(r,'LayerMember','').split(';')[0]);const layer=isNaN(layerIdx)?doc.layers[0].id:layerFor(pv,layerIdx);
+    if(!pv.content)continue;const ctx={v,pkg:v.pkg,partRels:pv.partRels},X=x=>x*k,Y=y=>(pv.H-y)*k,idMap=new Map(),edges=[],shapes=kids(kid(pv.content.documentElement,'Shapes'),'Shape');
+    for(const el of shapes){const r=instance(el,v,pv.partRels);const W=num(r,'Width',0),H=num(r,'Height',0),env={W,H},text=num(r,'HideText',0)===1?'':textOf(r),mname=r.masterInfo?.name||'',layerIdx=+(str(r,'LayerMember','').split(';')[0]);const layer=isNaN(layerIdx)?doc.layers[0].id:layerFor(pv,layerIdx);
       // 1-D: connectors and lines
-      if(cellRaw(r,'BeginX')&&cellRaw(r,'EndX')){const p=placement(r,{W,H,parent:{W:pv.W,H:pv.H}});let pts=geomPoints(r,env).map(q=>apply(p,q));const b=[num(r,'BeginX'),num(r,'BeginY')],e=[num(r,'EndX'),num(r,'EndY')];if(pts.length<2)pts=[b,e];else{pts[0]=b;pts[pts.length-1]=e}
+      if(isLine(r,ctx)){const p=placement(r,{W,H,parent:{W:pv.W,H:pv.H}});let pts=geomPoints(r,env).map(q=>apply(p,q));const b=[num(r,'BeginX'),num(r,'BeginY')],e=[num(r,'EndX'),num(r,'EndY')];if(pts.length<2)pts=[b,e];else{pts[0]=b;pts[pts.length-1]=e}
         const px=pts.map(q=>[X(q[0]),Y(q[1])]).filter((q,i,a)=>!i||Math.hypot(q[0]-a[i-1][0],q[1]-a[i-1][1])>.5);const edge=C.edge(px.length>1?px:[[X(b[0]),Y(b[1])],[X(e[0]),Y(e[1])]],null,null);
-        const ln=lineStyle(r,env);edge.stroke=ln.stroke;edge.strokeWidth=Math.max(1,+(ln.width*k).toFixed(1));edge.dash=ln.dash?'6 4':'';edge.endMarker=num(r,'EndArrow',0,'LineStyle')>0?'arrow':'none';edge.startMarker=num(r,'BeginArrow',0,'LineStyle')>0?'arrow':'none';
-        const ortho=px.every((q,i)=>!i||Math.abs(q[0]-px[i-1][0])<.6||Math.abs(q[1]-px[i-1][1])<.6);edge.routing=opt.reroute?'auto':ortho?'hv':'free';edge.layer=layer;edge.data=dataOf(r,C.LINK_FIELDS);
+        const ln=lineStyle(r,env);edge.stroke=ln.stroke;edge.strokeWidth=Math.max(.25,+(ln.width*k).toFixed(2));edge.dash=ln.dash?'6 4':'';edge.endMarker=num(r,'EndArrow',0,'LineStyle')>0?'arrow':'none';edge.startMarker=num(r,'BeginArrow',0,'LineStyle')>0?'arrow':'none';
+        const ortho=px.every((q,i)=>!i||Math.abs(q[0]-px[i-1][0])<.6||Math.abs(q[1]-px[i-1][1])<.6);edge.routing=opt.reroute?'auto':ortho?'hv':'free';edge.jumps=false;edge.layer=layer;edge.data=dataOf(r,C.LINK_FIELDS);
         if(userCell(r,'PortKind')==='edge'){const pp=portProps(r,'edge');Object.assign(edge,pp);delete edge.fromPort;delete edge.toPort;edge._ports=[pp.fromPort,pp.toPort];stats.restoredLinks++}
-        if(text){const ts=textStyle(r),l=C.label(text,0,0,Math.max(7,Math.min(48,+(ts.size*k).toFixed(1))));if(ts.color)l.color=ts.color;l.bold=ts.bold;l.anchor={t:.5,dx:0,dy:-9};l.background=true;edge.labels.push(l)}idMap.set(el.getAttribute('ID'),edge);edges.push(edge);page.items.push(edge);stats.links++;continue}
+        if(text){const ts=textStyle(r),l=C.label(text,0,0,Math.max(2,Math.min(48,+(ts.size*k).toFixed(1))));if(ts.color)l.color=ts.color;if(ts.font)l.font=ts.font;l.bold=ts.bold;l.anchor={t:.5,dx:0,dy:-9};l.background=true;edge.labels.push(l)}idMap.set(el.getAttribute('ID'),edge);edges.push(edge);page.items.push(edge);stats.links++;continue}
       if(!(W>0&&H>0))continue;const p=placement(r,{W,H,parent:{W:pv.W,H:pv.H}}),centre=apply(p,[W/2,H/2]),cx=X(centre[0]),cy=Y(centre[1]),w=W*k,h=H*k,rot=-p.a*180/Math.PI;
       const fl=fillStyle(r),ln=lineStyle(r,env),geom=mergedSections(r,'Geometry').filter(s=>cv(s.cells,'NoShow',env)!==1),
         drawn=geom.filter(s=>!((cv(s.cells,'NoFill',env)===1||fl.none)&&(cv(s.cells,'NoLine',env)===1||ln.none))),// text boxes carry an invisible rectangle
@@ -208,12 +235,22 @@ async function drawingToDoc(file,opt={}){const v=await load(file),k=25.4*C.PX,st
       if(n.kind==='node'){if(rot)n.rotation=+rot.toFixed(2);if(p.fx)n.flipX=true;if(p.fy)n.flipY=true}
       n.layer=layer;n.data={...(n.kind==='zone'?{}:dataOf(r)),...(n.data||{})};if(mname)n.data.visioMaster=mname;
       if(n.kind!=='zone'&&n.labels?.[0]){if(text)placeLabel(n.labels[0],r,env,p,X,Y,k,text);else n.labels=[]}
+      // text on a group's inner shapes (titles and captions inside a grouped box) becomes more labels on the group
+      if(n.kind==='node'&&subs&&n.labels){const walk=(par,f,penv,ang)=>{for(const c of children(par,ctx)){const cw=num(c,'Width',0),ch=num(c,'Height',0),pc=placement(c,{W:cw,H:ch,parent:penv}),fc=pt=>f(apply(pc,pt)),t=num(c,'HideText',0)===1?'':textOf(c);
+          if(t&&cw>0&&ch>0){const l=C.label(t,0,0,10);placeLabel(l,c,{W:cw,H:ch},fc,X,Y,k,t);const a=ang+(pc.a||0);if(Math.abs(a)>1e-6)l.rotation=+(-a*180/Math.PI).toFixed(2);n.labels.push(l)}walk(c,fc,{W:cw,H:ch},ang+(pc.a||0))}};walk(r,pt=>apply(p,pt),env,p.a||0)}
       idMap.set(el.getAttribute('ID'),n);page.items.push(n)}
     // glue connectors to what they connect (Connects: FromSheet = connector, ToSheet = shape)
     for(const c of pv.content.getElementsByTagName('Connect')){const e=idMap.get(c.getAttribute('FromSheet')),t=idMap.get(c.getAttribute('ToSheet'));if(!e||e.kind!=='edge'||!t||t.kind==='edge')continue;const cell=c.getAttribute('FromCell')||'',end=/^Begin/.test(cell)?0:/^End/.test(cell)?1:-1;if(end<0)continue;const ix=e._ports?.[end],port=ix!=null&&t.ports?.[ix]?.id||null;e[end?'to':'from']={node:t.id,port}}
     for(const e of edges)delete e._ports;
-    // zones go to the back
-    page.items=[...page.items.filter(n=>n.kind==='zone'),...page.items.filter(n=>n.kind!=='zone')]}
+    // Visio files often leave connectors unglued, ending exactly on a device: glue such an end to the smallest shape under
+    // it, at a connection point where the line ends — nothing moves, and moving the device now drags the link along
+    const targets=page.items.filter(n=>n.kind==='node'&&!n.rotation&&n.w>2&&n.h>2);
+    for(const e of edges)for(const end of[0,1]){const key=end?'to':'from';if(e[key])continue;const q=end?e.points.at(-1):e.points[0];
+      const t=targets.filter(n=>q[0]>=n.x-1.5&&q[0]<=n.x+n.w+1.5&&q[1]>=n.y-1.5&&q[1]<=n.y+n.h+1.5).sort((a,b)=>a.w*a.h-b.w*b.h)[0];if(!t)continue;
+      let rx=Math.max(0,Math.min(1,(q[0]-t.x)/t.w)),ry=Math.max(0,Math.min(1,(q[1]-t.y)/t.h));if(t.flipX)rx=1-rx;if(t.flipY)ry=1-ry;
+      let port=(t.ports||[]).find(o=>Math.abs(o.x-rx)*t.w<1&&Math.abs(o.y-ry)*t.h<1);if(!port){port={id:C.uid(),x:+rx.toFixed(4),y:+ry.toFixed(4),name:''};(t.ports??=[]).push(port)}e[key]={node:t.id,port:port.id};stats.glued=(stats.glued||0)+1}
+    // the drawing keeps Visio's stacking order (links over panels, devices over links where Visio has them)
+    page.stack='doc'}
   for(const pv of v.pages){const page=pageMap.get(pv.id);if(pv.backPage&&pageMap.get(pv.backPage))page.background=pageMap.get(pv.backPage).id}
   if(Object.keys(stencils).length)doc.stencils=stencils;doc.meta.description=`Imported from ${file.name}`;
   if(!doc.pages.length)throw Error('This Visio file has no pages.');if(!doc.pages.some(p=>!p.isBackground))doc.pages[0].isBackground=false;
@@ -233,8 +270,9 @@ async function openDrawing(file){notify('Reading '+file.name+'…',2000);let pee
     if(b.dataset.vs==='open'){if(S.dirty&&!confirm('Open “'+file.name+'”? Unsaved changes stay recoverable with Undo.'))return;loadDocument(doc,{name:file.name})}
     else{Packs.installDoc(doc);const r=mutate(()=>Merge.insertPages(S.doc,doc,{after:S.pageIndex,avoidClash:false}));if(r)gotoPage(S.doc.pages.indexOf(r.pages[0]))}
     const bits=[`${stats.shapes+stats.devices+stats.restored} shapes`,`${stats.links} connectors`];if(stats.zones)bits.push(`${stats.zones} containers → zones`);if(stats.images)bits.push(`${stats.images} pictures`);if(stats.text)bits.push(`${stats.text} text blocks`);if(stats.devices)bits.push(`${stats.devices} as Port devices`);if(stats.restored)bits.push(`${stats.restored} restored as Port items`);
-    notify(`Imported ${file.name}: ${bits.join(' · ')}.${stats.emf?` ${stats.emf} EMF/WMF picture${stats.emf>1?'s':''} can't be shown in a browser and appear as dashed boxes.`:''}`,8000)}}
-const isStencil=name=>/\.(vssx|vssm)$/i.test(name),isDrawing=name=>/\.(vsdx|vsdm|vstx|vstm)$/i.test(name),isLegacy=name=>/\.(vsd|vss|vst)$/i.test(name);
+    notify(`Imported ${file.name}: ${bits.join(' · ')}.${stats.emf?` ${stats.emf} picture${stats.emf>1?'s':''} could not be drawn and appear${stats.emf>1?'':'s'} as dashed boxes.`:''}`,8000)}}
+// .vss / .vsd / .vst are read by js/vsdbin.js; isLegacy is true only when that reader is missing.
+const legacyOk=()=>typeof VsdBin!=='undefined',isStencil=name=>/\.(vssx|vssm)$/i.test(name)||legacyOk()&&/\.vss$/i.test(name),isDrawing=name=>/\.(vsdx|vsdm|vstx|vstm)$/i.test(name)||legacyOk()&&/\.(vsd|vst)$/i.test(name),isLegacy=name=>!legacyOk()&&/\.(vsd|vss|vst)$/i.test(name);
 return{load,stencilToPack,drawingToDoc,openDrawing,isStencil,isDrawing,isLegacy,deviceType,_:{geomPath,evalF,color,ellArc}};
 })();
 if(typeof module!=='undefined')module.exports=Visio;

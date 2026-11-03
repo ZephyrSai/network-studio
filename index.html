@@ -69,16 +69,16 @@
   <span id="cursorPos" class="mono">0 , 0 mm</span>
   <label class="layerPick" title="Active layer for new shapes">Layer <select id="layerSel"></select></label>
   <span id="pageInfo"></span>
-  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-330" max="300" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit the view to the page">Fit</button><button data-action="fitPageDialog" title="Fit the page (and its border) to the drawing…">Fit page</button></div>
+  <div class="zoom"><button data-action="zoomOut" title="Zoom out">−</button><input id="zoomRange" type="range" min="-564" max="600" value="0" aria-label="Zoom"><button data-action="zoomIn" title="Zoom in">＋</button><button id="zoomValue" data-action="zoom100" title="Actual size">100%</button><button data-action="fit" title="Fit the view to the page">Fit</button><button data-action="fitPageDialog" title="Fit the page (and its border) to the drawing…">Fit page</button></div>
 </footer>
 
 <div id="contextMenu" class="menu" hidden></div>
 <div id="fileMenu" class="menu fileMenu" hidden></div>
 <div id="ribbonPop" class="menu ribbonPop" hidden></div>
-<input id="fileInput" type="file" accept=".json,.vsdx,.vsdm,.vstx,.vssx,.vssm,.vsd,.vss,.csv,.xlsx,.xls,.txt,image/*" hidden>
+<input id="fileInput" type="file" accept=".json,.vsdx,.vsdm,.vstx,.vssx,.vssm,.vsd,.vss,.vst,.csv,.xlsx,.xls,.txt,image/*" hidden>
 <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
 <input id="libraryInput" type="file" accept=".json" hidden>
-<input id="shapeInput" type="file" accept=".vssx,.vssm,.svg,.zip,.xml,.drawio,.json,.png,.jpg,.jpeg,.gif,.webp" multiple hidden>
+<input id="shapeInput" type="file" accept=".vssx,.vssm,.vss,.svg,.zip,.xml,.drawio,.json,.png,.jpg,.jpeg,.gif,.webp" multiple hidden>
 <input id="folderInput" type="file" webkitdirectory multiple hidden>
 <div id="printPreview" hidden><div class="previewbar"><strong>Print preview</strong><span id="printWarning" class="muted"></span><div class="spacer"></div><button data-action="closePrint">Back to drawing</button><button data-action="printNow" class="primary">Print / Save as PDF</button></div><div id="printPages"></div></div>
 <dialog id="dlg"></dialog>
@@ -99,30 +99,33 @@
 <script src="js/racks.js?v=9430ce12"></script>
 <script src="js/racksheet.js?v=818e4391"></script>
 <script src="js/revisions.js?v=3ef91001"></script>
-<script src="js/checks.js?v=3b96afd6"></script>
+<script src="js/checks.js?v=e8f7860a"></script>
 <script src="js/review.js?v=4c4feb50"></script>
 <script src="js/vsdx.js?v=08a52e96"></script>
+<script src="js/dxf.js?v=5d4b6d0b"></script>
+<script src="js/emf.js?v=e5a168bd"></script>
+<script src="js/vsdbin.js?v=b087f102"></script>
 <script src="js/xlsx.js?v=d91eeb2a"></script>
-<script src="js/visio.js?v=5f2977a0"></script>
-<script src="js/render.js?v=7d9e54df"></script>
+<script src="js/visio.js?v=e829ac98"></script>
+<script src="js/render.js?v=1c396cbb"></script>
 <script src="js/analysis.js?v=b2000869"></script>
-<script src="js/io.js?v=55e195dd"></script>
+<script src="js/io.js?v=d6fb4310"></script>
 <script src="js/packs.js?v=e3c44150"></script>
 <script src="js/builder.js?v=b9669f82"></script>
 <script src="js/templates.js?v=6669f418"></script>
-<script src="js/app.js?v=edea687a"></script>
-<script src="js/inspector.js?v=d80e0c98"></script>
-<script src="js/actions.js?v=f090a9f1"></script>
-<script src="js/panels.js?v=65009bbf"></script>
-<script src="js/workspace.js?v=c4909957"></script>
+<script src="js/app.js?v=0d6d8e15"></script>
+<script src="js/inspector.js?v=c03cfc3d"></script>
+<script src="js/actions.js?v=74e2f97f"></script>
+<script src="js/panels.js?v=f617ac4e"></script>
+<script src="js/workspace.js?v=47470772"></script>
 <script src="js/tplpanel.js?v=20a3c26f"></script>
 <script src="js/quick.js?v=53f2cc39"></script>
 <script src="js/rackui.js?v=e67e5bbe"></script>
 <script src="js/inventory.js?v=c9bc3f2d"></script>
 <script src="js/select.js?v=95d243ce"></script>
-<script src="js/reviewui.js?v=51011de6"></script>
-<script src="js/search.js?v=1ec4b992"></script>
+<script src="js/reviewui.js?v=bd6e11ad"></script>
+<script src="js/search.js?v=26f576e9"></script>
 <script src="js/tour.js?v=b00c28ec"></script>
-<script src="js/main.js?v=3dd07505"></script>
+<script src="js/main.js?v=88b620a8"></script>
 </body>
 </html>
