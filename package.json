@@ -2,7 +2,7 @@
   "name": "port-network-studio",
   "version": "3.0.0",
   "private": true,
-  "description": "Browser-based, offline-capable network diagram studio with Visio-style editing, network data and analysis.",
+  "description": "Browser-based network diagram studio with Visio-style editing, network data and analysis.",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "build": "node tools/build.mjs",

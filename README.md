@@ -1,8 +1,8 @@
 # Port Network Studio
 
-**A browser-based, offline-capable network diagram studio — Visio-style editing with the network data and analysis built in.**
+**A browser-based network diagram studio — Visio-style editing with the network data and analysis built in.**
 
-Live app: **https://zephyrsai.github.io/network-studio/** · Offline single file: [`dist/port-network-studio.html`](dist/port-network-studio.html)
+Live app: **https://zephyrsai.github.io/network-studio/**
 
 Port Network Studio grew out of *Port — Network Architecture Studio v2*, a single-file HTML tool for drawing layered network architectures with precise, manually controlled connector paths. v3 keeps that model (pages → devices, connection points, zones, manual right-angle paths, line jumps, print-ready sheets — and it opens v1/v2 drawings unchanged) and turns it into a full network-diagramming application.
 
@@ -196,12 +196,12 @@ js/racksheet.js     a rack as an Excel / CSV table and back: export, matching, i
 js/xlsx.js          dependency-free .xlsx writer and reader (drop-down lists, frozen header, text columns)
 js/app.js, actions.js, inspector.js, panels.js, workspace.js, main.js   editor UI
 tests/              node:test suites (router, layout, vsdx, visio, binary Visio, EMF, DXF, core/importers, merge, scale, revisions, ports, racks, rack sheets, xlsx)
-tools/              build.mjs (cache-busting + single-file build), build-packs.mjs, stencil preview
+tools/              build.mjs (cache-busting), build-packs.mjs, stencil preview
 ```
 
 ```bash
 npm test             # node --test tests/*.test.js
-npm run build        # stamp asset versions in index.html + build dist/port-network-studio.html
+npm run build        # stamp asset versions in index.html
 npm run packs        # refresh js/packs/extended.js from the Iconify API
 ```
 
