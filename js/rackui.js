@@ -7,30 +7,35 @@ const pageOf=n=>S.doc.pages.find(p=>p.items.includes(n));
 const findAny=id=>allItems().find(x=>x.id===id);
 const name=n=>(Analysis.nameOf(n)||Shapes.nameOf(n.type)).split('\n')[0];
 const ACCESSORIES=['rk-cable','rk-cable2','rk-tray','rk-shelf','rk-drawer','rk-kvm','rk-monitor','rk-kvmsw','rk-patch','rk-fiber','rk-pdu','rk-vpdu','rk-ats','rk-fan','rk-rooffan','rk-blank','rk-blank2','rk-brush'];
-const PDU='PDU 0U (vertical)';
+const PDU='PDU 0U (vertical)',OWN='__own';
+const opt=(v,t,cur)=>`<option value="${html(v)}" ${String(v)===String(cur)?'selected':''}>${html(t)}</option>`;
 const unitOf=dev=>allItems().find(x=>x.ref===dev.id&&Racks.isItem(x));
 function resizeRack(r){const D=Shapes.rackDims(r);r.w=D.w;r.h=D.h}
 
 // ---------- add drawing devices to a rack ----------
 function openAdd(devs=picked().filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&!Racks.isItem(n))){if(!devs.length)return notify('Select the devices to put in a rack.');
   const racks=S.doc.pages.flatMap(p=>p.items.filter(Racks.isRack).map(r=>({r,p}))),fams=Racks.families().filter(f=>f!=='Roof fan tray');
-  const rows=devs.map(d=>{const[t,u]=Racks.rackTypeFor(d),cur=unitOf(d),cr=cur&&Racks.rackOf(cur,pageOf(cur)?.items||[]);return{d,t,fam:Racks.family(t),u:u||1,cur,where:cur&&cr?`${name(cr)} · ${Racks.position(cr,cur)}`:''}});
-  const opt=(v,t,cur)=>`<option value="${v}" ${String(v)===String(cur)?'selected':''}>${t}</option>`;
+  // a picture of its own is mounted as itself by default; any device can choose that per row, with the height its picture suggests
+  const hintFor=d=>{try{return ShapeKit.hintOf(d).u}catch{return 1}};
+  const rows=devs.map(d=>{const[t,u]=Racks.rackTypeFor(d),cur=unitOf(d),cr=cur&&Racks.rackOf(cur,pageOf(cur)?.items||[]),art=Racks.isArt(d),artU=hintFor(d);return{d,t,fam:art?OWN:Racks.family(t),u:art?artU:u||1,artU,cur,where:cur&&cr?`${name(cr)} · ${Racks.position(cr,cur)}`:''}});
+  const heights=(...more)=>[...new Set([1,2,3,4,5,6,7,8,10,...more])].sort((a,b)=>a-b);
   const dlg=openDialog(`Add ${plural(devs.length,'device')} to a rack`,`<p class="muted">Each device becomes a rack unit with its own height. Linked units keep the device's name and data, and the inventory shows where it is mounted.</p>
-    <div class="tableWrap rkTable"><table class="report"><thead><tr><th></th><th>Device</th><th>Mounted as</th><th>Height</th><th></th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td><input type="checkbox" data-rk-on="${i}" ${x.cur?'':'checked'}></td><td>${html(name(x.d))}<br><em class="muted">${html(Shapes.nameOf(x.d.type))}</em></td><td><select data-rk-type="${i}">${fams.map(f=>opt(f,f,x.fam)).join('')}</select></td><td><select data-rk-u="${i}" ${x.fam===PDU?'disabled':''}>${[1,2,3,4,5,6,7,8,10].map(u=>opt(u,u+'U',x.u)).join('')}</select></td><td>${x.cur?`<em class="warnTxt">already in ${html(x.where)}</em>`:''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="tableWrap rkTable"><table class="report"><thead><tr><th></th><th>Device</th><th>Mounted as</th><th>Height</th><th></th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td><input type="checkbox" data-rk-on="${i}" ${x.cur?'':'checked'}></td><td>${html(name(x.d))}<br><em class="muted">${html(Shapes.nameOf(x.d.type))}</em></td><td><select data-rk-type="${i}">${opt(OWN,'Its own picture',x.fam)}${fams.map(f=>opt(f,f,x.fam)).join('')}</select></td><td><select data-rk-u="${i}" ${x.fam===PDU?'disabled':''}>${heights(x.u,x.artU).map(u=>opt(u,u+'U',x.u)).join('')}</select></td><td>${x.cur?`<em class="warnTxt">already in ${html(x.where)}</em>`:''}</td></tr>`).join('')}</tbody></table></div>
     <div class="fld"><span>Rack</span><div class="seg"><button data-rk-dest="existing" class="${racks.length?'active':''}" ${racks.length?'':'disabled'}>Existing rack</button><button data-rk-dest="new" class="${racks.length?'':'active'}">New rack</button></div></div>
-    <div id="rkExisting" ${racks.length?'':'hidden'}><select id="rkRack">${racks.map(({r,p},i)=>opt(i,`${html(name(r))} — ${Racks.freeU(r,p.items)} of ${r.units||42} U free · ${html(p.name)}`)).join('')}</select></div>
+    <div id="rkExisting" ${racks.length?'':'hidden'}><select id="rkRack">${racks.map(({r,p},i)=>opt(i,`${name(r)} — ${Racks.freeU(r,p.items)} of ${r.units||42} U free · ${p.name}`)).join('')}</select></div>
     <div id="rkNew" class="row r3" ${racks.length?'hidden':''}><label class="fld"><span>Name</span><input id="rkName" value="Rack ${racks.length+1}"></label><label class="fld"><span>Height</span><select id="rkUnits">${[12,18,24,42,45,47,48].map(u=>opt(u,u+'U',42)).join('')}</select></label><label class="fld"><span>Put it on</span><select id="rkWhere"><option value="page">a new “Racks” page</option><option value="here">this page, beside the drawing</option></select></label></div>
     <div class="fld"><span>Fill</span><div class="seg"><button data-rk-fill="top" class="active">From the top</button><button data-rk-fill="bottom">From the bottom</button></div></div>
     <label class="check"><input type="checkbox" id="rkLink" checked>Keep each unit linked to its device (name and data follow)</label>
     <footer><button data-close>Cancel</button><button class="primary" data-rk-go>Add to rack</button></footer>`,{wide:true});
   let dest=racks.length?'existing':'new',fill='top';
   // a vertical PDU hangs in a side channel at full height — it has no U height to choose
-  dlg.onchange=e=>{const i=e.target.dataset.rkType;if(i!=null)dlg.querySelector(`[data-rk-u="${i}"]`).disabled=e.target.value===PDU};
+  dlg.onchange=e=>{const i=e.target.dataset.rkType;if(i==null)return;const us=dlg.querySelector(`[data-rk-u="${i}"]`);us.disabled=e.target.value===PDU;if(e.target.value===OWN)us.value=rows[i].artU};
   dlg.onclick=e=>{const t=e.target;if(t.closest('[data-close]'))return closeDialog();const ds=t.closest('[data-rk-dest]');if(ds&&!ds.disabled){dest=ds.dataset.rkDest;dlg.querySelectorAll('[data-rk-dest]').forEach(b=>b.classList.toggle('active',b===ds));$('rkExisting').hidden=dest!=='existing';$('rkNew').hidden=dest!=='new';return}
     const fl=t.closest('[data-rk-fill]');if(fl){fill=fl.dataset.rkFill;dlg.querySelectorAll('[data-rk-fill]').forEach(b=>b.classList.toggle('active',b===fl));return}
-    if(!t.closest('[data-rk-go]'))return;const chosen=rows.map((x,i)=>{const fam=dlg.querySelector(`[data-rk-type="${i}"]`).value,u=+dlg.querySelector(`[data-rk-u="${i}"]`).value;return{...x,on:dlg.querySelector(`[data-rk-on="${i}"]`).checked,t:Racks.typeFor(fam,u)||'rk-server',u}}).filter(x=>x.on);
+    if(!t.closest('[data-rk-go]'))return;const chosen=rows.map((x,i)=>{const fam=dlg.querySelector(`[data-rk-type="${i}"]`).value,u=+dlg.querySelector(`[data-rk-u="${i}"]`).value;return{...x,on:dlg.querySelector(`[data-rk-on="${i}"]`).checked,own:fam===OWN,t:fam===x.fam&&u===x.u&&fam!==OWN?x.t:Racks.typeFor(fam,u)||'rk-server',u}}).filter(x=>x.on);
     if(!chosen.length)return notify('Tick at least one device.');const link=$('rkLink').checked;closeDialog();
+    // derived types are made here, not when the dialog opens
+    for(const x of chosen)if(x.own)try{x.t=ShapeKit.rackTypeOf(x.d)}catch{x.t=Racks.rackTypeFor(x.d)[0]}
     let target,page,made=[],missed=[];
     mutate(()=>{if(dest==='existing'){({r:target,p:page}=racks[+$('rkRack').value])}
       else{const where=$('rkWhere').value;if(where==='page'){page=S.doc.pages.find(p=>p.name==='Racks'&&!p.isBackground);if(!page){page=C.page('Racks');const cur=pg();for(const k of['paper','orientation','margin','bg','autoSize','customW','customH','minPaper','minW','minH'])if(cur[k]!==undefined)page[k]=cur[k];if(cur.background)page.background=cur.background;S.doc.pages.push(page)}}else page=pg();
@@ -56,6 +61,38 @@ function openMoveTo(n){const r=rackFor(n);if(!r)return notify('This unit is not 
 function toggleLock(list){const on=!list.every(n=>n.uLock);mutate(()=>list.forEach(n=>{if(on)n.uLock=true;else delete n.uLock}));notify(on?`Locked in place — ${plural(list.length,'unit')} stay in their U when dragged (the rack still carries them).`:'Unlocked.',2600)}
 function gotoAsset(n){const a=findAny(n.ref);if(!a)return notify('The linked device is no longer in the drawing.');gotoPage(S.doc.pages.indexOf(pageOf(a)));select([a.id]);fit(true)}
 function gotoUnit(dev){const u=unitOf(dev);if(!u)return;gotoPage(S.doc.pages.indexOf(pageOf(u)));select([u.id]);fit(true)}
+
+// ---------- a shape as rack equipment ----------
+// What a shape becomes in a slot: its own picture, or the rack unit of its kind. Heights remembered in this browser win.
+function mountPlan(n){if(Racks.isArt(n)){try{return{art:true,u:ShapeKit.hintOf(n).u}}catch{return null}}const m=Racks.rackMatch(n);return m?{type:m[0],u:Math.max(1,Math.round(+S.prefs.rackU?.[n.type]||m[1]))}:null}
+// Into a slot, inside the caller's undo step (a drag, a palette drop). No mutate here.
+function mountInto(r,n,u,hU){const plan=mountPlan(n);if(!plan)return false;let type=plan.type;if(plan.art)try{type=ShapeKit.rackTypeOf(n)}catch(err){notify(err.message,5000);return false}
+  Racks.toUnit(n,type,hU,items());Racks.placeAt(r,n,u);Racks.stackOver(pg(),n,r);notify(`${name(n)} locked into ${Racks.span(u,hU)} of ${name(r)}. Right-click it to change its height or go back to a normal shape; press ${MODK} while dragging to place a shape freely.`,5200);return true}
+const makeable=n=>n?.kind==='node'&&n.type!=='rack'&&!Racks.isItem(n)&&!Revisions.MARKUP.has(n.type)&&!n.pin&&!unitOf(n)&&(!!n.image||!!Stencils.shapes[n.type]||!!Shapes.basic[n.type])&&!JoinLines.isPanel(n,items());
+// Right-click ▸ Make rack equipment… on the page (the selected shape), or in the palette ({type}: a new one). Works away from a rack too: it floats at rack size and locks when dragged in.
+function openMake({type}={}){const sel=picked(),live=type?null:sel.length===1?sel[0]:null;if(!type&&!makeable(live))return notify('Select one shape to make it rack equipment.');if(live&&isLocked(live))return notify('Unlock it (or its layer) first.');
+  const n=live||Shapes.make(type,0,0);let art,hint;try{art=ShapeKit.artOf(n,{name:'Shape'});hint=ShapeKit.hintOf(n)}catch(err){return notify(err.message,5000)}
+  const racks=items().filter(r=>Racks.isRack(r)&&itemVisible(r,{doc:S.doc})),c=live&&C.center(live),under=live&&racks.find(r=>C.inside({x:c[0],y:c[1],w:0,h:0},Racks.frontRect(r))),label=live?name(live):Shapes.nameOf(type);
+  const d=openDialog(`Make “${html(label)}” rack equipment`,`<div class="shapePrev">${ShapeKit.preview(art,480,70)}</div><div class="row"><label class="fld"><span>Height</span><select id="rkmU">${[...new Set([1,2,3,4,5,6,7,8,10,12,hint.u])].sort((a,b)=>a-b).map(u=>opt(u,u+'U',hint.u)).join('')}</select></label>
+    <label class="fld"><span>Rack</span><select id="rkmRack">${opt('','Not in a rack yet',under?.id||'')}${racks.map(r=>opt(r.id,`${name(r)} — ${Racks.freeU(r,items())} of ${r.units||42} U free${isLocked(r)||r.lockItems?' · locked':''}`,under?.id||'')).join('')}</select></label></div>
+    <label class="check"><input type="checkbox" id="rkmKeep">Remember this height for this shape</label><p class="muted" id="rkmMsg">It keeps its links and data and shows its own picture in the slot. Not in a rack yet, it floats at rack size and locks in when you drag it there. For a rack on another page, use Add to rack.</p><footer><button data-close>Cancel</button><button class="primary" data-rkm-go>Make rack equipment</button></footer>`);
+  d.onclick=e=>{if(e.target.closest('[data-close]'))return closeDialog();if(!e.target.closest('[data-rkm-go]'))return;const hU=+$('rkmU').value,r=racks.find(x=>x.id===$('rkmRack').value)||null,msg=t=>{$('rkmMsg').innerHTML=`<span class="warnTxt">${html(t)}</span>`};let u=null;
+    if(r){if(isLocked(r)||r.lockItems)return msg(`${name(r)} is locked — unlock it, or choose another rack.`);const i=Shapes.rackInner(r),near=r===under?Math.round((i.y+i.h-c[1])/Shapes.RU-hU/2)+1:null;u=Racks.findSlot(r,items(),hU,near!=null?{near}:{order:'top'});if(u==null)return msg(`No ${hU}U run is free in ${name(r)}.`)}
+    let rk;try{rk=ShapeKit.rackTypeOf(n)}catch(err){return msg(err.message)}
+    if($('rkmKeep').checked){S.prefs.rackU={...S.prefs.rackU,[ShapeKit.rackKey(n)]:hU};savePrefs();Packs.rememberRack(rk,hU)}closeDialog();
+    mutate(()=>{if(!live){const v=centerOfView();C.move(n,v[0]-n.w/2-n.x,v[1]-n.h/2-n.y);n.layer=S.activeLayer;items().push(n)}Racks.toUnit(n,rk,hU,items());if(r){Racks.placeAt(r,n,u);Racks.stackOver(pg(),n,r)}select([n.id])});
+    notify(r?`${name(n)} is rack equipment at ${Racks.span(u,hU)} of ${name(r)}.`:`${name(n)} is rack equipment, ${hU}U. Drag it into a rack: it locks into the slot.`,4200)}}
+// An image unit made beside its image (Add to rack ▸ Its own picture) has no rackFrom: the picture is in its art.
+const artImage=s=>{const m=/<image\b[^>]*?\bhref="([^"]*)"/.exec(s?.svg||''),v=m&&m[1].replace(/&lt;/g,'<').replace(/&quot;/g,'"').replace(/&amp;/g,'&');return v&&C.IMAGE_RE.test(v)?v:null};
+const backImage=n=>(n.rackFrom?.type||Stencils.shapes[n.type]?.rackUnit?.from)==='image'&&!n.rackFrom?.image?artImage(Stencils.shapes[n.type]):null;
+const canBack=n=>{if(!n.rackFrom&&!Racks.isArtUnit(n))return false;const from=n.rackFrom?.type||Stencils.shapes[n.type]?.rackUnit?.from;return!!from&&(from!=='image'||!!n.rackFrom?.image||!!backImage(n))};
+// A unit that has been a shape, or shows its own picture. In a rack it lands just right of the cabinet, at the unit's height.
+function backToShape(n=picked().find(Racks.isItem)){if(!n||!(n.rackFrom||Racks.isArtUnit(n)))return notify('Select a rack unit that was made from a shape.');if(isLocked(n))return notify('Unlock it (or its layer) first.');const r=rackFor(n);if(r&&Racks.isLocked(n,r))return notify('This unit is locked in its U — unlock it first.');
+  const was=n.type,ru=Stencils.shapes[was]?.rackUnit,from=n.rackFrom?.type||ru?.from;if(!from)return notify('This unit has no shape to go back to.');const pic=backImage(n);if(from==='image'&&!n.rackFrom?.image&&!pic)return notify('This unit has no picture to go back to.');if(Packs.restoreSource(from,was)&&(S.ltab||'shapes')==='shapes')renderPalette();
+  const front=n.labels?.find(l=>l.view!=='rear'),s=Stencils.shapes[from],w=n.rackFrom?.w||s?.w||ru?.fromDef?.w||64,h=n.rackFrom?.h||s?.h||ru?.fromDef?.h||64;
+  mutate(()=>{const c=C.center(n),text=n.ref&&front?String(resolveLabel(n,front,makeCtx(pg()))??''):undefined;Racks.toShape(n,items(),{type:from,w,h,cx:r?r.x+r.w+24+w/2:c[0],cy:c[1],text});if(pic)n.image=pic;select([n.id])});notify(`${name(n)} is a normal shape again — ${MODK}+Z undoes.`,3000)}
+// On: shows even a name that repeats the picture. Off: hides this text, until the label says something else.
+function toggleName(n){const l=n.labels?.find(x=>x.view!=='rear');mutate(()=>{const lab=l||(n.labels=[...(n.labels||[]),{...C.label('',n.x+12,n.y+n.h/2+3,8.5),align:'start',color:'#1e293b'}]).at(-1);if(Shapes.labelHidden(n,lab)){n.showName=true;delete n.hideName;if(!lab.text.trim())lab.text=Shapes.nameOf(n.type)}else{delete n.showName;n.hideName=String(C.resolve(n,lab)??'').trim()}})}
 
 // ---------- rack commands ----------
 // Turning a view on widens the rack; whatever stands to its right moves along so nothing ends up underneath.
@@ -101,9 +138,9 @@ function mountNew(r,n,prefer='left',page=pg(),quiet=false){const m=Racks.mountOf
   const f=Racks.findSide(r,page.items,r.units||42,{prefer,shorten:true,except:new Set([n.id])});if(!f){if(!quiet)notify(`Both side channels of ${name(r)} are full.`,2600);return false}
   Racks.placeSide(r,n,f.side,f.u,f.len);pduName(r,n,f.side,page);if(!quiet)notify(`${name(n)} mounted on the ${f.side} side, U${f.u}–${f.u+f.len-1} — right-click ▸ Length to shorten it.${grows?` ${name(r)} now has 0U side channels; shapes to its right moved over.`:''}`,4200);return true}
 // A dragged 0U PDU / fan tray let go on a rack (app.js pointerUp, inside the drag's undo step).
-function mountDropped(r,n,sl){if(sl.mount==='roof'){if(!r.roof&&!frame(r,{roof:true},pg(),[n.id])?.ok)return;Racks.placeRoof(r,n);return notify(`${name(n)} on the roof of ${name(r)}${sl.ghost?' — it now has a roof':''}.`,2400)}
+function mountDropped(r,n,sl){if(sl.mount==='roof'){if(!r.roof&&!frame(r,{roof:true},pg(),[n.id])?.ok)return;Racks.placeRoof(r,n);Racks.stackOver(pg(),n,r);return notify(`${name(n)} on the roof of ${name(r)}${sl.ghost?' — it now has a roof':''}.`,2400)}
   if(!r.sides&&!frame(r,{sides:true},pg(),[n.id])?.ok)return;const ex=new Set([n.id]);let{side,u,len}=sl;if(!Racks.sideFits(r,items(),side,u,len,ex)){const f=Racks.findSide(r,items(),len,{prefer:side,near:u,except:ex});if(!f)return notify('No room left in the side channels.',2400);({side,u,len}=f)}
-  Racks.placeSide(r,n,side,u,len);pduName(r,n,side);notify(`${name(n)} on the ${side} side, U${u}–${u+len-1}${sl.ghost?` — ${name(r)} now has 0U side channels`:''}.`,2400)}
+  Racks.placeSide(r,n,side,u,len);Racks.stackOver(pg(),n,r);pduName(r,n,side);notify(`${name(n)} on the ${side} side, U${u}–${u+len-1}${sl.ghost?` — ${name(r)} now has 0U side channels`:''}.`,2400)}
 // The free run of len U on one side nearest to U near (null if none).
 function nearOnSide(r,side,len,near,ex){const c=[];for(let u=1;u+len-1<=(r.units||42);u++)if(Racks.sideFits(r,items(),side,u,len,ex))c.push(u);return c.sort((a,b)=>Math.abs(a-near)-Math.abs(b-near)||a-b)[0]??null}
 function pduAt(n){const r=rackFor(n),w=r&&Racks.where(r,n);if(!w||w.mount!=='left'&&w.mount!=='right'){notify('Drag the PDU into a side channel of a rack first.');return null}if(Racks.isLocked(n,r)){notify('This PDU is locked in place — unlock it first.');return null}return{r,w}}
@@ -164,18 +201,21 @@ async function openImport(file,{rack=null,at=null}={}){if(S.reviewMode)return Re
   const all=S.doc.pages.flatMap(p=>p.items.filter(Racks.isRack).map(r=>({r,p}))),here=items().filter(Racks.isRack),from=book.about?.id&&all.find(x=>x.r.id===book.about.id)?.r;
   // a CSV has no About tab: the rack most of its Row IDs belong to tells where it came from
   const ids=new Set(RackSheet.fromRows((book.tabs[book.tab]||book.tabs.find(t=>t.rack)).rows,{doc:S.doc}).rows.map(x=>x.rowId).filter(Boolean)),owner=ids.size?all.map(x=>({r:x.r,k:[...Racks.contents(x.r,x.p.items),...Racks.extras(x.r,x.p.items)].filter(n=>ids.has(n.id)).length})).sort((a,b)=>b.k-a.k)[0]:null;
-  const target=rackAt(at)||rack||from||(owner?.k?owner.r:null)||(here.length===1?here[0]:null)||null,fams=Racks.families();
+  const target=rackAt(at)||rack||from||(owner?.k?owner.r:null)||(here.length===1?here[0]:null)||null;
+  // the Equipment list: the families, then the pictures. Names repeat (17 masters called “Visio shape” in one drawing), and an entry is one picture.
+  const fams=[...Racks.families()],artOf={},artLabel=new Map(),addArt=t=>{if(artLabel.has(t))return;const nm=Shapes.rackItems[t].name;let k=nm;for(let i=2;fams.includes(k);i++)k=`${nm} (${i})`;fams.push(k);artOf[k]=t;artLabel.set(t,k)};Racks.artTypes(allItems()).forEach(addArt);
   // a new rack is named after the sheet (About, else the tab or file name) unless the user types a name
   const tabName=i=>book.about?.name||String(book.tabs[i]?.name||'').replace(/\s*-\s*rack$/i,'').trim()||`Rack ${all.length+1}`;
   const st={tab:book.tabs[book.tab]?.rack?book.tab:book.tabs.findIndex(t=>t.rack),into:all.findIndex(x=>x.r===target),newName:null,newUnits:0,where:'page',showSame:false,
     o:{resolve:{},off:[],types:{},updateLinked:true,linkByName:true,alsoLocked:false,removeMissing:false,growTo:null,about:book.about,rackChanges:true}};
   let src,P,R,page;
-  const compute=()=>{src=RackSheet.fromRows(book.tabs[st.tab].rows,{doc:S.doc});if(st.into>=0){({r:R,p:page}=all[st.into]);P=RackSheet.plan(R,page.items,src,{...st.o,newRack:false},sheetEnv(page));return}
+  const artRow=x=>{if(!x.pickArt&&Shapes.rackItems[x.type]?.face==='art')addArt(x.type)};
+  const compute=()=>{src=RackSheet.fromRows(book.tabs[st.tab].rows,{doc:S.doc});if(st.into>=0){({r:R,p:page}=all[st.into]);P=RackSheet.plan(R,page.items,src,{...st.o,newRack:false},sheetEnv(page));P.rows.forEach(artRow);return}
     // its height: the one chosen, else the sheet's (About, else the run of U rows it was exported with), else the smallest that fits
     const need=Math.max(0,...src.rows.map(x=>(+x.u||0)+(+x.h||1)-1)),run=+src.tops?.[0]||0,units=st.newUnits||+book.about?.units||(run>=need&&run?run:0)||[12,18,24,42,45,47,48].find(h=>h>=need)||need||42;
-    R=Shapes.make('rack'+units,0,0,st.newName??tabName(st.tab));page=null;P=RackSheet.plan(R,[R],src,{...st.o,newRack:true},sheetEnv())};
+    R=Shapes.make('rack'+units,0,0,st.newName??tabName(st.tab));page=null;P=RackSheet.plan(R,[R],src,{...st.o,newRack:true},sheetEnv());P.rows.forEach(artRow)};
   const rows=()=>P.rows.filter(x=>st.showSame||x.status!=='same'),same=P=>P.rows.filter(x=>x.status==='same').length;
-  const row=x=>{const sel=x.kind==='new'&&x.on?`<select data-rs-type="${x.line}">${fams.map(f=>`<option ${f===x.fam?'selected':''}>${html(f)}</option>`).join('')}</select>${x.guessed?' <em class="muted">guessed</em>':''}`:html(x.fam||'');
+  const row=x=>{const sel=x.kind==='new'&&x.on?`<select data-rs-type="${x.line}">${x.pickArt?'<option value="" selected disabled>Choose a picture…</option>':''}${fams.map(f=>`<option ${!x.pickArt&&f===(artLabel.get(x.type)||x.fam)?'selected':''}>${html(f)}</option>`).join('')}</select>${x.guessed?' <em class="muted">guessed</em>':''}`:html(x.fam||'');
     const notes=[...(x.problems||[]),...(x.skipped||[]).map(c=>c.text||c)].map(t=>`<div class="warnTxt">${html(t)}</div>`).join('')+(x.notes||[]).map(t=>`<div class="muted">${html(t)}</div>`).join('');
     const cf=x.conflict&&x.on?`<div class="warnTxt">${html(x.conflict.text)}</div><select data-rs-res="${x.line}">${x.conflict.options.map(o=>`<option value="${o.v}" ${o.v===x.conflict.choice?'selected':''}>${html(o.text)}</option>`).join('')}</select>`:'';
     return`<tr class="${x.on?'':'muted'}"><td><input type="checkbox" data-rs-on="${x.line}" ${x.on?'checked':''}></td><td class="num">${x.line}</td><td>${html(x.position||'')}</td><td>${html(x.name||'')}</td><td>${sel}</td><td>${html(x.what||(x.status==='same'?'No change':''))}${cf}${notes}</td></tr>`};
@@ -203,7 +243,7 @@ async function openImport(file,{rack=null,at=null}={}){if(S.reviewMode)return Re
   const redraw=()=>{compute();d.querySelector('h2').textContent=st.into>=0?`Import into ${name(R)} — preview`:'Import as a new rack — preview';$('rsBody').innerHTML=body();$('rsFoot').innerHTML=foot()};
   const lineSet=(k,line,v)=>{st.o[k]={...st.o[k],[line]:v}};
   d.onchange=e=>{const t=e.target,ln=+(t.dataset.rsOn||t.dataset.rsRes||t.dataset.rsType);
-    if(t.dataset.rsOn){st.o.off=t.checked?st.o.off.filter(x=>x!==ln):[...st.o.off,ln]}else if(t.dataset.rsRes)lineSet('resolve',ln,t.value);else if(t.dataset.rsType){const x=P.rows.find(r=>r.line===ln);lineSet('types',ln,Racks.typeFor(t.value,x?.want?.h||1))}
+    if(t.dataset.rsOn){st.o.off=t.checked?st.o.off.filter(x=>x!==ln):[...st.o.off,ln]}else if(t.dataset.rsRes)lineSet('resolve',ln,t.value);else if(t.dataset.rsType){const x=P.rows.find(r=>r.line===ln);lineSet('types',ln,artOf[t.value]||Racks.typeFor(t.value,x?.want?.h||1))}
     else if(t.id==='rsTab'){st.tab=+t.value;st.o={...st.o,resolve:{},off:[],types:{},growTo:null}}else if(t.id==='rsInto'){st.into=+t.value;st.o={...st.o,resolve:{},off:[],types:{},growTo:null}}
     // typing a name changes nothing else: no redraw, so the Import button under the pointer stays the same element
     else if(t.id==='rsName'){st.newName=t.value;if(R?.labels?.[0])R.labels[0].text=t.value;return}else if(t.id==='rsUnits'){st.newUnits=+t.value;st.o.growTo=null}else if(t.id==='rsWhere'){st.where=t.value;return}
@@ -220,6 +260,7 @@ function applySheet(P,R,page,st){if(page&&isLocked(R))return notify(`Unlock ${na
 // ---------- right-click ----------
 function menu(sel){const sub=(l,b)=>`<div class="sub"><button>${l} ▸</button><div class="submenu">${b}</div></div>`;let h='';
   const devs=sel.filter(n=>n.kind==='node'&&Shapes.isDevice(n)&&!Racks.isItem(n)),units=sel.filter(Racks.isItem),uu=units.filter(Racks.isU),racks=sel.filter(Racks.isRack);
+  if(sel.length===1&&makeable(sel[0]))h+=`<button data-ctx="q:rk:make">Make rack equipment…</button>`;
   const pdu=units.length===1&&Racks.mountOf(units[0])==='side'?units[0]:null,tray=units.length===1&&Racks.mountOf(units[0])==='roof'?units[0]:null;
   if(devs.length){h+=`<button data-ctx="q:rk:add">${devs.some(unitOf)?'Add to rack… (some are racked)':'Add to rack…'}</button>`;if(devs.length===1&&unitOf(devs[0]))h+=`<button data-ctx="q:rk:unit">Show it in its rack</button>`}
   if(pdu){const r=rackFor(pdu),w=r&&Racks.where(r,pdu);if(w&&(w.mount==='left'||w.mount==='right')){const n=r.units||42,opts=[[n,`Full height (${n}U)`],[Math.round(n*.75),`Three-quarters (${Math.round(n*.75)}U)`],[Math.round(n/2),`Half (${Math.round(n/2)}U)`]];
@@ -227,7 +268,9 @@ function menu(sel){const sub=(l,b)=>`<div class="sub"><button>${l} ▸</button><
   if(tray){const k=Racks.fansOf(tray);h+=sub('Fans',[1,2,3,4,5,6].map(v=>`<button data-ctx="q:rk:fans:${v}">${plural(v,'fan')}${v===k?' ✓':''}</button>`).join(''))}
   if(uu.length){const cur=uu.length===1?Racks.heightU(uu[0]):0;h+=sub('Height',[1,2,3,4,5,6,8,10].map(u=>`<button data-ctx="q:rk:h:${u}">${u}U${u===cur?' ✓':''}</button>`).join(''));
     if(uu.length===1&&units.length===1)h+=`<button data-ctx="q:rk:to">Move to U…</button>`}
-  if(units.length){const zu=units.every(Racks.isZeroU);h+=`<button data-ctx="q:rk:lock">${units.every(n=>n.uLock)?zu?'Unlock':'Unlock U position':zu?'Lock in place':'Lock in this U'}</button>`;if(units.length===1&&units[0].ref)h+=`<button data-ctx="q:rk:asset">Show the device in the drawing</button>`}
+  if(units.length){const zu=units.every(Racks.isZeroU);h+=`<button data-ctx="q:rk:lock">${units.every(n=>n.uLock)?zu?'Unlock':'Unlock U position':zu?'Lock in place':'Lock in this U'}</button>`;if(units.length===1&&units[0].ref)h+=`<button data-ctx="q:rk:asset">Show the device in the drawing</button>`;
+    if(sel.length===1&&Racks.isArtUnit(units[0])){const l=units[0].labels?.find(x=>x.view!=='rear');h+=`<button data-ctx="q:rk:name">${l&&!Shapes.labelHidden(units[0],l)?'✓ ':''}Show name on the faceplate</button>`}
+    if(sel.length===1&&canBack(units[0]))h+=`<button data-ctx="q:rk:back">Back to a normal shape</button>`}
   if(racks.length===1){const r=racks[0],v=r.views||{};h+=sub('Views',`<button data-ctx="q:rk:v:rear">${v.rear?'✓ ':''}Rear view</button><button data-ctx="q:rk:v:top">${v.top?'✓ ':''}Top view (depth)</button>`)
     +sub('Spreadsheet',`<button data-ctx="q:rk:xls:export">Export to Excel (.xlsx)</button><button data-ctx="q:rk:xls:csv">Export as CSV</button><button data-ctx="q:rk:xls:import">Import from Excel or CSV…</button>`)
     +sub('Cabinet',`<button data-ctx="q:rk:frame:sides">${r.sides?'✓ ':''}0U side channels (vertical PDUs)</button><button data-ctx="q:rk:frame:roof">${r.roof?'✓ ':''}Roof (fan tray)</button>`)
@@ -235,12 +278,12 @@ function menu(sel){const sub=(l,b)=>`<div class="sub"><button>${l} ▸</button><
     +`<button data-ctx="q:rk:lockall">${r.lockItems?'Unlock all equipment':'Lock all equipment in its U'}</button><button data-ctx="q:rk:power">Space & power…</button>`}
   return h}
 function apply(c){const[, ,op,...rest]=c.split(':'),v=rest.join(':'),sel=picked(),u1=sel.find(Racks.isItem),r1=sel.find(Racks.isRack);
-  if(op==='add')return openAdd();if(op==='unit')return gotoUnit(sel.find(n=>Shapes.isDevice(n)));
+  if(op==='add')return openAdd();if(op==='unit')return gotoUnit(sel.find(n=>Shapes.isDevice(n)));if(op==='make')return actions.makeRack();if(op==='back')return actions.backToShape();if(op==='name'&&u1)return toggleName(u1);
   if(op==='h'){for(const n of sel.filter(Racks.isU))setHeight(n,+v);return}if(op==='to'&&u1)return openMoveTo(u1);
   if(op==='len'&&u1)return v==='custom'?openLength(u1):setLength(u1,+v);if(op==='side'&&u1)return switchSide(u1);if(op==='fans'&&u1)return setFans(u1,+v);if(op==='lock')return toggleLock(sel.filter(Racks.isItem));if(op==='asset'&&u1)return gotoAsset(u1);
   if(!r1)return;if(op==='v')return setView(r1,v);if(op==='frame')return toggleFrame(r1,v);if(op==='xls')return v==='import'?importSheet(r1):exportSheet(r1,v==='csv'?'csv':'xlsx');if(op==='acc')return addAccessory(r1,v);if(op==='power')return openPower(r1);
   if(op==='lockall'){mutate(()=>{r1.lockItems=!r1.lockItems});notify(r1.lockItems?'Equipment is locked in its U; moving the rack still carries it.':'Equipment unlocked.',2400)}}
 
-return{openAdd,setHeight,openMoveTo,toggleLock,gotoAsset,gotoUnit,setView,addAccessory,openPower,menu,apply,resizeRack,unitOf,ACCESSORIES,
+return{openAdd,openMake,backToShape,mountPlan,mountInto,makeable,setHeight,openMoveTo,toggleLock,gotoAsset,gotoUnit,setView,addAccessory,openPower,menu,apply,resizeRack,unitOf,ACCESSORIES,
   frame,toggleFrame,dropTarget,mountNew,mountDropped,setLength,openLength,switchSide,setFans,pduName,makeRoom,shift,exportSheet,importSheet,openImport,rackAt};
 })();

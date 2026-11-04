@@ -68,12 +68,17 @@ function newDoc(name='Untitled network'){const now=new Date().toISOString();retu
 // ---------- structure helpers ----------
 function duplicate(items,dx=30,dy=30){const map=new Map(items.map(n=>[n.id,uid()])),groups=new Map();return items.map(o=>{const n=copy(o);n.id=map.get(n.id);if(n.group){if(!groups.has(n.group))groups.set(n.group,uid());n.group=groups.get(n.group)}(n.labels||[]).forEach(l=>l.id=uid());if(n.ports){const pm=new Map();n.ports.forEach(p=>{const id=uid();pm.set(p.id,id);p.id=id});n._portMap=pm}return n}).map((n,_,all)=>{if(n.kind==='edge')for(const k of['from','to']){const r=n[k];if(!r)continue;const t=all.find(x=>x.id===map.get(r.node));n[k]=t?{node:t.id,port:r.port?t._portMap?.get(r.port)??null:null}:null}if(n.target&&map.has(n.target))n.target=map.get(n.target);return n}).map(n=>{delete n._portMap;move(n,dx,dy);return n})}
 function splitEdge(e,index){return[e.points.slice(0,index+1),e.points.slice(index+1)].map((p,i)=>p.length<2?null:{...copy(e),id:uid(),points:p,routing:e.routing==='auto'?'hv':e.routing,labels:[],from:i===0?copy(e.from):null,to:i===1?copy(e.to):null}).filter(Boolean).map((p,i)=>{if(i===0)p.labels=copy(e.labels);return p})}
-function join(a,b){const c=[[false,false,a.points.at(-1),b.points[0]],[false,true,a.points.at(-1),b.points.at(-1)],[true,false,a.points[0],b.points[0]],[true,true,a.points[0],b.points.at(-1)]];c.sort((u,v)=>Math.hypot(u[2][0]-u[3][0],u[2][1]-u[3][1])-Math.hypot(v[2][0]-v[3][0],v[2][1]-v[3][1]));const[ra,rb]=c[0],ap=copy(a.points),bp=copy(b.points);if(ra)ap.reverse();if(rb)bp.reverse();if(Math.hypot(ap.at(-1)[0]-bp[0][0],ap.at(-1)[1]-bp[0][1])<.01)bp.shift();return{...copy(a),id:uid(),routing:a.routing==='auto'?'hv':a.routing,points:[...ap,...bp],from:copy(ra?a.to:a.from),to:copy(rb?b.from:b.to),labels:[...copy(a.labels),...copy(b.labels)]}}
 function dimensions(p){const a=p.paper==='Custom'?[p.customW,p.customH]:PAPERS[p.paper]||PAPERS.A4;return p.paper==='Custom'?a:p.orientation==='landscape'?[Math.max(...a),Math.min(...a)]:[Math.min(...a),Math.max(...a)]}
 function pageSize(p){const[w,h]=dimensions(p);return{w:w*PX,h:h*PX}}
 
 // ---------- validation and migration ----------
 const finite=x=>typeof x==='number'&&Number.isFinite(x)&&Math.abs(x)<1e7;
+const IMAGE_RE=/^data:image\/(png|jpeg|bmp|webp|gif|svg\+xml);base64,/i;
+// What a rack unit keeps of the shape it was: "Back to a normal shape" restores it, so it passes the same rules as a shape.
+function validRackFrom(f){const bad=()=>{throw Error('Invalid rack unit data.')};if(typeof f!=='object'||typeof f.type!=='string'||!f.type||![f.w,f.h,f.rotation||0].every(finite)||f.w<=0||f.h<=0)bad();
+  if(f.image!=null&&(typeof f.image!=='string'||!IMAGE_RE.test(f.image)))throw Error('Only embedded images are accepted.');
+  if(f.labels!=null&&!(Array.isArray(f.labels)&&f.labels.every(l=>typeof l?.text==='string'&&[l.x,l.y,l.size,l.rotation||0].every(finite)&&l.size>0)))bad();
+  if(f.ports!=null&&!(Array.isArray(f.ports)&&f.ports.every(q=>finite(q?.x)&&finite(q?.y)&&q.id)))bad()}
 function validate(d){
   if(!d||d.version!==3||!Array.isArray(d.pages)||!d.pages.length)throw Error('This is not a Port v3 drawing.');
   const ids=new Set();
@@ -85,7 +90,8 @@ function validate(d){
       if(n.kind==='edge'){if(!Array.isArray(n.points)||n.points.length<2||!n.points.every(q=>Array.isArray(q)&&q.length===2&&q.every(finite)))throw Error('Invalid connector.')}
       else if(![n.x,n.y,n.w,n.h].every(finite)||n.w<=0||n.h<=0)throw Error('Invalid shape dimensions.');
       if(!Array.isArray(n.labels)||!n.labels.every(l=>typeof l.text==='string'&&[l.x,l.y,l.size,l.rotation||0].every(finite)&&l.size>0))throw Error('Invalid labels.');
-      if(n.image&&!/^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/i.test(n.image))throw Error('Only embedded images are accepted.');
+      if(n.image&&!IMAGE_RE.test(n.image))throw Error('Only embedded images are accepted.');
+      if(n.rackFrom)validRackFrom(n.rackFrom);
       if(n.ports&&!n.ports.every(q=>finite(q.x)&&finite(q.y)&&q.id))throw Error('Invalid ports.');
       if(n.kind==='table'&&(!Array.isArray(n.rows)||!Array.isArray(n.cols)))throw Error('Invalid table.');
     }
@@ -117,6 +123,6 @@ const inCidr=(ip,c)=>((ip&c.mask)>>>0)===c.net;
 const ipsIn=s=>(String(s??'').match(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g)||[]).filter(x=>ip2int(x)!=null);
 function fillFields(s,lookup){return String(s??'').replace(/\{\{\s*([\w.]+)\s*\}\}/g,(m,k)=>{const v=lookup(k);return v==null?m:String(v)})}
 
-return{copy,uid,PX,FONT,MONO,PAPERS,KINDS,textWidth,textLines,labelMetrics,setResolver,setSampler,setGlyph,glyphBox,resolve:(o,l)=>resolveText(o,l),corners,bounds,box,inside,overlaps,center,move,scale,rotateVec,portPoint,portDir,localPoint,label,defaultPorts,node,edge,zone,text,page,newDoc,FIELDS,LINK_FIELDS,ZONE_FIELDS,SWITCHES,POE_LOADS,CAMERAS,RECORDERS,duplicate,splitEdge,join,dimensions,pageSize,validate,migrate,ip2int,int2ip,cidr,inCidr,ipsIn,fillFields};
+return{copy,uid,PX,FONT,MONO,PAPERS,KINDS,textWidth,textLines,labelMetrics,setResolver,setSampler,setGlyph,glyphBox,resolve:(o,l)=>resolveText(o,l),corners,bounds,box,inside,overlaps,center,move,scale,rotateVec,portPoint,portDir,localPoint,label,defaultPorts,node,edge,zone,text,page,newDoc,FIELDS,LINK_FIELDS,ZONE_FIELDS,SWITCHES,POE_LOADS,CAMERAS,RECORDERS,duplicate,splitEdge,dimensions,pageSize,IMAGE_RE,validate,migrate,ip2int,int2ip,cidr,inCidr,ipsIn,fillFields};
 })();
 if(typeof module!=='undefined')module.exports=Core;

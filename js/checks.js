@@ -1,5 +1,5 @@
 // Drawing-quality checks behind Analyze ▸ Check and Review mode:
-//  • connection integrity — lines attached to nothing, loose ends (and the device they stop at), self-connections,
+//  • connection integrity — lines attached to nothing, links drawn in pieces, loose ends (and the device they stop at), self-connections,
 //    one port carrying several cables;
 //  • labels & data — free text that sits on a device or link without belonging to it, empty {{field}} labels,
 //    duplicate names and identifiers, labels that say something other than the shape data;
@@ -10,7 +10,7 @@
 const Checks=(()=>{
 const C=Core;
 const CATS=[['connectivity','Connection integrity'],['labels','Labels'],['data','Device data'],['readability','Readability'],['design','Network design']];
-const RULE_CAT={unattached:'connectivity',dangling:'connectivity',selfloop:'connectivity',reuse:'connectivity',broken:'connectivity',isolated:'connectivity',pagelink:'connectivity',
+const RULE_CAT={pieces:'connectivity',unattached:'connectivity',dangling:'connectivity',selfloop:'connectivity',reuse:'connectivity',broken:'connectivity',isolated:'connectivity',pagelink:'connectivity',
   freelabel:'labels',mismatch:'labels',labelonly:'labels',placeholder:'labels',
   dupname:'data',dupid:'data',duphost:'data',dupip:'data',ipfmt:'data',hostfmt:'data',subnet:'data',netaddr:'data',gw:'data',cidr:'data',cidrnet:'data',gwout:'data',vlan:'data',
   labeloverlap:'readability',linkoverlap:'readability',hiddentext:'readability',tinytext:'readability',through:'readability',offpage:'readability',overlap:'readability',
@@ -55,26 +55,31 @@ function run(doc){
   const hidden=new Set((doc.layers||[]).filter(l=>l.visible===false).map(l=>l.id)),vis=n=>!hidden.has(n.layer);
   for(const page of doc.pages){if(page.isBackground)continue;const pi=doc.pages.indexOf(page);
     const add=(severity,ids,message,rule,extra={})=>out.push({severity,page:pi,ids:[].concat(ids).filter(Boolean),message,rule,cat:catOf(rule),...extra});
-    const items=page.items.filter(vis);connectivity(items,add);labelsData(items,add,doc,all);readability(items,add,page)}
+    const items=page.items.filter(vis);pieces(doc,page,add);connectivity(items,add);labelsData(items,add,doc,all);readability(items,add,page)}
   identifiers(doc,out,vis);
   for(const i of out)i.key=key(i);return out}
 
 function connectivity(items,add){
-  const byId=new Map(items.map(n=>[n.id,n])),targets=items.filter(n=>n.kind==='node'&&n.type!=='rack'&&!n.pin&&!MARKUP.has(n.type));
-  const nearest=(p,skip)=>{let best=null,bd=NEAR,ba=Infinity;for(const n of targets){if(skip.has(n.id))continue;const b=C.box(n),d=gapPt(b,p),a=b.w*b.h;if(d<bd||d===bd&&a<ba){bd=d;ba=a;best=n}}return best};
+  const byId=new Map(items.map(n=>[n.id,n]));let targets=null;
+  // what a loose end can attach to: not a background panel (a box that holds other shapes) that lines merely run across
+  const targetList=()=>{if(targets)return targets;const list=items.filter(n=>n.kind==='node'&&n.type!=='rack'&&!n.pin&&!MARKUP.has(n.type)),panels=typeof JoinLines!=='undefined'?JoinLines.panelSet(items):new Set();return targets=list.filter(n=>!panels.has(n))};
+  const nearest=(p,skip)=>{let best=null,bd=NEAR,ba=Infinity;for(const n of targetList()){if(skip.has(n.id))continue;const b=C.box(n),d=gapPt(b,p),a=b.w*b.h;if(d<bd||d===bd&&a<ba){bd=d;ba=a;best=n}}return best};
   const ports=new Map();
   for(const e of items){if(e.kind!=='edge')continue;const P=[e.points[0],e.points.at(-1)],refs=[e.from,e.to];
     if(!e.from&&!e.to){const a=nearest(P[0],new Set()),b=a&&nearest(P[1],new Set([a.id]));
       add('warning',e.id,a&&b?`A line runs from “${nameOf(a)}” to “${nameOf(b)}” without being attached to either.`:'A line is not attached to anything.','unattached',{at:midOf(e.points),fixes:[...(a&&b?[{id:'attach',label:'Attach both ends'}]:[]),{id:'delete',label:'Delete the line'}],fix:{a:a?.id,b:b?.id}})}
     else for(const k of[0,1]){if(refs[k])continue;const o=byId.get(refs[1-k]?.node),dev=nearest(P[k],new Set(o?[o.id]:[])),from=o?`from “${nameOf(o)}” `:'';
       add('warning',e.id,dev?`The connector ${from}stops at “${nameOf(dev)}” but is not attached to it.`:`The connector ${from}has a loose end.`,'dangling',{sub:k?'to':'from',at:P[k],fixes:[...(dev?[{id:'attach',label:`Attach to ${short(nameOf(dev))}`}]:[]),{id:'delete',label:'Delete'}],fix:{end:k?'to':'from',node:dev?.id}})}
-    if(e.from&&e.to&&e.from.node===e.to.node){const n=byId.get(e.from.node);add('warning',e.id,`A connector starts and ends on “${n?nameOf(n):'the same device'}”.`,'selfloop',{fixes:[{id:'delete',label:'Delete the connector'}]})}
+    if(e.from&&e.to&&e.from.node===e.to.node&&e.from.port===e.to.port){const n=byId.get(e.from.node);add('warning',e.id,`A connector starts and ends on “${n?nameOf(n):'the same device'}”.`,'selfloop',{fixes:[{id:'delete',label:'Delete the connector'}]})}
     if(e.linkType==='logical'||e.linkType==='power')continue;
     for(const k of[0,1]){const r=refs[k],n=r&&byId.get(r.node);if(!n)continue;const pt=r.port&&n.ports?.find(q=>q.id===r.port),names=new Map(),norm=s=>String(s).toLowerCase().replace(/\s+/g,'');
       if(pt&&pt.name&&!GENERIC.test(pt.name))names.set(norm(pt.name),pt.name);const ifn=String((k?e.toIf:e.fromIf)||'').trim();if(ifn)names.set(norm(ifn),ifn);
       for(const[nk,label]of names){const id=n.id+'|'+nk;let g=ports.get(id);if(!g)ports.set(id,g={n,label,edges:new Set()});g.edges.add(e.id)}}}
   // a patch panel port takes the patch cord at the front and the permanent link at the back
   for(const g of ports.values()){const max=/patch|odf|fib/i.test(g.n.type)?2:1;if(g.edges.size>max)add('warning',[g.n.id,...g.edges],`Port “${g.label}” on “${nameOf(g.n)}” is used by ${g.edges.size} connectors.`,'reuse',{sub:g.label.toLowerCase().replace(/\s+/g,'')})}}
+
+// A page whose links are drawn as several separate lines end to end.
+function pieces(doc,page,add){if(typeof JoinLines==='undefined')return;const p=JoinLines.pending(doc,page);if(p)add('warning',[],`${p.links} link${p.links===1?' is':'s are'} drawn in several pieces (${p.pieces} separate lines, end to end).`,'pieces',{sub:page.id,at:p.at,fixes:[{id:'join',label:p.links===1?'Join it':'Join them'}]})}
 
 const CIDR_RE=/\b\d{1,3}(?:\.\d{1,3}){3}\/\d{1,2}\b/g,PLACE_RE=/\{\{[^}]*\}\}/g,VLAN_RE=/\bVLAN[\s#:-]*(\d{1,4})\b/gi,SPEED_RE=/\b(\d+(?:\.\d+)?)\s*([KMGT])(?:b(?:ps|\/s|it\/s)?|bE|E)?\b/gi;
 const literal=s=>String(s||'').replace(PLACE_RE,'');
@@ -163,6 +168,7 @@ function apply(doc,issue,fixId,env={}){const page=doc.pages[issue.page];if(!page
   const lbl=(o,id)=>o?.labels?.find(l=>l.id===id)||o?.labels?.[0],drop=n=>{const i=page.items.indexOf(n);if(i>=0)page.items.splice(i,1)};
   const edgesOf=id=>page.items.filter(e=>e.kind==='edge'&&(e.from?.node===id||e.to?.node===id));
   switch(issue.rule+':'+fixId){
+    case'pieces:join':{if(typeof JoinLines==='undefined')return null;const r=JoinLines.applyPage(doc,page);if(!r.merged)return null;env.joined?.();return`${r.pieces} line pieces joined into ${r.merged} link${r.merged===1?'':'s'}.`}
     case'unattached:delete':case'dangling:delete':case'selfloop:delete':if(!first)return null;drop(first);return'Deleted.';
     case'unattached:attach':if(!first||!byId.get(f.a)||!byId.get(f.b))return null;first.from={node:f.a,port:null};first.to={node:f.b,port:null};dirty(first.id);return'Both ends attached.';
     case'dangling:attach':if(!first||!byId.get(f.node))return null;first[f.end]={node:f.node,port:null};dirty(first.id);return`Attached to ${nameOf(byId.get(f.node))}.`;

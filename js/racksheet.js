@@ -46,6 +46,8 @@ function columns(doc){const L=(k,d)=>fieldsOf(doc).find(f=>f.key===k)?.label||d,
 const tabName=name=>{let t=cut(String(name||'').replace(/[\\/?*[\]:]/g,' ').replace(/^'+|'+$/g,'').trim(),31).trim()||'Rack';if(/^(about|lists|history)$/i.test(t))t+=' rack';return t};
 // One rack as a table: {name, sheet, units, columns, rows:[[cell]], ids:[unit id | null], about:[[key, value]], lists, statuses}.
 // Only stored values go out (typical power has its own column), so importing it straight back changes nothing.
+// the art units a drawing uses are offered by name, with the families; the type registry itself outlives a document
+const artNames=doc=>doc?.pages?Racks.artTypes(doc.pages.flatMap(p=>p.items)).map(t=>Shapes.rackItems[t].name):[];
 function exportTable(r,items,env={},name){const doc=env.doc,cols=columns(doc),H=unitsOf(r),nm=namer(env),rows=[],ids=[];
   const cell=(c,n,w)=>{if(!n)return c.key==='u'?w.u??'':c.key==='height'?w.h??'':c.key==='mount'?MOUNTS[w.mount]:'';const dev=devOf(n,env);
     switch(c.key){case'u':return w.mount==='roof'?'':w.u;case'height':return w.mount==='roof'?'':w.h;case'mount':return MOUNTS[w.mount];case'equipment':return equipmentOf(n);case'name':return nm(n);
@@ -61,7 +63,7 @@ function exportTable(r,items,env={},name){const doc=env.doc,cols=columns(doc),H=
   const p=env.page||pageOf(r,env),D=env.date||new Date(),pad=x=>String(x).padStart(2,'0'),rn=name??nm(r),num=v=>numOut(v??'');
   const about=[['Rack',rn],['Rack ID',{v:r.id||'',style:'muted'}],['Height (U)',H],['Width (mm)',num(r.data?.width)],['Depth (mm)',num(r.data?.depth)],['Power budget (W)',num(r.data?.powerBudget)],['Voltage (V)',num(r.data?.voltage)],
     ['Page',typeof p==='string'?p:p?.name||''],['Drawing',doc?.name||''],['Exported',`${D.getFullYear()}-${pad(D.getMonth()+1)}-${pad(D.getDate())} ${pad(D.getHours())}:${pad(D.getMinutes())}`],[],...HOWTO.map(t=>[t])];
-  return{name:rn,sheet:tabName(rn),units:H,columns:cols,rows,ids,about,lists:[...Racks.families(),...[2,4,6].map(k=>`Roof fan tray (${k} fans)`)],statuses:fieldsOf(doc).find(f=>f.key==='status')?.options||[],date:D}}
+  return{name:rn,sheet:tabName(rn),units:H,columns:cols,rows,ids,about,lists:[...new Set([...Racks.families(),...artNames(doc)]),...[2,4,6].map(k=>`Roof fan tray (${k} fans)`)],statuses:fieldsOf(doc).find(f=>f.key==='status')?.options||[],date:D}}
 // An empty rack of a given height to plan in Excel.
 function blankTable(units=42,name='Rack',env={}){const r={id:'',kind:'node',type:'rack',x:0,y:0,w:1,h:1,units:Math.max(1,Math.round(+units)||42),labels:[{text:name}],data:{}};return exportTable(r,[],{...env,page:''},name)}
 function toXlsx(t){const cols=t.columns,ix=f=>cols.flatMap((c,i)=>f(c)?[i]:[]),at=k=>cols.findIndex(c=>c.key===k),last=Math.max(ROWS,t.rows.length+1),rng=i=>`${Xlsx.colName(i)}2:${Xlsx.colName(i)}${last}`,st=cols.findIndex(c=>c.field==='status');
@@ -117,7 +119,7 @@ function parseMount(s){const raw=String(s??'').trim(),t=raw.toLowerCase();if(!t)
   if(/^(front|rear|back|rails?|rack|rack ?u|in rack|u|rack[- ]?mount(ed)?|front ?\/ ?rear)$/.test(t))return{mount:'u'};return{mount:'u',note:`Mount “${raw}” not recognised — treated as Rack U`}}
 // Equipment text → {type (when it names one exactly), fam, fans}; null when it is not a family, catalogue name or type key.
 function parseEquipment(text){const t=String(text??'').trim();if(!t)return null;const fm=/\(\s*(\d+)\s*fans?\s*\)/i.exec(t),fans=fm?Math.max(1,Math.min(6,+fm[1])):null,b=t.replace(/\(\s*\d+\s*fans?\s*\)/i,'').replace(/\(guessed\)/i,'').replace(/\s+/g,' ').trim().toLowerCase();
-  for(const[k,v]of Object.entries(Shapes.rackItems))if(k===b||v.name.toLowerCase()===b)return{type:k,fam:v.fam,fans};const fam=Racks.families().find(f=>f.toLowerCase()===b);return fam?{type:null,fam,fans}:null}
+  const named=art=>{for(const[k,v]of Object.entries(Shapes.rackItems))if((v.face==='art')===art&&(k===b||v.name.toLowerCase()===b))return{type:k,fam:v.fam,fans,...(art?{art:k===b?'type':'name'}:{})}};const fam=Racks.families().find(f=>f.toLowerCase()===b);return named(false)||(fam?{type:null,fam,fans}:null)||named(true)||null}
 function parseRow(cells,cols,line){const get=k=>{const c=cols.find(c=>c.key===k);return c?String(cells[c.i]??''):undefined},nameCell=(get('name')||'').trim(),name=first(nameCell).trim(),eqText=(get('equipment')||'').trim();if(!name&&!eqText)return null;
   const notes=[],problems=[],values={};if(/\n/.test(nameCell))notes.push('Name has more than one line — only the first line is used');for(const c of cols)if(c.key==='field')values[c.field]=String(cells[c.i]??'');else if(c.key==='depth')values.depth=String(cells[c.i]??'');
   const U=parseU(get('u')),Hh=parseH(get('height')),M=parseMount(get('mount')),eq=parseEquipment(eqText),fm=/\(\s*(\d+)\s*fans?\s*\)/i.exec(eqText),guess=eq?null:Racks.guessType(`${eqText} ${name} ${values.model||''}`);
@@ -186,13 +188,16 @@ function plan(r,items,src,opts={},env={}){
       if(raw&&!Number.isFinite(v)){rackProblems.push(`${lb} “${raw}” is not a number — not changed`);continue}if(has(cur)?v!==''&&parseNum(cur)===v:v==='')continue;rack.push({key:k,label:lb,from:has(cur)?cur:'',to:v,text:`${lb} ${has(cur)?cur:'—'} → ${v===''?'—':v} ${u}`})}}
   const base=aboutH||H0;let H=+o.growTo>0?Math.round(+o.growTo):base;
   // 3. what each row asks for: equipment type, mount, U and height
-  for(const x of rows){const p=x.p,i=x.id?info.get(x.id):null,n=i?.n,cur=i?.cur,ov=!n&&Shapes.rackItems[o.types?.[x.line]]?o.types[x.line]:null;let t0;
-    if(ov)t0=ov;else if(p.eq)t0=p.eq.type||Racks.typeFor(p.eq.fam,1);else if(p.eqText){t0=p.guess.type;x.guessed=true}else if(n)t0=n.type;else{t0=isSide(p.mount)?'rk-vpdu':p.mount==='roof'?'rk-rooffan':p.guess.type;x.guessed=true}
+  // Picture names repeat, so a name alone may not say which: the unit a row's Row ID points at, while the row still names it; else the only picture of that name this drawing uses, else the only one known here. Several: the user picks.
+  const artHere=doc?.pages?Racks.artTypes(doc.pages.flatMap(p=>p.items)):[],artNamed=name=>{const is=t=>lc(Shapes.rackItems[t].name)===lc(name),here=artHere.filter(is);return here.length?here:Object.keys(Shapes.rackItems).filter(t=>Shapes.rackItems[t].face==='art'&&is(t))};
+  for(const x of rows){const p=x.p,i=x.id?info.get(x.id):null,n=i?.n,cur=i?.cur,ov=!n&&Shapes.rackItems[o.types?.[x.line]]?o.types[x.line]:null,by=!n&&p.rowId&&p.eq?env.find?.(p.rowId):null;let t0,pic=by&&Racks.isArtUnit(by)&&lc(Racks.family(by.type))===lc(p.eq.fam)?by.type:null;
+    if(!ov&&!pic&&p.eq?.art==='name'&&Racks.family(n?.type)!==p.eq.fam){const c=artNamed(p.eq.fam);if(c.length===1)pic=c[0];else if(n){pic=n.type;x.problems.push(`Several pictures are called “${p.eq.fam}” — equipment not changed`)}else{x.pickArt=true;x.problems.push(`Several pictures are called “${p.eq.fam}” — choose one under Equipment, or this row is skipped`)}}
+    if(ov)t0=ov;else if(pic)t0=pic;else if(p.eq)t0=p.eq.type||Racks.typeFor(p.eq.fam,1);else if(p.eqText){t0=p.guess.type;x.guessed=true}else if(n)t0=n.type;else{t0=isSide(p.mount)?'rk-vpdu':p.mount==='roof'?'rk-rooffan':p.guess.type;x.guessed=true}
     const fam=Racks.family(t0),fm=Racks.mountOf(t0),keep=n&&Racks.family(n.type)===fam;x.fam=fam;
     if(p.uBad&&n)x.problems.push(`U “${p.uBad}” is not a whole number — position kept`);
     if(fm==='u'){if(isSide(p.mount))x.notes.push(`${art(fam)} can't go in a side channel — treated as Rack U`);else if(p.mount==='roof')x.notes.push(`${art(fam)} can't go on the roof — treated as Rack U`);
       const h=p.h==='full'?H:p.h??p.spanH??(cur?.mount==='u'?cur.h:Shapes.rackItems[t0].u||1);
-      x.type=ov||(keep?n.type:p.eq?.type&&Shapes.rackItems[p.eq.type].u===h?p.eq.type:Racks.typeFor(fam,h)||t0);x.want={mount:'u',u:p.u??(cur?.mount==='u'?cur.u:null),h}}
+      x.type=ov||pic||(keep?n.type:p.eq?.type&&Shapes.rackItems[p.eq.type].u===h?p.eq.type:Racks.typeFor(fam,h)||t0);x.want={mount:'u',u:p.u??(cur?.mount==='u'?cur.u:null),h}}
     else if(fm==='side'){const cs=isSide(cur?.mount)?cur.mount:null,side=isSide(p.mount)?p.mount:cs||'left';if(p.mount&&!isSide(p.mount))x.notes.push(`${fam} goes in a side channel — mount set to ${MOUNTS[side]}`);
       // full height follows the rack: "full", a blank length on a new or loose PDU, or a full-height PDU still as long as
       // the rack was when the spreadsheet was made (it may have grown or shrunk since): the unbroken run of rows, or up to
@@ -237,7 +242,7 @@ function plan(r,items,src,opts={},env={}){
     const runs=(m,h)=>{const c=[];if(h>=1)for(let u=1;u+h-1<=H;u++)if(!clash({mount:m,u,h}))c.push(u);return c};
     const near=w=>{if(!mounted(w.mount))return null;for(const m of isSide(w.mount)?[w.mount,w.mount==='left'?'right':'left']:[w.mount]){const c=runs(m,w.h),to=w.u??(m==='u'?H:1);if(c.length)return{mount:m,u:c.sort((a,b)=>Math.abs(a-to)-Math.abs(b-to)||(m==='u'?b-a:a-b))[0],h:w.h}}return null};
     for(const x of rows){x.place=null;x.conflict=null;x.keepType=false}
-    const act=rows.filter(x=>x.on&&!x.fixed),W=new Map(act.map(x=>{const w={...x.want};delete w.bad;delete w.full;if(x.want.full)w.h=H;return[x,w]})),stay=new Set(act.filter(x=>x.kind==='match'&&samePlace(at(info.get(x.id)),W.get(x)))),pend=[];
+    const act=rows.filter(x=>x.on&&!x.fixed&&!x.pickArt),W=new Map(act.map(x=>{const w={...x.want};delete w.bad;delete w.full;if(x.want.full)w.h=H;return[x,w]})),stay=new Set(act.filter(x=>x.kind==='match'&&samePlace(at(info.get(x.id)),W.get(x)))),pend=[];
     for(const x of[...act.filter(x=>stay.has(x)),...act.filter(x=>x.kind==='match'&&!stay.has(x)),...act.filter(x=>x.kind==='new')]){const w=W.get(x);
       if(mounted(w.mount)&&w.u==null&&!x.want.bad){const c=runs(w.mount,w.h);if(c.length)w.u=w.mount==='u'?c.at(-1):c[0]}
       const c=x.want.bad?{bad:x.want.bad}:stay.has(x)?(mounted(w.mount)&&w.u+w.h-1>H?{range:true}:null):clash(w);if(c)pend.push([x,w,c]);else{x.place=w;claim(w,{name:x.name||x.fam,line:x.line})}}

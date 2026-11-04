@@ -1,7 +1,7 @@
 // Drawing-quality checks (connection integrity, labels & data, readability), their fixes, and the review model.
 const test=require('node:test'),assert=require('node:assert'),fs=require('fs'),path=require('path'),vm=require('vm');
 function sandbox(){const ctx={console,Math,JSON,Date,Map,Set,Array,Object,String,Number,RegExp,Error,Infinity,NaN,parseFloat,parseInt,isFinite,Uint8Array,TextEncoder,globalThis:null};ctx.globalThis=ctx;vm.createContext(ctx);
-  for(const f of['core.js','stencils.js','shapes.js','revisions.js','checks.js','review.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8').replace(/^const (\w+)=/m,'var $1=').replace(/\nconst (Shapes)=/,'\nvar $1='),ctx);
+  for(const f of['core.js','stencils.js','shapes.js','revisions.js','joinlines.js','checks.js','review.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../js',f),'utf8').replace(/^const (\w+)=/m,'var $1=').replace(/\nconst (Shapes)=/,'\nvar $1='),ctx);
   vm.runInContext("var S={prefs:{},doc:{display:{fields:[]}}};",ctx);return ctx}
 const X=sandbox(),{Core:C,Shapes,Checks,Review,Revisions}=X;
 function doc(){const d=C.newDoc('t');return{d,p:d.pages[0],items:d.pages[0].items}}
@@ -86,3 +86,26 @@ test('review: finding status, checklist, comparison with the previous review and
 
 test('review comparison falls back to the last issued revision before the first review',()=>{const{d,items}=doc();const a=dev(items,'switch',100,100,'SW-01');assert.equal(Review.changes(d).known,false);
   Revisions.setBaseline(d);C.move(a,5,0);const ch=Review.changes(d);assert.equal(ch.since.kind,'revision');assert.deepEqual(ch.modified,[a.id])});
+
+test('links drawn in pieces: one finding per page, a stable key, and a fix that joins them',()=>{const{d,p,items}=doc();const a=dev(items,'switch',100,100,'SW-01'),b=dev(items,'router',600,100,'R-01');
+  const piece=(pts,o={})=>{const e=C.edge(pts);e.routing='hv';Object.assign(e,o);items.push(e);return e};
+  const p1=piece([[184,122],[300,122]],{from:{node:a.id,port:a.ports[1].id}}),p2=piece([[300,122],[300,200]]),p3=piece([[300,200],[595,200]],{to:{node:b.id,port:b.ports[3].id}});
+  let f=rules(d,'pieces');assert.equal(f.length,1);assert.match(f[0].message,/^1 link is drawn in several pieces/);assert.equal(f[0].cat,'connectivity');assert.deepEqual(f[0].ids,[]);assert.equal(f[0].sub,p.id);assert.deepEqual(f[0].at,[300,122]);assert.deepEqual(f[0].fixes.map(x=>x.id),['join']);
+  const key=f[0].key;const q=piece([[0,500],[50,500]]);piece([[50,500],[50,600]]);f=rules(d,'pieces');assert.equal(f.length,1,'one per page');assert.match(f[0].message,/^2 links are drawn/);assert.equal(f[0].key,key,'the key does not change as pieces come and go');
+  let called=0;const msg=Checks.apply(d,f[0],'join',{joined:()=>called++});assert.match(msg,/5 line pieces joined into 2 links/);assert.equal(called,1);assert.equal(rules(d,'pieces').length,0);assert.equal(p.items.filter(n=>n.kind==='edge').length,2);
+  const e=p.items.find(n=>n.id===p1.id);assert.deepEqual(e.from.node,a.id);assert.deepEqual(e.to.node,b.id);assert.equal(Checks.apply(d,f[0],'join',{}),null,'nothing left to fix');
+  const d2=C.newDoc('x');d2.pages.push(C.page('Page 2'));for(const pg of d2.pages){const x=C.edge([[0,0],[9,0]]),y=C.edge([[9,0],[9,9]]);x.routing=y.routing='hv';pg.items.push(x,y)}assert.equal(rules(d2,'pieces').length,2)});
+test('pieces rule: lines meeting on a device and lines that double back are not one link in pieces',()=>{const{d,items}=doc();const s=dev(items,'switch',300,100,'SW-01'),[x,y]=C.center(s),q=C.portPoint(s,s.ports[1]),piece=pts=>{const e=C.edge(pts);e.routing='hv';items.push(e);return e};
+  const a=piece([[x,0],[x,y]]),b=piece([[x,y],[x+400,y]]);assert.equal(rules(d,'pieces').length,0,'on its centre');items.splice(items.indexOf(a),2);piece([[q[0],0],q]);piece([q,[q[0]+400,q[1]]]);assert.equal(rules(d,'pieces').length,0,'on a named connection point');
+  const{d:d2,items:i2}=doc(),two=()=>{const e=C.edge([[0,500],[300,500]]);e.routing='hv';i2.push(e)};two();two();assert.equal(rules(d2,'pieces').length,0,'a duplicate')});
+test('pieces rule: lines on a hidden or locked layer and locked lines do not count; attached links do not count',()=>{const{d,items}=doc();const a=dev(items,'switch',100,100,'SW-01'),b=dev(items,'router',400,100,'R-01'),g=(n)=>({node:n.id,port:null});
+  const l1=C.edge([[0,0],[9,0]]),l2=C.edge([[9,0],[9,9]]);items.push(l1,l2);assert.equal(rules(d,'pieces').length,1);l1.locked=true;assert.equal(rules(d,'pieces').length,0);l1.locked=false;
+  d.layers.push({id:'off',name:'off',visible:false,print:true});l1.layer=l2.layer='off';assert.equal(rules(d,'pieces').length,0);l1.layer=l2.layer=d.layers[0].id;d.layers[0].locked=true;assert.equal(rules(d,'pieces').length,0);d.layers[0].locked=false;delete l1.layer;delete l2.layer;
+  items.length=2;const x=C.edge([[184,122],[250,122]],g(a),null),y=C.edge([[250,122],[395,122]],g(b),null);x.routing=y.routing='hv';items.push(x,y);assert.equal(rules(d,'pieces').length,0,'an end attached to a shape is a terminal');
+});
+test('self-connection: only when both ends share a point; a stack cable between two points of one shape is real',()=>{const{d,items}=doc();const a=dev(items,'switch',100,100,'SW-01');
+  const u=C.edge([[110,100],[110,80],[150,80],[150,100]],{node:a.id,port:a.ports[0].id},{node:a.id,port:a.ports[1].id});u.routing='hv';items.push(u);assert.equal(rules(d,'selfloop').length,0);
+  u.to.port=a.ports[0].id;assert.equal(rules(d,'selfloop').length,1)});
+test('a loose end is not offered a background panel to attach to, only the shapes on it',()=>{const{d,items}=doc();const P=dev(items,'switch',0,0,'Building');P.w=800;P.h=600;const a=dev(items,'switch',100,100,'SW-01');dev(items,'server',300,100,'SRV-1');
+  link(items,a,null,[[184,140],[500,400]]);let f=rules(d,'dangling');assert.match(f[0].message,/stops at “Building”/,'it holds two shapes: not a panel yet');
+  dev(items,'server',300,300,'SRV-2');f=rules(d,'dangling');assert.match(f[0].message,/loose end/,'now it holds three');assert.deepEqual(f[0].fixes.map(x=>x.id),['delete'])});

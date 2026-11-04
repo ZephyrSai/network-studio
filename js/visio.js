@@ -174,8 +174,8 @@ async function load(blob){const pkg=await readPackage(blob),docRels=pkg.rels(pkg
       masters.set(m.getAttribute('ID'),{id:m.getAttribute('ID'),name:m.getAttribute('NameU')||m.getAttribute('Name')||'Shape',hidden:m.getAttribute('Hidden')==='1',shapes,sheet:cellsOf(kid(m,'PageSheet'))})}}
   const pages=[],pagesPart=Object.values(docRels).find(r=>/\/pages$/.test(r.type))?.target;
   if(pagesPart){const px=pkg.xml(pagesPart),pr=pkg.rels(pagesPart);for(const p of px?.getElementsByTagName('Page')||[]){const rid=kid(p,'Rel')?.getAttribute('r:id'),part=rid&&pr[rid]?.target,content=part&&pkg.xml(part);
-      const sheet=kid(p,'PageSheet'),cells=cellsOf(sheet),get=(n,d)=>{const c=cells[n];return c&&!isNaN(+c.getAttribute('V'))?+c.getAttribute('V'):d};const layers=[];for(const s of kids(sheet,'Section'))if(s.getAttribute('N')==='Layer')for(const row of kids(s,'Row')){const rc=cellsOf(row);layers.push({name:rc.Name?.getAttribute('V')||'Layer '+(layers.length+1),visible:rc.Visible?.getAttribute('V')!=='0',print:rc.Print?.getAttribute('V')!=='0',locked:rc.Lock?.getAttribute('V')==='1'})}
-      pages.push({id:p.getAttribute('ID'),name:p.getAttribute('NameU')||p.getAttribute('Name')||'Page',background:p.getAttribute('Background')==='1',backPage:p.getAttribute('BackPage'),W:get('PageWidth',11),H:get('PageHeight',8.5),layers,content,partRels:part?pkg.rels(part):{}})}}
+      const sheet=kid(p,'PageSheet'),cells=cellsOf(sheet),get=(n,d)=>{const c=cells[n];return c&&!isNaN(+c.getAttribute('V'))?+c.getAttribute('V'):d},ps=get('PageScale',1),ds=get('DrawingScale',1);const layers=[];for(const s of kids(sheet,'Section'))if(s.getAttribute('N')==='Layer')for(const row of kids(s,'Row')){const rc=cellsOf(row);layers.push({name:rc.Name?.getAttribute('V')||'Layer '+(layers.length+1),visible:rc.Visible?.getAttribute('V')!=='0',print:rc.Print?.getAttribute('V')!=='0',locked:rc.Lock?.getAttribute('V')==='1'})}
+      pages.push({id:p.getAttribute('ID'),name:p.getAttribute('NameU')||p.getAttribute('Name')||'Page',background:p.getAttribute('Background')==='1',backPage:p.getAttribute('BackPage'),W:get('PageWidth',11),H:get('PageHeight',8.5),scale:ps>0&&ds>0?ds/ps:1,layers,content,partRels:part?pkg.rels(part):{}})}}
   return{pkg,styles,masters,pages}}
 const instance=(el,v,partRels)=>{const mid=el.getAttribute('Master'),m=mid!=null?v.masters.get(mid):null,ms=el.getAttribute('MasterShape');let base=null;
   if(m)base=(ms!=null&&m.shapes.find(s=>s.el.getAttribute('ID')===ms))||m.shapes[0]||null;
@@ -241,14 +241,17 @@ async function drawingToDoc(file,opt={}){const v=await load(file),k=25.4*C.PX,st
       idMap.set(el.getAttribute('ID'),n);page.items.push(n)}
     // glue connectors to what they connect (Connects: FromSheet = connector, ToSheet = shape)
     for(const c of pv.content.getElementsByTagName('Connect')){const e=idMap.get(c.getAttribute('FromSheet')),t=idMap.get(c.getAttribute('ToSheet'));if(!e||e.kind!=='edge'||!t||t.kind==='edge')continue;const cell=c.getAttribute('FromCell')||'',end=/^Begin/.test(cell)?0:/^End/.test(cell)?1:-1;if(end<0)continue;const ix=e._ports?.[end],port=ix!=null&&t.ports?.[ix]?.id||null;e[end?'to':'from']={node:t.id,port}}
-    for(const e of edges)delete e._ports;
+    // One cable is often drawn as several lines end to end (Visio left them unglued too). The chains are worked out first: only a
+    // chain's far ends may glue, so a joint lying on a shape does not tie the line to it. With join on, each chain becomes one link.
+    const s=pv.scale||1;if(s!==1)page.joinTol=JoinLines.TOL*s;const chains=JoinLines.plan(edges,{mode:'page',tol:JoinLines.tolOf(page),items:page.items}),inner=new Set(),joined=new Set();
+    if(opt.join!==false){const r=JoinLines.applyPage(doc,page,{chains});stats.pieces=(stats.pieces||0)+r.pieces;stats.joined=(stats.joined||0)+r.merged;stats.links-=r.pieces-r.merged;r.survivors.forEach(id=>joined.add(id))}
+    else for(const ch of chains)ch.forEach((c,i)=>{if(i)inner.add(c.e.id+(c.rev?'|to':'|from'));if(i<ch.length-1)inner.add(c.e.id+(c.rev?'|from':'|to'))});
+    const links=page.items.filter(n=>n.kind==='edge');for(const e of links)delete e._ports;
     // Visio files often leave connectors unglued, ending exactly on a device: glue such an end to the smallest shape under
-    // it, at a connection point where the line ends — nothing moves, and moving the device now drags the link along
-    const targets=page.items.filter(n=>n.kind==='node'&&!n.rotation&&n.w>2&&n.h>2);
-    for(const e of edges)for(const end of[0,1]){const key=end?'to':'from';if(e[key])continue;const q=end?e.points.at(-1):e.points[0];
-      const t=targets.filter(n=>q[0]>=n.x-1.5&&q[0]<=n.x+n.w+1.5&&q[1]>=n.y-1.5&&q[1]<=n.y+n.h+1.5).sort((a,b)=>a.w*a.h-b.w*b.h)[0];if(!t)continue;
-      let rx=Math.max(0,Math.min(1,(q[0]-t.x)/t.w)),ry=Math.max(0,Math.min(1,(q[1]-t.y)/t.h));if(t.flipX)rx=1-rx;if(t.flipY)ry=1-ry;
-      let port=(t.ports||[]).find(o=>Math.abs(o.x-rx)*t.w<1&&Math.abs(o.y-ry)*t.h<1);if(!port){port={id:C.uid(),x:+rx.toFixed(4),y:+ry.toFixed(4),name:''};(t.ports??=[]).push(port)}e[key]={node:t.id,port:port.id};stats.glued=(stats.glued||0)+1}
+    // it (not a background panel), at a connection point where the line ends — nothing moves, and moving the device now drags the link along
+    const nodes=page.items.filter(n=>n.kind==='node'),panels=JoinLines.panelSet(nodes);
+    for(const e of links)for(const end of[0,1]){const key=end?'to':'from';if(e[key]||inner.has(e.id+'|'+key))continue;const t=JoinLines.pickTarget(end?e.points.at(-1):e.points[0],nodes,{s,panels});if(!t)continue;JoinLines.glueEnd(e,end,t);stats.glued=(stats.glued||0)+1}
+    if(opt.reroute)for(const e of links)if(joined.has(e.id))e.routing='auto';
     // the drawing keeps Visio's stacking order (links over panels, devices over links where Visio has them)
     page.stack='doc'}
   for(const pv of v.pages){const page=pageMap.get(pv.id);if(pv.backPage&&pageMap.get(pv.backPage))page.background=pageMap.get(pv.backPage).id}
@@ -263,16 +266,17 @@ async function openDrawing(file){notify('Reading '+file.name+'…',2000);let pee
   const d=openDialog('Visio drawing',`<p><b>${html(file.name)}</b> — ${fg.length} page${fg.length===1?'':'s'}${peek.pages.length>fg.length?` + ${peek.pages.length-fg.length} background`:''} · ${count('Shape')} shapes · ${glued} glued connector${glued===1?'':'s'} · ${peek.masters.size} masters</p>
     <p class="muted">Shapes keep their Visio look, connectors stay glued to their shapes, containers become zones, shape data becomes fields, and layers and background pages carry over. Everything is editable.</p>
     <label class="check"><input type="checkbox" id="vsDev" ${S.prefs.visioDevices?'checked':''}>Use Port's device icons for recognised network shapes (router, switch, firewall, server…) — they then get ports, design checks and the legend</label>
+    <label class="check"><input type="checkbox" id="vsJoin" ${S.prefs.visioJoin!==false?'checked':''}>Join lines drawn in pieces into single connectors — the look stays the same</label>
     <label class="check"><input type="checkbox" id="vsRoute">Re-route connectors around shapes (otherwise Visio's routes are kept)</label>
     <footer><button data-close>Cancel</button><span class="spacer"></span><button data-vs="add" ${items().length?'':'disabled'}>Add its pages to this drawing</button><button class="primary" data-vs="open">Open as a new drawing</button></footer>`);
-  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const b=e.target.closest('[data-vs]');if(!b)return;const opt={devices:$('vsDev').checked,reroute:$('vsRoute').checked};S.prefs.visioDevices=opt.devices;savePrefs();closeDialog();
+  d.onclick=async e=>{if(e.target.closest('[data-close]'))return closeDialog();const b=e.target.closest('[data-vs]');if(!b)return;const opt={devices:$('vsDev').checked,reroute:$('vsRoute').checked,join:$('vsJoin').checked};S.prefs.visioDevices=opt.devices;S.prefs.visioJoin=opt.join;savePrefs();closeDialog();
     let res;try{res=await drawingToDoc(file,opt)}catch(err){console.error(err);return notify('Could not import: '+err.message,6000)}const{doc,stats}=res;
     if(b.dataset.vs==='open'){if(S.dirty&&!confirm('Open “'+file.name+'”? Unsaved changes stay recoverable with Undo.'))return;loadDocument(doc,{name:file.name})}
     else{Packs.installDoc(doc);const r=mutate(()=>Merge.insertPages(S.doc,doc,{after:S.pageIndex,avoidClash:false}));if(r)gotoPage(S.doc.pages.indexOf(r.pages[0]))}
-    const bits=[`${stats.shapes+stats.devices+stats.restored} shapes`,`${stats.links} connectors`];if(stats.zones)bits.push(`${stats.zones} containers → zones`);if(stats.images)bits.push(`${stats.images} pictures`);if(stats.text)bits.push(`${stats.text} text blocks`);if(stats.devices)bits.push(`${stats.devices} as Port devices`);if(stats.restored)bits.push(`${stats.restored} restored as Port items`);
+    const bits=[`${stats.shapes+stats.devices+stats.restored} shapes`,`${stats.links} connectors`];if(stats.joined)bits.push(`${stats.pieces} line pieces joined into ${stats.joined} links`);if(stats.zones)bits.push(`${stats.zones} containers → zones`);if(stats.images)bits.push(`${stats.images} pictures`);if(stats.text)bits.push(`${stats.text} text blocks`);if(stats.devices)bits.push(`${stats.devices} as Port devices`);if(stats.restored)bits.push(`${stats.restored} restored as Port items`);
     notify(`Imported ${file.name}: ${bits.join(' · ')}.${stats.emf?` ${stats.emf} picture${stats.emf>1?'s':''} could not be drawn and appear${stats.emf>1?'':'s'} as dashed boxes.`:''}`,8000)}}
 // .vss / .vsd / .vst are read by js/vsdbin.js; isLegacy is true only when that reader is missing.
 const legacyOk=()=>typeof VsdBin!=='undefined',isStencil=name=>/\.(vssx|vssm)$/i.test(name)||legacyOk()&&/\.vss$/i.test(name),isDrawing=name=>/\.(vsdx|vsdm|vstx|vstm)$/i.test(name)||legacyOk()&&/\.(vsd|vst)$/i.test(name),isLegacy=name=>!legacyOk()&&/\.(vsd|vss|vst)$/i.test(name);
-return{load,stencilToPack,drawingToDoc,openDrawing,isStencil,isDrawing,isLegacy,deviceType,_:{geomPath,evalF,color,ellArc}};
+return{load,stencilToPack,drawingToDoc,openDrawing,isStencil,isDrawing,isLegacy,deviceType,repad,_:{geomPath,evalF,color,ellArc}};
 })();
 if(typeof module!=='undefined')module.exports=Visio;

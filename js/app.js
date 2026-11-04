@@ -20,7 +20,7 @@ let checkTimer=null;
 // Findings accepted as intentional or marked resolved do not count.
 function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;if(!S.side)return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),open=issues.filter(i=>i.status==='open'),e=open.filter(i=>i.severity==='error').length,w=open.filter(i=>i.severity==='warning').length,b=$('issueCount');ReviewUI.update(issues);if(!b||!S.prefs.liveCheck)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
 function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear();S.findMark=null}
-function restore(s){const r=JSON.parse(s);S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;changed();render()}
+function restore(s){const r=JSON.parse(s);S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;Conn.reset();changed();render()}
 // in review mode only what was done during the review can be undone
 function undo(){if(!S.history.length||S.reviewMode&&S.history.length<=S.reviewFloor)return notify(S.reviewMode?'Nothing to undo in this review.':'Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
 function redo(){if(!S.future.length||S.reviewMode&&S.future.length<=S.reviewFutureFloor)return;S.history.push(snapshot());restore(S.future.pop())}
@@ -63,9 +63,9 @@ function ensureEditable(){if(!S.selected.size){notify('Select an element first.'
 function moveSet(ids){
   const all=items(),set=new Set(ids);let grew=true;
   while(grew){grew=false;for(const z of all.filter(n=>set.has(n.id)&&(n.kind==='zone'&&n.contain!==false||n.type==='rack'))){const zb=C.box(z);for(const n of all)if(!set.has(n.id)&&!isLocked(n)&&n.kind!=='edge'&&C.inside(C.box(n),zb,1)&&!(n.kind==='zone'&&n.w*n.h>=z.w*z.h)){set.add(n.id);grew=true}}}
+  for(const n of all)if(set.has(n.id)&&Racks.isItem(n)){const r=Racks.rackOf(n,all);if(r&&(isLocked(r)||Racks.isLocked(n,r)&&!set.has(r.id)))set.delete(n.id)}
   const nodes=new Set(all.filter(n=>set.has(n.id)&&n.kind!=='edge').map(n=>n.id)),zones=all.filter(n=>set.has(n.id)&&(n.kind==='zone'||n.type==='rack')).map(C.box);
   for(const e of all.filter(n=>n.kind==='edge')){const endOk=k=>e[k]?nodes.has(e[k].node):zones.some(b=>C.inside({x:(k==='from'?e.points[0]:e.points.at(-1))[0],y:(k==='from'?e.points[0]:e.points.at(-1))[1],w:0,h:0},b));const inner=endOk('from')&&endOk('to');if(set.has(e.id)&&!inner&&(e.from&&!nodes.has(e.from.node)||e.to&&!nodes.has(e.to.node)))set.delete(e.id);else if(!set.has(e.id)&&inner&&(e.from||e.to||zones.length))set.add(e.id)}
-  for(const n of all)if(set.has(n.id)&&Racks.isItem(n)){const r=Racks.rackOf(n,all);if(r&&Racks.isLocked(n,r)&&!set.has(r.id))set.delete(n.id)}
   return all.filter(n=>set.has(n.id)&&!isLocked(n))}
 
 // ---------- pointer ----------
@@ -74,7 +74,7 @@ function beginPointer(e){
   if(e.button===2||IS_MAC&&e.ctrlKey&&!e.metaKey)return;if(!$('inlineText').hidden){$('inlineText').blur();return}
   // middle button: drag pans; a double-click zooms to the whole drawing (AutoCAD's zoom extents)
   if(e.button===1){e.preventDefault();const t0=performance.now();if(t0-(S.midClick||0)<400){S.midClick=0;fit();return}S.midClick=t0}
-  hideMenus();const p=point(e),t=e.target.closest('[data-role]'),role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id),now=Date.now(),key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
+  hideMenus();const p=point(e),t=e.target.closest('[data-role]'),now=Date.now();let role=t?.dataset.role,id=t?.dataset.id,n=id&&find(id);const key=role+':'+id+':'+(t?.dataset.label||t?.dataset.index||'');
   if(S.lastClick&&now-S.lastClick.time<380&&S.lastClick.key===key&&Math.hypot(e.clientX-S.lastClick.x,e.clientY-S.lastClick.y)<6&&S.mode==='select'){S.lastClick=null;onDoubleClick(e,p,t,n);return}
   S.lastClick={time:now,key,x:e.clientX,y:e.clientY};
   if(S.pickHandler){const h=S.pickHandler;S.pickHandler=null;const msg=S.pickCancel||'Path trace cancelled.';S.pickCancel=null;if(n?.kind==='node'){h(n.id);return}notify(msg,1500)}
@@ -89,7 +89,7 @@ function beginPointer(e){
   if(S.painter){if(n){applyPainter(n);if(!S.painterSticky){S.painter=false;$('canvas').style.cursor='default'}}else{S.painter=false;$('canvas').style.cursor='default'}render();return}
   if(role==='autoconnect'){S.drag={kind:'autoconn',id,dir:t.dataset.dir,start:p,startClient:[e.clientX,e.clientY]};capture();return}
   if(role==='rotate'&&editable().length===1){remember();const m=picked()[0];S.drag={kind:'rotate',id:m.id,center:C.center(m),original:C.copy(m)};capture();return}
-  if(role==='port'&&(S.mode==='select'||S.mode==='connect')&&n&&!isLocked(n)){const port=n.ports.find(q=>q.id===t.dataset.port);startConnect({p:C.portPoint(n,port),ref:{node:n.id,port:port.id}},p,e);capture();return}
+  if(role==='port'&&(S.mode==='select'||S.mode==='connect')&&n&&!isLocked(n)&&!(S.mode==='select'&&Racks.innerPort(n,n.ports.find(q=>q.id===t.dataset.port)))){const port=n.ports.find(q=>q.id===t.dataset.port);startConnect({p:C.portPoint(n,port),ref:{node:n.id,port:port.id}},p,e);capture();return}
   if(S.mode==='connect'){
     if(S.trace){let c=snapTarget(p,e);if(c.candidate){remember();c=commitPort(c);changed()}if(c.glue)c={p:c.p,ref:c.ref};S.trace.steps.push(S.trace.points.length);S.trace.points.push(...routeTo(S.trace.points.at(-1),c.p));S.trace.to=c.ref;if(c.ref){finishTrace();return}S.hover=null;render('overlay');return}
     const c=snapTarget(p,e);startConnect(c,p,e);capture();return}
@@ -97,7 +97,9 @@ function beginPointer(e){
   if(S.mode==='zone'){S.drag={kind:'zone',start:[grid(p[0]),grid(p[1])]};S.drag.current=S.drag.start;capture();return}
   if(S.mode==='text'){S.drag={kind:'textbox',start:p,current:p};capture();return}
   if(S.mode==='port'&&n?.kind==='node'&&!isLocked(n)){if(role==='port'){remember();S.drag={kind:'port',id:n.id,port:t.dataset.port};capture()}else{const c=edgeCandidate(n,p);mutate(()=>n.ports.push({id:C.uid(),name:'Port '+(n.ports.length+1),x:c.candidate.x,y:c.candidate.y}))}return}
+  if(role==='resize'&&t.dataset.edge){const m=picked()[0],r=m&&Racks.isU(m)?Racks.rackOf(m,items()):null;if(!r||picked().length!==1||isLocked(m)||isLocked(r)||Racks.isLocked(m,r))return;remember();S.drag={kind:'uresize',id:m.id,rackId:r.id,edge:t.dataset.edge,u0:Racks.uOf(r,m),h0:Racks.heightU(m)};capture();render('overlay');return}
   if(role==='resize'){if(!editable().length||picked().some(x=>x.type==='rack'||Shapes.rackItems[x.type]))return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
+  const face=role==='edge'&&faceUnder(n,p);if(face){n=face;id=n.id;role='object'}
   if(n){
     if(n.kind==='node'&&n.url&&(e.ctrlKey||e.metaKey)){followLink(n.url);return}
     const mod=e.ctrlKey||e.metaKey;
@@ -113,7 +115,7 @@ function beginPointer(e){
     S.activeLabel=kind==='label'?{owner:id,id:t.dataset.label}:null;S.segment=kind==='segment'?{id,index:+t.dataset.index}:null;S.bend=kind==='bend'?{id,index:+t.dataset.index}:null;
     remember();
     const set=kind==='move'?moveSet([...S.selected].filter(i=>!isLocked(find(i)))):editable();
-    if(kind==='move'&&Racks.isItem(n)&&!set.some(x=>x.id===n.id)){const r=Racks.rackOf(n,items());notify(Racks.isZeroU(n)?`${Analysis.nameOf(n)||Shapes.nameOf(n.type)} is locked in place (${Racks.position(r,n)}) — right-click ▸ Unlock to move it.`:`${Analysis.nameOf(n)} is locked at U${Racks.uOf(r,n)} — right-click ▸ Unlock U position to move it.`,2600)}
+    if(kind==='move'&&Racks.isItem(n)&&!set.some(x=>x.id===n.id)){const r=Racks.rackOf(n,items());notify(isLocked(r)?`${Analysis.nameOf(r)||'This rack'} is locked — unlock it to move its equipment.`:Racks.isZeroU(n)?`${Analysis.nameOf(n)||Shapes.nameOf(n.type)} is locked in place (${Racks.position(r,n)}) — right-click ▸ Unlock to move it.`:`${Analysis.nameOf(n)} is locked at U${Racks.uOf(r,n)} — right-click ▸ Unlock U position to move it.`,2600)}
     // Ctrl- or Alt-drag duplicates (once the pointer really moves); Alt-click reaches what is underneath; clicking a
     // member of an already selected group picks just that member
     S.drag={kind,start:p,startClient:[e.clientX,e.clientY],id,label:t.dataset.label,index:+t.dataset.index,original:C.copy(set),box:C.bounds(set.filter(x=>x.kind!=='edge').length?set.filter(x=>x.kind!=='edge'):set),
@@ -121,6 +123,8 @@ function beginPointer(e){
   }else{const add=e.shiftKey||e.ctrlKey||e.metaKey;if(!add)S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.drag={kind:'box',start:p,current:p,add,touch:e.altKey,startClient:[e.clientX,e.clientY]}}
   capture();render('overlay');render('panel')}
 
+// The stretch of a link lying over the faceplate whose jack it lands on counts as the faceplate: with a link on every jack, there would be nothing left to grab. A selected link keeps its handles.
+function faceUnder(l,p){if(l?.kind!=='edge'||S.mode!=='select'||S.reviewMode||S.selected.has(l.id))return null;for(const k of['from','to']){const m=l[k]?.node&&find(l[k].node);if(m&&!isLocked(m)&&itemVisible(m,{doc:S.doc})&&Racks.innerPort(m,m.ports?.find(q=>q.id===l[k].port))&&C.inside({x:p[0],y:p[1],w:0,h:0},C.box(m)))return m}return null}
 function startConnect(c,p,e){
   if(c.candidate){remember();c=commitPort(c);changed()}else remember();
   const lt=Shapes.linkTypes[S.linkType]||{};
@@ -132,7 +136,7 @@ function pointerMove(e,fromPan=false){
   if(!fromPan)autoPan(e);const p=point(e);S.cursor=p;updateCursorReadout(p);const d=S.drag;
   if(!d){
     if(S.mode==='connect'){if(S.trace){const t=snapTarget(p,e);S.hover=t.p}else snapTarget(p,e);S.hoverId=nodesAt(p)[0]?.id||null;render('overlay')}
-    else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id,n=id&&find(id);const hv=n&&Select.selectable(n)&&!n.pin?n.id:null;if(hv!==S.hoverItem){S.hoverItem=hv;render('overlay')}let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
+    else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id;let n=id&&find(id);if(tgt?.dataset.role==='edge')n=faceUnder(n,p)||n;const hv=n&&Select.selectable(n)&&!n.pin?n.id:null;if(hv!==S.hoverItem){S.hoverItem=hv;render('overlay')}let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
     else render('overlay');
     if(S.prefs.rulers)renderRulers();return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
@@ -142,9 +146,12 @@ function pointerMove(e,fromPan=false){
   if(d.kind==='lasso'){const l=d.pts.at(-1);if(Math.hypot(p[0]-l[0],p[1]-l[1])*S.view.zoom>3)d.pts.push(p);d.touch=e.altKey;render('overlay');return}
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
   if(d.kind==='connect'){const t=snapTarget(p,e,{exclude:d.from?.node});d.target=t;d.moved=d.moved||Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>4;d.preview=previewRoute(d,t);render('overlay');return}
+  // a unit's top or bottom edge: the other edge stays, the slot shows the new height, the unit changes on release
+  if(d.kind==='uresize'){const n=find(d.id),r=find(d.rackId);if(!n||!r)return;const i=Shapes.rackInner(r),RU=Shapes.RU,units=r.units||42,top=d.u0+d.h0-1,line=Math.round((i.y+i.h-p[1])/RU);let u=d.u0,h=d.h0;if(d.edge==='top')h=Math.max(1,Math.min(units-d.u0+1,line-d.u0+1));else{u=Math.max(1,Math.min(top,line+1));h=top-u+1}
+    const full=!Racks.fits(r,items(),u,h,new Set([n.id]));d.rackSlot={x:i.x,y:i.y+i.h-(u-1+h)*RU,w:i.w,h:h*RU,mount:'u',u,hU:h,full,text:Racks.span(u,h)+(full?' is taken':''),why:`${Racks.span(u,h)} is taken — ${Analysis.nameOf(n)||Shapes.nameOf(n.type)} stays as it was.`};d.moved=true;render('overlay');return}
   // a press that moves less than 4 px is a click, not a drag (no accidental nudges)
   if(d.startClient&&!d.moved&&['move','label','segment','bend'].includes(d.kind)&&Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])<4)return;
-  if(d.kind==='move'&&d.dupPending){const live=d.original.map(o=>find(o.id)).filter(Boolean),dup=C.duplicate(live,0,0);items().push(...dup);d.original=C.copy(dup);d.id=(dup.find(x=>x.kind!=='edge')||dup[0]).id;S.selected=new Set(dup.map(x=>x.id));S.duplicated=true;d.dupPending=false}
+  if(d.kind==='move'&&d.dupPending&&d.original.length){const live=d.original.map(o=>find(o.id)).filter(Boolean),dup=C.duplicate(live,0,0);items().push(...dup);d.original=C.copy(dup);d.id=(dup.find(x=>x.kind!=='edge')||dup[0]).id;S.selected=new Set(dup.map(x=>x.id));S.duplicated=true;d.dupPending=false}
   if(d.kind==='move'){d.altClick=false;d.ctrlClick=null;d.subselect=null}
   let dx=p[0]-d.start[0],dy=p[1]-d.start[1];const n=find(d.id),o=d.original?.find?.(x=>x.id===d.id);
   if(d.kind==='port'){const port=n.ports.find(q=>q.id===d.port),[u,v]=C.localPoint(n,p);port.x=Math.max(0,Math.min(1,Math.round(u*40)/40));port.y=Math.max(0,Math.min(1,Math.round(v*40)/40))}
@@ -163,17 +170,23 @@ function previewRoute(d,t){const a=d.fromP,b=t.p;if(S.routeStyle==='straight'||S
   try{const byId=new Map(items().map(n=>[n.id,n])),fake={from:d.from,to:t.ref,points:[a,b],routing:'auto'},A=d.from?Conn.resolveEnd(fake,'from',byId):null,B=t.ref?Conn.resolveEnd(fake,'to',byId):null;return Router.route({x:(A?.p||a)[0],y:(A?.p||a)[1],dir:A?.dir||null},{x:(B?.p||b)[0],y:(B?.p||b)[1],dir:B?.dir||null},Conn.obstacleList(items()),{margin:14,stub:18,sourceId:A?.node.id,targetId:B?.node.id})}catch{return[a,b]}}
 
 function snapMove(d,dx,dy,e){
-  S.guideLines=[];S.spacing=null;d.rackSlot=null;const b=d.box,z=S.view.zoom,free=e.ctrlKey||e.metaKey;
+  S.guideLines=[];S.spacing=null;d.rackSlot=null;const b=d.box,z=S.view.zoom,free=e.ctrlKey||e.metaKey,px=d.start[0]+dx,py=d.start[1]+dy;
   if(!free&&S.prefs.snap){dx=grid(b.x+dx)-b.x;dy=grid(b.y+dy)-b.y}
   // rack equipment snaps into U slots, a vertical 0U PDU into a side channel, a roof fan tray onto the roof
   const movers=d.original.filter(x=>x.kind==='node'),mounts=new Set(movers.map(Racks.mountOf));
+  // one shape that can become rack equipment shows the slot it would lock into, and sits centred on it. It changes only on release: this restores from d.original on every move.
+  if(!free&&movers.length===1&&d.original.filter(x=>x.kind!=='edge').length===1&&!Shapes.rackItems[movers[0].type]){const m=find(movers[0].id);if(d.mountU===undefined)d.mountU=m&&Racks.canMount(m)?RackUI.mountPlan(m)?.u||0:0;
+    if(d.mountU){const sl=mountSlot(d.mountU,px,py,b.x+b.w/2+dx,b.y+b.h/2+dy,{id:m.id,box:b});if(sl){d.rackSlot=sl;return sl.full?[dx,dy]:[sl.x+sl.w/2-b.x-b.w/2,sl.y+sl.h/2-b.y-b.h/2]}}}
   if(movers.length&&movers.every(m=>Shapes.rackItems[m.type])&&!free&&mounts.size===1){const cx=b.x+b.w/2+dx,cy=b.y+b.h/2+dy;
     // a long PDU is judged by where the pointer is, not by its centre
     if(!mounts.has('u')){if(d.original.filter(x=>x.kind!=='edge').length>1)return[dx,dy];const slot=zeroUSlot(movers[0],d.start[0]+dx,d.start[1]+dy,b,dy,d)||zeroUSlot(movers[0],cx,cy,b,dy,d);d.rackSlot=slot;return slot&&!slot.full?[slot.x-b.x,slot.y-b.y]:[dx,dy]}
-    const rack=items().find(r=>r.type==='rack'&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack),hU=Math.max(1,Math.round(b.h/Shapes.RU));let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));
+    const rack=items().find(r=>r.type==='rack'&&itemVisible(r,{doc:S.doc})&&!d.original.some(o=>o.id===r.id)&&C.inside({x:cx,y:cy,w:0,h:0},Shapes.rackInner(r)));if(rack){const i=Shapes.rackInner(rack),hU=Math.max(1,Math.round(b.h/Shapes.RU));let ny=i.y+Math.round((b.y+dy-i.y)/Shapes.RU)*Shapes.RU;ny=Math.max(i.y,Math.min(i.y+i.h-b.h,ny));const red=(text,why,stay)=>{d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h,full:true,text,why,stay};return stay?[0,0]:[dx,dy]};
+    if(isLocked(rack)||rack.lockItems)return red('Locked',`${Analysis.nameOf(rack)} is locked — unlock it to mount equipment.`);
     // a single unit takes the nearest free U run instead of overlapping another one
-    if(movers.length===1){const want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return[dx,dy];ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
-    const u=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1;dx=i.x-b.x;dy=ny-b.y;d.rackSlot={x:i.x,y:ny,w:i.w,h:b.h,mount:'u',text:movers.length===1?`U${u}${hU>1?'–'+(u+hU-1):''}`:''};return[dx,dy]}}
+    if(movers.length===1){const want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return red(`No ${hU}U run free`,`No ${hU}U run is free in ${Analysis.nameOf(rack)}.`);ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
+    // several keep their spacing: all of them fit there, or none moves (copies being dragged stay on the pointer)
+    if(movers.length>1){const ex=new Set(movers.map(m=>m.id)),hit=movers.map(m=>[Math.round((i.y+i.h-(m.y+ny-b.y+m.h))/Shapes.RU)+1,Racks.heightU(m)]).find(([u,h])=>!Racks.fits(rack,items(),u,h,ex));if(hit)return red(`${Racks.span(...hit)} is taken`,`${Racks.span(...hit)} of ${Analysis.nameOf(rack)} is taken — the units stay where they were.`,!S.duplicated)}
+    const u=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1;dx=i.x-b.x;dy=ny-b.y;d.rackSlot={rackId:rack.id,x:i.x,y:ny,w:i.w,h:b.h,mount:'u',text:movers.length===1?`U${u}${hU>1?'–'+(u+hU-1):''}`:''};return[dx,dy]}}
   if(S.prefs.guides&&!free){const th=6/z,others=items().filter(t=>!d.original.some(o=>o.id===t.id)&&t.kind!=='edge'&&itemVisible(t,{doc:S.doc})),ps=C.pageSize(pg());const xs=[],ys=[];
     for(const t of others){if(t.kind==='zone')continue;const tb=C.box(t);xs.push(tb.x,tb.x+tb.w/2,tb.x+tb.w);ys.push(tb.y,tb.y+tb.h/2,tb.y+tb.h)}xs.push(ps.w/2);ys.push(ps.h/2);for(const g of pg().guideLines||[])(g.axis==='x'?xs:ys).push(g.pos);
     let bx=null,by=null;for(const v of[b.x,b.x+b.w/2,b.x+b.w])for(const x of xs){const off=x-v-dx;if(Math.abs(off)<th&&(bx===null||Math.abs(off)<Math.abs(bx.off)))bx={off,x}}
@@ -206,9 +219,14 @@ function pointerUp(e){
   else if(d.kind==='textbox'){const q=d.current,w=Math.abs(q[0]-d.start[0]);const x=w>30?Math.min(q[0],d.start[0]):d.start[0],y=w>30?Math.min(q[1],d.start[1]):d.start[1];const n=mutate(()=>{const t=C.text('Text',x,y,w>30?w:240,60,14);if(w>30)t.labels[0].wrapWidth=w-20;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});setMode('select');editLabel(n.id,n.labels[0].id,true)}
   else if(d.kind==='autoconn'){autoConnect(d.id,d.dir)}
   else if(d.kind==='connect'){finishConnect(d,e,p)}
+  else if(d.kind==='uresize'){const n=find(d.id),r=find(d.rackId),sl=d.rackSlot;if(n&&r&&sl&&!sl.full&&(sl.u!==d.u0||sl.hU!==d.h0)){n.h=sl.hU*Shapes.RU;Racks.placeAt(r,n,sl.u);changed();notify(`${Analysis.nameOf(n)||Shapes.nameOf(n.type)} is now ${sl.hU}U at ${Racks.span(sl.u,sl.hU)}.`,2200)}else{S.history.pop();if(sl?.full)notify(sl.why,3200)}}
+  // nothing could move, or it went back: no undo step. What followed the units on the way is put back too.
+  else if(d.kind==='move'&&d.moved&&!d.original.length)S.history.pop();
+  else if(d.kind==='move'&&d.moved&&d.rackSlot?.stay){const was=S.history.pop(),why=d.rackSlot.why;if(snapshot()!==was)restore(was);notify(why,3600)}
   else if(d.moved){if(['bend','segment'].includes(d.kind)){const edge=find(d.id);if(edge?.kind==='edge'){if(d.pending?.candidate){const t=commitPort(d.pending);edge.points[d.index]=t.p;if(d.index===0)edge.from=t.ref;else edge.to=t.ref}if(d.index===0||d.index===edge.points.length-1){const k=d.index===0?'from':'to',f=k==='from'?'fromIf':'toIf',o=d.original?.find(x=>x.id===edge.id),r=edge[k],n=r&&find(r.node),port=r?.port&&n?.ports.find(q=>q.id===r.port);if(o&&(o[k]?.node!==r?.node||o[k]?.port!==r?.port))edge[f]=port&&!genericPort(port.name)?port.name:''}
       if(d.pending?.glue||edge.routing==='auto'||edge.routing==='straight')Conn.markDirty(edge.id);Conn.orthogonalize(edge);edge.points=Conn.simplify(edge.points)}}
-    if(d.kind==='move'&&d.rackSlot&&!d.rackSlot.full){const sl=d.rackSlot;if(sl.mount==='u'){if(sl.text)notify('Placed at '+sl.text+'.',1800)}else{const r=find(sl.rackId),m=find(sl.id);if(r&&m)RackUI.mountDropped(r,m,sl)}}
+    if(d.kind==='move'&&d.rackSlot){const sl=d.rackSlot;if(sl.full){if(sl.why)notify(sl.why,3600)}else if(sl.mount==='convert'){const r=find(sl.rackId),m=find(sl.id);if(r&&m&&!(e.ctrlKey||e.metaKey))RackUI.mountInto(r,m,sl.u,sl.hU)}else if(sl.mount==='u'){const r=find(sl.rackId);if(r)for(const o of d.original)if(o.kind==='node')Racks.stackOver(pg(),find(o.id),r);if(sl.text)notify('Placed at '+sl.text+'.',1800)}else{const r=find(sl.rackId),m=find(sl.id);if(r&&m)RackUI.mountDropped(r,m,sl)}}
+    else if(d.kind==='move'&&!(e.ctrlKey||e.metaKey))notMounted(d,p);
     S.snapPort=null;S.dropTarget=null;changed()}
   else if(d.kind==='move'&&(d.altClick||d.ctrlClick||d.subselect)){S.history.pop();if(d.altClick)Select.cycleAt(...d.startClient,d.prevSel);else if(d.ctrlClick==='remove')selection(d.id,true);else if(d.subselect){select([d.subselect]);notify('Picked one shape of the group — click outside to go back, Ctrl+Shift+G ungroups.',2200)}}
   else if(d.kind!=='pan'&&d.kind!=='autoconn'){if(S.duplicated){changed()}else S.history.pop()}
@@ -279,17 +297,32 @@ function zeroUSlot(m,cx,cy,b,dy,d){const all=items(),side=Racks.mountOf(m)==='si
 
 function editCell(n,row,col){const x=n.x+n.cols.slice(0,col).reduce((a,b)=>a+b,0)+n.cols[col]/2,y=n.y+row*n.rowH+n.rowH/2;select([n.id]);$('inlineText').dataset.single='1';openEditor(x,y,String(n.rows[row][col]??''),v=>mutate(()=>{n.rows[row][col]=v}),{width:Math.max(140,n.cols[col]*S.view.zoom+20)});const ed=$('inlineText');ed.addEventListener('tabnext',ev=>{let c=col+ev.detail,r=row;if(c>=n.cols.length){c=0;r++}if(c<0){c=n.cols.length-1;r--}if(r>=0&&r<n.rows.length)setTimeout(()=>editCell(n,r,c),0)},{once:true})}
 
+// The slot a shape would lock into: the rack under the pointer (px,py), else under its centre (cx,cy); visible racks only. U from the pointer, the nearest free run of hU. A shape carries box, and id when it is on the page.
+// → {rackId,id,mount:'convert',u,hU,x,y,w,h,ghost,text}, or with full and why when it's refused there; null away from racks.
+function mountSlot(hU,px,py,cx,cy,{id=null,box=null}={}){const RU=Shapes.RU,vis=items().filter(r=>r.type==='rack'&&r.id!==id&&itemVisible(r,{doc:S.doc})),over=(x,y)=>vis.find(r=>C.inside({x,y,w:0,h:0},Shapes.rackInner(r))),r=over(px,py)||over(cx,cy);if(!r||box&&Racks.tooBig(box,r))return null;
+  const i=Shapes.rackInner(r),units=r.units||42,nm=Analysis.nameOf(r)||'the rack',hh=Math.min(hU,units)*RU,top=Math.max(i.y,Math.min(i.y+i.h-hh,i.y+Math.round((py-hh/2-i.y)/RU)*RU)),want=Math.round((i.y+i.h-(top+hh))/RU)+1,at=u=>({rackId:r.id,id,mount:'convert',ghost:true,u,hU,x:i.x,y:i.y+i.h-(u-1)*RU-hh,w:i.w,h:hh}),red=(text,why)=>({...at(want),full:true,text,why});
+  if(isLocked(r)||r.lockItems)return red('Locked',`${nm} is locked — unlock it to mount equipment.`);const u=hU>units?null:Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u==null)return red(`No ${hU}U run free`,`No ${hU}U run is free in ${nm}.`);return{...at(u),text:Racks.span(u,hU)}}
+// Let go over a rack without locking in: say why, once.
+function notMounted(d,p){const parts=d.original.filter(x=>x.kind!=='edge'),nodes=parts.filter(x=>x.kind==='node');if(!nodes.length||nodes.length!==parts.length||nodes.some(n=>n.type==='rack'||Shapes.rackItems[n.type]||!Shapes.isDevice(n))||!mountSlot(1,p[0],p[1],p[0],p[1]))return;
+  if(nodes.length>1)notify(`Drag one shape at a time to lock it into a slot. For several, right-click ▸ Add to rack…`,4200);else if(d.mountU===0&&!nodes[0].group&&!nodes[0].locked){const m=nodes[0],nm=Analysis.nameOf(m)||Shapes.nameOf(m.type);if(RackUI.unitOf(m))notify(`${nm} already has a unit in a rack. To see it: right-click it ▸ Show it in its rack.`,4200);else if(RackUI.makeable(m))notify(`${nm} stays a normal shape here. To put it in a slot: right-click it ▸ Make rack equipment…`,4200)}}
+// A palette shape dragged over a rack shows the same slot. The type was noted at dragstart: getData is empty during dragover.
+function slotGhost(p,e){const t=S.dragSymbol;if(!t||S.reviewMode)return;if(t.u===undefined){const n=t.type.startsWith('ann:')||Shapes.rackItems[t.type]?null:Shapes.make(t.type,0,0);t.u=n&&Racks.canMount(n,{items:[],locked:false,linked:false})?RackUI.mountPlan(n)?.u||0:0;t.box=n&&{w:n.w,h:n.h}}
+  const sl=t.u&&!(e.ctrlKey||e.metaKey)?mountSlot(t.u,p[0],p[1],p[0],p[1],{box:t.box}):null,g=sl?{...sl,slot:true}:null;if((g&&g.y+'|'+g.rackId+'|'+g.full)===(S.dropGhost?.slot&&S.dropGhost.y+'|'+S.dropGhost.rackId+'|'+S.dropGhost.full)||!g&&!S.dropGhost?.slot)return;S.dropGhost=g;render('overlay')}
+function clearSlotGhost(){if(S.dropGhost?.slot){S.dropGhost=null;render('overlay')}}
+
 // ---------- editing operations ----------
 function addNode(type,x,y,opts={}){if(S.reviewMode)return ReviewUI.blocked();
   if(type.startsWith('ann:'))return insertAnnotation(type.slice(4),x,y);
   // a 0U PDU or fan tray dropped on a rack mounts there — or is refused when there is no room
   const rk0=Racks.mountOf(type)!=='u'?RackUI.dropTarget(type,x,y):null;if(rk0?.refuse)return notify(rk0.refuse,3200);
   const n=mutate(()=>{const n=Shapes.make(type,0,0);C.move(n,grid(x-n.w/2)-n.x,grid(y-n.h/2)-n.y);if(Shapes.kindOf(type)==='device'&&S.prefs.newDisplay!=='symbol')n.display=S.prefs.newDisplay;if(opts.image)n.image=opts.image;n.layer=S.activeLayer;applyThemeToNew(n);
+    // a shape dropped from the palette onto a rack locks into the slot under the pointer; with no room it stays a normal shape. Clicks and search never mount.
+    const can=opts.drop&&!Shapes.rackItems[type]&&Racks.canMount(n,{items:[],locked:false,linked:false})?RackUI.mountPlan(n):null,sl=can?mountSlot(can.u,x,y,x,y,{box:{w:n.w,h:n.h}}):null,mount=sl&&!sl.full;
     // dropped into a rack → snap to the slot under the pointer (anywhere on the cabinet, its side channels and roof too)
-    if(Shapes.rackItems[type]&&Racks.mountOf(type)==='u'){const r=items().find(r=>r.type==='rack'&&C.inside({x,y,w:0,h:0},Racks.frontRect(r)));if(r){const i=Shapes.rackInner(r),hU=Racks.heightU(n),units=r.units||42,want=Math.max(1,Math.min(units-hU+1,Math.round((i.y+i.h-(n.y+n.h))/Shapes.RU)+1)),u=Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u!=null)Racks.placeAt(r,n,u)}}
+    if(Shapes.rackItems[type]&&Racks.mountOf(type)==='u'){const r=items().find(r=>r.type==='rack'&&itemVisible(r,{doc:S.doc})&&C.inside({x,y,w:0,h:0},Racks.frontRect(r)));if(r){const i=Shapes.rackInner(r),hU=Racks.heightU(n),units=r.units||42,want=Math.max(1,Math.min(units-hU+1,Math.round((i.y+i.h-(n.y+n.h))/Shapes.RU)+1)),u=Racks.fits(r,items(),want,hU)?want:Racks.findSlot(r,items(),hU,{near:want});if(u!=null)Racks.placeAt(r,n,u)}}
     // dropped onto a connector → split it (Visio "drop on connector")
-    const target=opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
-    items().push(n);if(rk0)RackUI.mountNew(rk0.r,n,rk0.prefer);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
+    const target=!mount&&opts.split&&Shapes.kindOf(type)==='device'?items().find(e=>e.kind==='edge'&&!isLocked(e)&&Conn.nearestT(e,[x,y]).distance<10/S.view.zoom):null;
+    items().push(n);if(rk0)RackUI.mountNew(rk0.r,n,rk0.prefer);if(mount)RackUI.mountInto(find(sl.rackId),n,sl.u,sl.hU);else if(sl?.full)notify(sl.why,3600);if(target){const nb=new Map(items().map(i=>[i.id,i]));const second=C.copy(target);second.id=C.uid();second.labels=[];second.from={node:n.id,port:null};target.to={node:n.id,port:null};target.routing=target.routing==='straight'?'straight':'auto';second.routing=target.routing;second.fromIf='';target.toIf='';items().push(second);Conn.markDirty(target.id);Conn.markDirty(second.id)}
     select([n.id]);return n});if(S.mode!=='select')setMode('select');return n}
 function applyThemeToNew(n){const t=Shapes.themes[S.doc.theme];if(t&&S.doc.theme!=='port'){if(Shapes.kindOf(n.type)==='device'){n.stroke=t.device.stroke==='category'?Shapes.CATEGORY[Stencils.shapes[n.type]?.cat]||'#2563eb':t.device.stroke;n.fill=t.device.fill;n.display=t.device.display}n.labels?.forEach(l=>{if(!Shapes.rackItems[n.type])l.color=t.label})}
   // a style set for this type from the legend applies to new ones too
@@ -310,12 +343,15 @@ function erase(){
 // Delete items from a page, with the links on them (unless Preferences keep connectors) and what pointed at them.
 function removeItems(page,ids){const gone=new Set(ids);if(S.prefs.deleteConnectors!==false)for(const e of page.items)if(e.kind==='edge'&&!isLocked(e)&&(e.from&&gone.has(e.from.node)||e.to&&gone.has(e.to.node)))gone.add(e.id);
   page.items=page.items.filter(n=>!gone.has(n.id));for(const e of page.items)if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&gone.has(e[k].node))e[k]=null;for(const t of page.items)if(t.target&&gone.has(t.target))delete t.target;return gone}
-function copySelection(){if(!S.selected.size)return false;const set=picked(),ids=new Set(set.map(n=>n.id));for(const e of items())if(e.kind==='edge'&&!ids.has(e.id)&&e.from&&e.to&&ids.has(e.from.node)&&ids.has(e.to.node))set.push(e);S.clipboard=C.copy(set);return JSON.stringify({portClipboard:3,items:S.clipboard})}
+function copySelection(){if(!S.selected.size)return false;const set=picked(),ids=new Set(set.map(n=>n.id));for(const e of items())if(e.kind==='edge'&&!ids.has(e.id)&&e.from&&e.to&&ids.has(e.from.node)&&ids.has(e.to.node))set.push(e);S.clipboard=C.copy(set);return JSON.stringify({portClipboard:3,items:S.clipboard,stencils:Packs.stencilsFor(set)})}
+// Stencil definitions travelling with copied or library items, so they draw in a tab that never saw them.
+function carryStencils(stencils){if(Packs.installDoc({stencils})&&(S.ltab||'shapes')==='shapes')renderPalette()}
 function pasteItems(list,at=null){if(!list?.length)return;mutate(()=>{let a=C.duplicate(list,24,24);if(at){const b=C.bounds(a);a.forEach(n=>C.move(n,grid(at[0]-b.w/2)-b.x,grid(at[1]-b.h/2)-b.y))}a.forEach(n=>{if(!S.doc.layers.some(l=>l.id===n.layer))n.layer=S.activeLayer});items().push(...a);for(const e of a)if(e.kind==='edge')Conn.markDirty(e.id);S.clipboard=C.copy(a);select(a.map(n=>n.id))})}
 function align(kind){const list=editable().filter(n=>n.kind!=='edge');if(list.length<2&&S.alignRef!=='page')return notify('Select at least two shapes.');if(!list.length)return;const first=find([...S.selected].find(id=>find(id)?.kind!=='edge')),m=pg().margin*C.PX,ps=C.pageSize(pg()),b=S.alignRef==='page'?{x:m,y:m,w:ps.w-2*m,h:ps.h-2*m}:S.alignRef==='selection'?C.bounds(list):C.bounds([first]);mutate(()=>list.forEach(n=>{const nb=C.box(n);let dx=0,dy=0;if(kind===0)dx=b.x-nb.x;if(kind===1)dx=b.x+b.w/2-nb.x-nb.w/2;if(kind===2)dx=b.x+b.w-nb.x-nb.w;if(kind===3)dy=b.y-nb.y;if(kind===4)dy=b.y+b.h/2-nb.y-nb.h/2;if(kind===5)dy=b.y+b.h-nb.y-nb.h;C.move(n,dx,dy)}))}
 function distribute(axis){const a=editable().filter(n=>n.kind!=='edge'&&n.kind!=='zone');if(a.length<3)return notify('Select at least three shapes to distribute.');mutate(()=>{const size=axis==='x'?'w':'h';a.sort((p,q)=>p[axis]-q[axis]);const begin=a[0][axis],end=a.at(-1)[axis]+a.at(-1)[size],gap=(end-begin-a.reduce((s,n)=>s+n[size],0))/(a.length-1);let pos=begin;for(const n of a){C.move(n,axis==='x'?pos-n[axis]:0,axis==='y'?pos-n[axis]:0);pos+=n[size]+gap}})}
 function sameSize(axis){const list=editable().filter(n=>n.kind==='node'||n.kind==='zone'||n.kind==='text'),ref=find([...S.selected][0]);if(list.length<2||!ref||ref.kind==='edge')return notify('Select two or more shapes; the first selected sets the size.');mutate(()=>list.forEach(n=>{const b=C.box(n);if(axis!=='h'){n.w=ref.w}if(axis!=='w'){n.h=ref.h}const dx=(n.w-b.w)/2;(n.labels||[]).forEach(l=>{if(n.kind==='node')l.x+=dx;if(n.kind==='node'&&l.y>b.y+b.h)l.y+=n.h-b.h})}))}
-function order(where){if(!ensureEditable())return;mutate(()=>{const sel=picked(),rest=items().filter(n=>!S.selected.has(n.id));if(where==='front')pg().items=[...rest,...sel];else if(where==='back')pg().items=[...sel,...rest];else{const arr=items(),dir=where==='forward'?1:-1;const idx=arr.map((n,i)=>S.selected.has(n.id)?i:-1).filter(i=>i>=0);if(dir>0)idx.reverse();for(const i of idx){const j=i+dir;if(j<0||j>=arr.length||S.selected.has(arr[j].id))continue;[arr[i],arr[j]]=[arr[j],arr[i]]}}})}
+function order(where){if(!ensureEditable())return;mutate(()=>{const sel=picked(),rest=items().filter(n=>!S.selected.has(n.id));if(where==='front')pg().items=[...rest,...sel];else if(where==='back')pg().items=[...sel,...rest];else{const arr=items(),dir=where==='forward'?1:-1;const idx=arr.map((n,i)=>S.selected.has(n.id)?i:-1).filter(i=>i>=0);if(dir>0)idx.reverse();for(const i of idx){const j=i+dir;if(j<0||j>=arr.length||S.selected.has(arr[j].id))continue;[arr[i],arr[j]]=[arr[j],arr[i]]}}
+    if(pg().stack==='doc')for(const n of[...items()].reverse())if(Racks.isItem(n)){const r=Racks.rackOf(n,items());if(r)Racks.stackOver(pg(),n,r)}})}
 function wrapInZone(){const list=editable().filter(n=>n.kind!=='edge');if(!list.length)return notify('Select the devices to wrap in a zone.');const b=C.bounds(list,true);mutate(()=>{const z=C.zone('Network zone',grid(b.x-30),grid(b.y-50),grid(b.w+60),grid(b.h+80));z.layer=S.activeLayer;const first=items().findIndex(n=>list.includes(n));items().splice(Math.max(0,first),0,z);select([z.id])});const z=picked()[0];editLabel(z.id,z.labels[0].id)}
 function fitZone(){const zones=editable().filter(n=>n.kind==='zone');if(!zones.length)return notify('Select a zone.');mutate(()=>{for(const z of zones){const members=items().filter(n=>n!==z&&n.kind!=='edge'&&n.kind!=='zone'&&C.overlaps(C.box(n),C.box(z)));if(!members.length)continue;const b=C.bounds(members,true),nx=b.x-30,ny=b.y-50,dx=nx-z.x,dy=ny-z.y;z.labels.forEach(l=>{l.x+=dx;l.y+=dy});z.x=nx;z.y=ny;z.w=b.w+60;z.h=b.h+80}})}
 function setLayer(id){if(!ensureEditable())return;mutate(()=>picked().forEach(n=>n.layer=id));notify('Moved to layer “'+(S.doc.layers.find(l=>l.id===id)?.name)+'”.')}
@@ -340,7 +376,9 @@ function setZoom(z){zoomAt(z/S.view.zoom)}
 function updateCursorReadout(p){const e=$('cursorPos');if(e)e.textContent=`${(p[0]/C.PX).toFixed(1)} , ${(p[1]/C.PX).toFixed(1)} mm`}
 
 // ---------- menus ----------
-function showMenu(menu,x,y){menu.hidden=false;const r=menu.getBoundingClientRect();menu.style.left=Math.max(4,Math.min(x,innerWidth-r.width-6))+'px';menu.style.top=Math.max(4,Math.min(y,innerHeight-r.height-6))+'px'}
+// A menu taller than the window scrolls, so its last items can be reached; its flyouts then sit on the window (flyTo).
+function showMenu(menu,x,y){menu.hidden=false;menu.classList.remove('scroll');if(menu.scrollHeight>menu.clientHeight+1)menu.classList.add('scroll');const r=menu.getBoundingClientRect();menu.style.left=Math.max(4,Math.min(x,innerWidth-r.width-6))+'px';menu.style.top=Math.max(4,Math.min(y,innerHeight-r.height-6))+'px'}
+function flyTo(e){const s=e.target.closest?.('.sub'),m=e.currentTarget;if(!s||!m.classList.contains('scroll'))return;const f=s.querySelector(':scope>.submenu');if(!f)return;const r=s.getBoundingClientRect(),b=f.getBoundingClientRect();f.style.left=(r.right+b.width>innerWidth-4?Math.max(4,r.left-b.width):r.right)+'px';f.style.top=Math.max(4,Math.min(r.top-5,innerHeight-b.height-6))+'px'}
 function hideMenus(){for(const id of['contextMenu','fileMenu','dropMenu','ribbonPop'])if($(id))$(id).hidden=true}
 
 // ---------- keyboard ----------
@@ -365,7 +403,7 @@ function onKey(e){
   if(k==='enter'&&S.mode==='connect'&&S.trace){finishTrace();return}
   if((k==='enter'||k==='f2')&&S.selected.size===1){e.preventDefault();const n=picked()[0];if(n.kind==='edge')editEdgeLabel(n);else if(n.kind==='table')editCell(n,0,0);else onDoubleClick(e,C.center(n),null,n);return}
   if(['delete','backspace'].includes(k)){e.preventDefault();if(S.segment)actions.deleteSegment();else if(S.bend)actions.deleteBend();else erase();return}
-  if(k.startsWith('arrow')&&S.selected.size){e.preventDefault();if(!ensureEditable())return;const s=e.shiftKey?10:1,dx=k==='arrowright'?s:k==='arrowleft'?-s:0,dy=k==='arrowdown'?s:k==='arrowup'?-s:0;mutate(()=>{if(S.activeLabel){const l=find(S.activeLabel.owner).labels.find(x=>x.id===S.activeLabel.id);if(l.anchor){l.anchor.dx+=dx;l.anchor.dy+=dy}else{l.x+=dx;l.y+=dy}}else moveSet([...S.selected]).forEach(n=>C.move(n,dx,dy))});return}
+  if(k.startsWith('arrow')&&S.selected.size){e.preventDefault();if(!ensureEditable())return;const s=e.shiftKey?10:1,dx=k==='arrowright'?s:k==='arrowleft'?-s:0,dy=k==='arrowdown'?s:k==='arrowup'?-s:0;if(!S.activeLabel&&!moveSet([...S.selected]).length)return;mutate(()=>{if(S.activeLabel){const l=find(S.activeLabel.owner).labels.find(x=>x.id===S.activeLabel.id);if(l.anchor){l.anchor.dx+=dx;l.anchor.dy+=dy}else{l.x+=dx;l.y+=dy}}else moveSet([...S.selected]).forEach(n=>C.move(n,dx,dy))});return}
   if(e.shiftKey&&k==='!'||e.shiftKey&&e.code==='Digit1'){fit();return}if(e.shiftKey&&(k==='@'||e.code==='Digit2')){fit(true);return}
   const tools={v:'select',c:'connect',z:'zone',t:'text',p:'port',h:'pan'};if(tools[k]&&!e.shiftKey&&!e.altKey){setMode(tools[k]);return}
   if(k==='?'){actions.shortcuts();return}

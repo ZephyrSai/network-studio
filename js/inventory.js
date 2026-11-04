@@ -9,7 +9,7 @@ const devicesIn=scope=>{const pages=scope==='page'?[pg()]:S.doc.pages.filter(p=>
 // Every column on offer: computed ones, the document's fields, then data keys found on devices that are not fields yet.
 function catalog(){const zone=(n,p)=>Analysis.zoneOf(n,p),cols=[
   {id:'name',label:'Name',get:(n,p)=>Analysis.nameOf(n),edit:'name'},{id:'type',label:'Type',get:n=>Shapes.nameOf(n.type)},
-  {id:'category',label:'Category',get:n=>{const c=Stencils.shapes[n.type]?.cat;return Shapes.catalog().find(x=>x.id===c)?.name||c||''}},
+  {id:'category',label:'Category',get:n=>{const s=Stencils.shapes[n.type],c=s?.rackUnit?'rack':s?.cat;return Shapes.catalog().find(x=>x.id===c)?.name||c||''}},
   {id:'zone',label:'Zone',get:(n,p)=>Analysis.zoneName(zone(n,p))},{id:'subnet',label:'Zone subnet',get:(n,p)=>zone(n,p)?.data?.subnet||''},
   {id:'page',label:'Page',get:(n,p)=>p.name},{id:'layer',label:'Layer',get:n=>S.doc.layers.find(l=>l.id===n.layer)?.name||''},
   {id:'rack',label:'Rack / U',get:(n,p)=>{let u=n,pp=p;const lu=RackUI.unitOf(n);if(lu){u=lu;pp=S.doc.pages.find(x=>x.items.includes(lu))}// rack units by their mount; a device symbol drawn over a rack's U space by where it sits

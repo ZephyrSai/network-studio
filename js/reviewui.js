@@ -169,7 +169,7 @@ function onKey(e){const mod=e.ctrlKey||e.metaKey;if(e.key==='Enter'&&mod){if(e.t
 function applyFix(it,id){if(S.reviewMode)return notify('Leave review mode to fix things — review keeps the layout as it is.');
   if(id==='editData'){onPage(it.page);select(it.ids.filter(x=>find(x)));S.tab='data';S.side=null;draw(true);render();return}
   if(id==='fitpage'){onPage(it.page);mutate(()=>Constraints.fitPage(pg(),S.doc,pg().fit||{}));fit();recheck();draw(true);return notify('Page fitted to the drawing.',1800)}
-  onPage(it.page);let msg=null;mutate(()=>{msg=Checks.apply(S.doc,it,id,{markDirty:Conn.markDirty})});if(!msg){notify('That no longer applies — checking again.');recheck();draw(true);return}
+  onPage(it.page);let msg=null;mutate(()=>{msg=Checks.apply(S.doc,it,id,{markDirty:Conn.markDirty,joined:()=>{S.segment=null;S.bend=null;Conn.reset()}})});if(!msg){notify('That no longer applies — checking again.');recheck();draw(true);return}
   // stay on the same spot in the list: the next finding moves up into it
   const list=visible(),i=list.findIndex(x=>x.key===it.key);S.highlights.clear();S.findMark=null;S.selected=new Set(it.ids.filter(x=>find(x)));recheck();const after=visible();cursor=(after[i]||after[i-1])?.key??null;render();draw(true);notify(msg,1800)}
 
@@ -224,7 +224,7 @@ function init(){window.addEventListener('error',e=>{if(e.error?.name==='ReviewLo
   for(const k of Object.keys(actions)){const f=actions[k];if(typeof f==='function')actions[k]=(...a)=>guard(k)?f(...a):blocked()}
   const box=$('sidePanel');box.addEventListener('click',onClick);box.addEventListener('change',onChange);box.addEventListener('keydown',onKey);box.addEventListener('focusout',()=>setTimeout(()=>{if(ui.pending&&!box.contains(document.activeElement))draw(true)},0))}
 // Edit commands refused in review mode (looking, checking, exporting and review commands still work).
-const SAFE=new Set(['rackExport','exportDxf','exportDxfAll','save','saveAs','open','new','newBlank','myDrawings','importVisio','share','print','printAll','exportPng','exportPng4','exportPngT','exportSvg','exportVsdx','exportDrawio','copyPng','closePrint','printNow',
+const SAFE=new Set(['addToShapes','keepAllShapes','rackExport','exportDxf','exportDxfAll','save','saveAs','open','new','newBlank','myDrawings','importVisio','share','print','printAll','exportPng','exportPng4','exportPngT','exportSvg','exportVsdx','exportDrawio','copyPng','closePrint','printNow',
   'copy','selectAll','selectNone','selectByType','invertSel','find','palette','help','shortcuts','about','tour','check','spof','trace','traceFrom','traffic','poeBudget','storage','filter','clearAnalysis',
   'repInventory','repCables','repBom','repRack','repVlan','repIp','repPoe','repCctv','exportCsv','fit','fitSelection','zoom100','zoomIn','zoomOut','present','fullscreen','focusMode','resetLayout','toggleLeft','toggleRight','toggleRibbon','toggleHeader','toggleStatus','uiTheme','docProps',
   'reviewMode','reviewComment','reviewFindings','reviewChecklist','reviewChanges','reviewReport','reviewComplete','checkConnections','checkLabels','checkReadability','nextFinding','prevFinding']);

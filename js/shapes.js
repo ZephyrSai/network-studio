@@ -94,7 +94,7 @@ function drawRackFrame(n,g,_,caption,empty={}){const units=n.units||42,s=n.strok
 // unit's rear label (as on the front); shallow front-mounted panels are shown faded.
 function drawRear(n,g,name,shallow){const w=n.w,h=n.h,s=n.stroke||'#475569',face=rackItems[n.type]?.face||'blank',dark='#334155';
   el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:shallow?'none':n.fill||'#e2e8f0',stroke:s,'stroke-width':1,'stroke-dasharray':shallow?'3 2':null,opacity:shallow?.55:1},g);
-  const passive=['patch','fiber','cable','blank','brush','shelf','tray','drawer'].includes(face);
+  const passive=['patch','fiber','cable','blank','brush','shelf','tray','drawer','art'].includes(face);
   if(!passive&&!shallow){const r=Math.min(h/2-2.5,5.5),pw=Math.min(18,w*.095);for(let k=0;k<2;k++){const px=w-4-pw-k*(pw+2);el('rect',{x:f(px),y:2.5,width:f(pw),height:h-5,rx:1.5,fill:'#cbd5e1',stroke:s,'stroke-width':.6},g);el('rect',{x:f(px+pw-6),y:h/2-2,width:4,height:4,fill:dark},g)}
     for(let k=0;k<2;k++)el('circle',{cx:f(w-4-2*(pw+2)-r-2-k*(2*r+2)),cy:f(h/2),r:f(r),fill:'none',stroke:dark,'stroke-width':.8},g);
     let d='';for(let k=0;k<4;k++)d+=`M${f(w*.47+k*7)} ${f(h/2-1.6)}h4.5v3.2h-4.5z`;el('path',{d,fill:dark},g)}
@@ -121,8 +121,15 @@ function drawFace(n,g){
   // roof fan tray: 1–6 fans to the right of the label
   if(face==='rooffan'){el('rect',{x:0,y:0,width:w,height:h,rx:2.5,fill:body,stroke:s,'stroke-width':1},g);const k=Math.max(1,Math.min(6,+n.data?.fans||4)),x0=w*.3,x1=w-6,r=Math.min(h/2-2,(x1-x0)/k/2-1.5);
     for(let j=0;j<k;j++){const cx=x0+(x1-x0)*(j+.5)/k;el('circle',{cx:f(cx),cy:h/2,r:f(r),fill:'#f8fafc',stroke:dark,'stroke-width':.9},g);el('path',{d:`M${f(cx-r*.7)} ${f(h/2)}h${f(r*1.4)}M${f(cx)} ${f(h/2-r*.7)}v${f(r*1.4)}`,stroke:dark,'stroke-width':.6},g);el('circle',{cx:f(cx),cy:h/2,r:1.3,fill:dark},g)}return}
-  el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:body,stroke:s,'stroke-width':1},g);
-  for(const x of[1.5,w-7.5]){el('rect',{x,y:1.5,width:6,height:h-3,fill:s,'fill-opacity':.18},g);el('circle',{cx:x+3,cy:h/2,r:1.4,fill:s,'fill-opacity':.6},g)}
+  const plateOf=()=>{el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:body,stroke:s,'stroke-width':1},g);for(const x of[1.5,w-7.5]){el('rect',{x,y:1.5,width:6,height:h-3,fill:s,'fill-opacity':.18},g);el('circle',{cx:x+3,cy:h/2,r:1.4,fill:s,'fill-opacity':.6},g)}};
+  // a shape's own picture: centred in its share of the slot, on a plate with ears when it doesn't fill it. Always ends with an outline: exports and colour-by read that.
+  const artS=face==='art'?ST().shapes[n.type]:null,artT=artS&&typeof iconTemplate==='function'?iconTemplate(n.type):null;
+  if(artT){const[vx,vy,vw,vh]=artS.vb.split(/[\s,]+/).map(Number),fr=artS.rackUnit?.frac||1,bw=w*fr,fit=(vw/vh)/(bw/h);if(fr<.9||fit<.5||fit>2)plateOf();
+    // stray lines outside the picture must not cross the units above and below
+    const bb=typeof glyphFrac==='function'?glyphFrac(n.type,0):null,tol=Math.max(vw,vh)*.01,over=bb&&(bb.x<vx-tol||bb.y<vy-tol||bb.x+bb.w>vx+vw+tol||bb.y+bb.h>vy+vh+tol);
+    const box=el('svg',{x:f((w-bw)/2),y:0,width:f(bw),height:h,viewBox:artS.vb,preserveAspectRatio:'xMidYMid meet',overflow:over?'hidden':'visible'},g),ig=artT.cloneNode(true);ig.setAttribute('fill',body);ig.setAttribute('stroke','currentColor');ig.setAttribute('color',s);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig);
+    el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:'none',stroke:s,'stroke-width':.75},g);return}
+  plateOf();
   const x0=w*.46,x1=w-12,bw=x1-x0,mid=h/2;
   const ports=(n0,rows,x,wid,pw=3.2,ph=3)=>{const step=wid/n0,top=mid-(rows*ph+(rows-1)*1.4)/2;let d='';for(let r=0;r<rows;r++)for(let k=0;k<n0;k++)d+=`M${f(x+k*step)} ${f(top+r*(ph+1.4))}h${pw}v${ph}h${-pw}z`;el('path',{d,fill:dark},g)};
   const vents=(x,wid,y0=4,y1=h-4)=>{let d='';for(let x2=x;x2<x+wid;x2+=4)d+=`M${f(x2)} ${y0}V${y1}`;el('path',{d,stroke:s,'stroke-opacity':.35,'stroke-width':1},g)};
@@ -199,7 +206,7 @@ function applyTheme(doc,id){
 // ---------- catalogue ----------
 const ANNOTATIONS=[{type:'ann:text',name:'Text block'},{type:'ann:callout',name:'Callout'},{type:'ann:zone',name:'Network zone'},{type:'ann:table',name:'Table'},{type:'ann:title',name:'Title block'},{type:'ann:legend',name:'Legend'},{type:'ann:revision',name:'Revision table'}];
 function catalog(){const st=ST(),cats=st.categories.map(c=>({id:c.id,name:c.name,pack:c.pack,items:Object.entries(st.shapes).filter(([,s])=>s.cat===c.id).map(([type,s])=>({type,name:s.name,tags:s.tags||''}))}));
-  cats.push({id:'rack',name:'Racks & rack equipment',items:[{type:'rack',name:'Rack 42U',tags:'cabinet elevation'},{type:'rack24',name:'Rack 24U',tags:'cabinet wall'},{type:'rack12',name:'Wall rack 12U',tags:'cabinet wall'},...Object.entries(rackItems).map(([type,s])=>({type,name:s.name,tags:s.tags||'rack mount '+s.face}))]});
+  cats.push({id:'rack',name:'Racks & rack equipment',items:[{type:'rack',name:'Rack 42U',tags:'cabinet elevation'},{type:'rack24',name:'Rack 24U',tags:'cabinet wall'},{type:'rack12',name:'Wall rack 12U',tags:'cabinet wall'},...Object.entries(rackItems).filter(([,s])=>s.face!=='art').map(([type,s])=>({type,name:s.name,tags:s.tags||'rack mount '+s.face}))]});
   cats.push({id:'basic',name:'Basic shapes',items:Object.entries(basic).map(([type,s])=>({type,name:s.name,tags:'shape'}))});
   cats.push({id:'annotation',name:'Annotations',items:ANNOTATIONS.map(a=>({...a,tags:'note document'}))});
   return cats}
@@ -207,6 +214,8 @@ const kindOf=type=>basic[type]?'basic':type==='rack'?'rack':rackItems[type]?'rac
 const isDevice=n=>n.kind==='node'&&(!!ST().shapes[n.type]||!!rackItems[n.type]||n.type==='image');
 const nameOf=type=>basic[type]?.name||rackItems[type]?.name||(type==='rack'?'Rack':ST().shapes[type]?.name)||(type==='image'?'Image':type);
 
+// An art unit's picture says what it is: a name that only repeats the type, or none, isn't drawn. showName forces it on; hideName is a text turned off by hand.
+function labelHidden(n,l){const t=rackItems[n?.type];if(t?.face!=='art'||n.showName)return false;const v=String(C.resolve(n,l)??'').trim();return!v||v===t.name||v===n.hideName}
 // Build a node of any catalogue type at (x,y) top-left.
 function make(type,x,y,name){
   let units=0;if(/^rack(\d+)?$/.test(type)){units=+(type.slice(4)||42);type='rack'}
@@ -223,12 +232,12 @@ function iconSvg(type,{display='symbol',accent='#2f5ea8',fill='#ffffff',size=40}
   if(type==='rack'||/^rack\d+$/.test(type))return`<svg viewBox="0 0 40 40" width="${size}" height="${size*.8}"><rect x="10" y="2" width="20" height="36" rx="2" fill="#fff" stroke="${accent}" stroke-width="1.6"/><path d="M13 8h14M13 13h14M13 18h14M13 23h14M13 28h14M13 33h14" stroke="${accent}" stroke-width="1.2" stroke-opacity=".6"/></svg>`;
   if(rackItems[type]?.mount==='side')return`<svg viewBox="0 0 44 36" width="${size}" height="${size*.8}"><rect x="17" y="1.5" width="10" height="33" rx="1.5" fill="#e2e8f0" stroke="${accent}" stroke-width="1.3"/><rect x="18.5" y="3" width="7" height="5" rx="1" fill="${accent}"/><path d="M20 12h4M20 16.5h4M20 21h4M20 25.5h4M20 30h4" stroke="${accent}" stroke-width="1.8"/></svg>`;
   if(rackItems[type]?.mount==='roof')return`<svg viewBox="0 0 44 36" width="${size}" height="${size*.8}"><path d="M4 33h36" stroke="${accent}" stroke-width="1.6"/><rect x="5" y="19" width="34" height="12" rx="2" fill="#e2e8f0" stroke="${accent}" stroke-width="1.3"/><circle cx="16" cy="25" r="4" fill="#fff" stroke="${accent}"/><circle cx="28" cy="25" r="4" fill="#fff" stroke="${accent}"/><path d="M13.5 25h5M16 22.5v5M25.5 25h5M28 22.5v5" stroke="${accent}" stroke-width=".8"/></svg>`;
-  if(rackItems[type]){const u=rackItems[type].u,h=Math.min(30,6+u*5);return`<svg viewBox="0 0 44 36" width="${size}" height="${size*.8}"><rect x="2" y="${18-h/2}" width="40" height="${h}" rx="1.5" fill="#e2e8f0" stroke="${accent}" stroke-width="1.3"/><path d="M22 ${18-h/2+3}v${h-6}" stroke="${accent}" stroke-width=".8"/><circle cx="7" cy="18" r="1.5" fill="#22c55e"/></svg>`}
+  if(rackItems[type]&&!(rackItems[type].face==='art'&&s)){const u=rackItems[type].u,h=Math.min(30,6+u*5);return`<svg viewBox="0 0 44 36" width="${size}" height="${size*.8}"><rect x="2" y="${18-h/2}" width="40" height="${h}" rx="1.5" fill="#e2e8f0" stroke="${accent}" stroke-width="1.3"/><path d="M22 ${18-h/2+3}v${h-6}" stroke="${accent}" stroke-width=".8"/><circle cx="7" cy="18" r="1.5" fill="#22c55e"/></svg>`}
   if(!s)return`<svg viewBox="0 0 40 32" width="${size}" height="${size*.8}"><rect x="4" y="4" width="32" height="24" rx="4" fill="none" stroke="${accent}"/></svg>`;
   const bg=display==='tile'?`<rect x="0" y="0" width="${s.w}" height="${s.h}" rx="${Math.min(s.w,s.h)*.2}" fill="${accent}"/>`:display==='circle'?`<circle cx="${s.w/2}" cy="${s.h/2}" r="${Math.min(s.w,s.h)/2}" fill="${accent}"/>`:'';
   const inset=display==='tile'?.16:display==='circle'?.22:0,[vx,vy,vw,vh]=s.vb.split(/[\s,]+/).map(Number);
   const inner=`<svg x="${s.w*inset}" y="${s.h*inset}" width="${s.w*(1-2*inset)}" height="${s.h*(1-2*inset)}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" overflow="visible"><g fill="${bg?accent:fill}" stroke="currentColor" color="${bg?'#ffffff':accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.svg}</g></svg>`;
   return`<svg viewBox="-2 -2 ${s.w+4} ${s.h+4}" width="${size}" height="${size*.8}">${bg}${inner}</svg>`}
 
-return{basic,RU,RACK,rackItems,rackSize,rackFrame,rackDims,rackInner,rackU,rearX,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,make,iconSvg};
+return{basic,RU,RACK,rackItems,rackSize,rackFrame,rackDims,rackInner,rackU,rearX,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,labelHidden,make,iconSvg};
 })();

@@ -92,3 +92,12 @@ test('drawings saved before pinning get their border, title block and legend anc
   Constraints.upgrade(d);const v=Constraints.bgItems(bg,fg),A=Constraints.area(fg),lg=fg.items[0],tb=v.find(i=>i.id==='tb'),fr=v.find(i=>i.id==='fr');
   return{pins:[bg.items[0].pin,bg.items[1].pin,lg.pin],frame:Math.round(fr.w-A.w),tbGap:[Math.round(A.x+A.w-tb.x-tb.w),Math.round(A.y+A.h-tb.y-tb.h)],legendGap:Math.round(A.y+A.h-lg.y-lg.h),again:Constraints.upgrade(d)}})()`,ctx);
   assert.deepEqual(r.pins,['frame','br','bl']);assert.equal(r.frame,0);assert.deepEqual(r.tbGap,[0,0]);assert.equal(r.legendGap,20);assert.equal(r.again,0)});
+
+test('embedded pictures: BMP from Visio files validates; anything not embedded is refused',()=>{const d=Core.newDoc('x'),n=Core.node('image',0,0,'p');d.pages[0].items.push(n);for(const t of['png','jpeg','bmp','webp','gif','svg+xml']){n.image=`data:image/${t};base64,AAAA`;Core.validate(d)}Core.validate(JSON.parse(JSON.stringify(d)));assert.ok(Core.IMAGE_RE.test('data:image/bmp;base64,Qk0='));
+  for(const bad of['https://x/y.png','data:text/html;base64,AAAA','data:image/bmp,AAAA'])assert.throws(()=>{n.image=bad;Core.validate(d)},/Only embedded images/)});
+test('the old two-line join is gone: js/joinlines.js does this now',()=>{assert.equal(Core.join,undefined)});
+
+test('validate checks what a rack unit keeps of its shape: same image rule, real sizes',()=>{const ctx=sandbox(),run=rf=>vm.runInContext(`(()=>{const d=Core.newDoc('x'),n=Core.node('rk-server',0,0,'a');n.rackFrom=${JSON.stringify(rf)};d.pages[0].items.push(n);return Core.validate(d)})()`,ctx),good={type:'vs-a',w:64,h:6,labels:[{text:'A',x:1,y:2,size:12}],ports:[{id:'p',x:0,y:.5}],image:'data:image/bmp;base64,AA'};
+  assert.ok(run(good));assert.ok(run({type:'vs-a',w:1,h:1}),'the shape may have had no labels or ports');
+  assert.throws(()=>run({...good,image:'https://example.com/a.png'}),/embedded images/);assert.throws(()=>run({...good,image:{}}),/embedded images/);for(const bad of[{...good,w:-5},{...good,h:0},{...good,w:'64'},{...good,type:5},{...good,type:''},{...good,labels:'x'},{...good,labels:[{text:'A',x:'1',y:2,size:12}]},{...good,labels:[{text:'A',x:1,y:2,size:0}]},{...good,ports:[{x:0,y:0}]},{...good,ports:[{id:'p',x:'a',y:0}]},{...good,rotation:'r'}])assert.throws(()=>run(bad),/Invalid rack unit/,JSON.stringify(bad));
+  assert.throws(()=>run(5),/Invalid rack unit/)});

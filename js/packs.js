@@ -21,24 +21,108 @@ const Packs=(()=>{
   const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0).toString(36)};
 
   // ---------- registry ----------
-  function install(pack){packs.set(pack.id,pack);const cats=pack.categories?.length?pack.categories:[{id:'pack:'+pack.id,name:pack.name}];
+  // Packs from storage or a backup are checked like any file: a bad entry goes, the rest stays.
+  function install(pack){if(!okId(pack?.id))return false;packs.set(pack.id,pack);if(Array.isArray(pack.categories))pack.categories=pack.categories.filter(c=>okId(c?.id));else delete pack.categories;const cats=pack.categories?.length?pack.categories:[{id:'pack:'+pack.id,name:pack.name}];
     for(const c of cats){const i=Stencils.categories.findIndex(x=>x.id===c.id);const cat={...c,pack:pack.id};if(i>=0)Stencils.categories[i]=cat;else Stencils.categories.push(cat)}
-    for(const[id,s]of Object.entries(pack.shapes||{}))Stencils.shapes[id]={tier:5,...s,svg:noStroke(s.svg),cat:s.cat||cats[0].id,pack:pack.id};iconCache?.clear?.()}
+    for(const[id,s]of Object.entries(pack.shapes||{})){const d=okId(id)&&cleanDef(s);if(!d){delete pack.shapes[id];continue}pack.shapes[id]=d;Stencils.shapes[id]={tier:5,...d,svg:noStroke(d.svg),cat:d.cat||cats[0].id,pack:pack.id}}iconCache?.clear?.();return true}
   // pack icons are mostly filled glyphs: don't let the editor's default outline stroke thicken them
   const noStroke=svg=>/^<g [^>]*stroke=/.test(svg||'')?svg:`<g stroke="none">${svg}</g>`;
-  function uninstall(id){const p=packs.get(id);if(!p)return;packs.delete(id);const used=new Set((S.doc?.pages||[]).flatMap(pg=>pg.items).filter(n=>n.kind==='node').map(n=>n.type));
+  const usedTypes=()=>new Set((S.doc?.pages||[]).flatMap(pg=>pg.items).filter(n=>n.kind==='node').map(n=>n.type));
+  function uninstall(id){const p=packs.get(id);if(!p)return;packs.delete(id);const used=usedTypes();
     for(const sid of Object.keys(p.shapes||{}))if(!used.has(sid))delete Stencils.shapes[sid];else Stencils.shapes[sid].cat='doc-shapes';Stencils.categories=Stencils.categories.filter(c=>c.pack!==id);ensureDocCategory();iconCache?.clear?.()}
   function ensureDocCategory(){if(Object.values(Stencils.shapes).some(s=>s.cat==='doc-shapes')&&!Stencils.categories.some(c=>c.id==='doc-shapes'))Stencils.categories.push({id:'doc-shapes',name:'Shapes in this drawing'})}
   // A drawing carries copies of the pack shapes it uses.
-  function embedUsed(doc){const used=new Set(doc.pages.flatMap(p=>p.items).filter(n=>n.kind==='node').map(n=>n.type)),out={};for(const t of used){const s=Stencils.shapes[t];if(s?.pack){const{pack,...rest}=s;out[t]=rest}}if(Object.keys(out).length)doc.stencils=out;else delete doc.stencils;return doc}
-  function installDoc(doc){let added=0;for(const[id,s]of Object.entries(doc.stencils||{})){if(Stencils.shapes[id])continue;if(!isSafeMarkup(s.svg))continue;Stencils.shapes[id]={...s,svg:noStroke(s.svg),cat:'doc-shapes',pack:'doc'};added++}if(added)ensureDocCategory();iconCache?.clear?.();return added}
+  function stencilsFor(list){const out={};for(const n of list){if(n.kind!=='node')continue;const s=Stencils.shapes[n.type];if(s?.pack){const{pack,...rest}=s;out[n.type]=rest}}return out}
+  function embedUsed(doc){const out=stencilsFor(doc.pages.flatMap(p=>p.items));if(Object.keys(out).length)doc.stencils=out;else delete doc.stencils;return doc}
+  function installDoc(doc){let added=0;for(const[id,s]of Object.entries(doc.stencils||{})){if(Stencils.shapes[id]||!okId(id))continue;const d=cleanDef(s);if(!d)continue;const rk=RKC.test(id)&&!!d.rackUnit;if(rk?!Shapes.rackItems[id]&&!registerRack(id,d):Shapes.rackItems[id])continue;const{rackUnit,...rest}=d;Stencils.shapes[id]=rk?{...rest,rackUnit,svg:noStroke(d.svg),cat:'rack-art',pack:'doc'}:{...rest,svg:noStroke(d.svg),cat:'doc-shapes',pack:'doc'};added++}if(added)ensureDocCategory();iconCache?.clear?.();return added}
+  // ---------- rack form of a picture ----------
+  // rkc-<art>: a derived type, so the source stays a normal resizable shape everywhere else. Only ever in documents (pack 'doc'), never in a pack, and listed nowhere (cat 'rack-art').
+  const RKC=/^rkc-/;
+  function registerRack(id,s){if(!RKC.test(id)||!s?.rackUnit||typeof s.name!=='string'||!s.name.trim()||Shapes.rackItems[id])return false;const r=s.rackUnit,fr=+r.frac;r.u=Math.max(1,Math.min(48,Math.round(+r.u)||1));r.frac=fr>0?Math.min(1,fr):1;Shapes.rackItems[id]={name:s.name,fam:s.name,u:r.u,face:'art'};return true}
+  // d: {name,vb,svg,u,frac,from,fromDef:{vb,w,h,name,tags},tags} → the type's id. The same art always gets the same id, across reloads too.
+  function rackType(d){const vb=normVb(d.vb),art=safeArt(d.svg);if(!vb||art==null)return null;const svg=noStroke(art),name=String(d.name||'').trim()||'Rack equipment';let id='rkc-'+hash(svg);for(let s=Stencils.shapes[id];s&&(s.svg!==svg||s.vb!==vb);s=Stencils.shapes[id])id+='x';if(Stencils.shapes[id])return id;
+    const def={name,cat:'rack-art',w:Shapes.RACK.inner,vb,svg,tier:3,tags:d.tags||'',recolor:false,pack:'doc',rackUnit:{u:d.u,frac:d.frac,from:d.from,fromDef:d.fromDef}};if(!registerRack(id,def))return null;def.h=def.rackUnit.u*Shapes.RU;Stencils.shapes[id]=def;return id}
+  // the height chosen with Remember for this shape travels with the document
+  function rememberRack(id,u){const s=Stencils.shapes[id],r=Shapes.rackItems[id];if(!s?.rackUnit||!r)return;u=Math.max(1,Math.min(48,Math.round(+u)||1));s.rackUnit.u=r.u=u;s.h=u*Shapes.RU}
+  // Saved files don't embed the source of a type all of whose shapes are in racks: the derived art is its art, so Back brings it back under its old id.
+  function restoreSource(from,id){if(!from||Stencils.shapes[from]||Shapes.basic[from]||Shapes.rackItems[from]||from==='image'||/^rack\d*$/.test(from)||!/^[\w:.-]+$/.test(from))return false;const s=Stencils.shapes[id],d=s?.rackUnit?.fromDef;if(!s?.rackUnit)return false;Stencils.shapes[from]={name:String(d?.name||s.name),cat:'doc-shapes',w:sizeOf(d?.w)||64,h:sizeOf(d?.h)||64,vb:normVb(d?.vb)||s.vb,svg:s.svg,tier:5,tags:String(d?.tags||''),recolor:false,pack:'doc'};ensureDocCategory();iconCache?.clear?.();return true}
   const list=()=>[...packs.values()];
 
   // ---------- SVG sanitising ----------
   const DROP=new Set(['script','foreignobject','iframe','object','embed','audio','video','canvas','animate','animatemotion','animatetransform','set','handler','listener','metadata','title','desc','sodipodi:namedview','inkscape:perspective']);
-  const ALLOWED_HREF=/^(#|data:image\/(png|jpe?g|gif|webp);base64,)/i;
-  function isSafeMarkup(svg){return typeof svg==='string'&&!/<\s*(script|foreignObject|iframe|object|embed)\b|\bon\w+\s*=|javascript:/i.test(svg)}
+  const ALLOWED_HREF=/^(#|data:image\/(png|jpe?g|bmp|gif|webp);base64,)/i;
+  // A stencil's markup comes from files, and the app pastes it into its own HTML: what counts is what the HTML parser will read, so this reads it the same way.
+  const ENT={tab:'\t',newline:'\n',colon:':',sol:'/',num:'#',amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",lpar:'(',rpar:')',semi:';',comma:',',period:'.',equals:'=',nbsp:'\xa0'};
+  const decode=s=>s.replace(/&(?:#(\d+)|#x([0-9a-f]+)|(\w+));?/gi,(m,d,x,n)=>{if(n)return Object.hasOwn(ENT,n.toLowerCase())?ENT[n.toLowerCase()]:m;const c=d?+d:parseInt(x,16);return c>0&&c<=0x10ffff?String.fromCodePoint(c):'�'});
+  const isWs=c=>c===' '||c==='\n'||c==='\t'||c==='\f'||c==='\r';
+  // The tags in the markup, as the HTML tokenizer sees them. null: something is left open (a quote, a comment, a tag), which would swallow the app's markup after it.
+  function tokens(s){const out=[],n=s.length;let i=0;
+    while((i=s.indexOf('<',i))>=0){
+      if(s.startsWith('<!--',i)){if(s.startsWith('>',i+4)||s.startsWith('->',i+4)){i=s.indexOf('>',i)+1;continue}const a=s.indexOf('-->',i+4),b=s.indexOf('--!>',i+4);if(a<0&&b<0)return null;i=a<0||b>=0&&b<a?b+4:a+3;continue}
+      if(s.startsWith('<![CDATA[',i)){const e=s.indexOf(']]>',i+9);if(e<0)return null;i=e+3;continue}
+      const c=s[i+1],close=c==='/',at=close?i+2:i+1;
+      if(!/[a-z]/i.test(s[at]||'')){if(close||c==='!'||c==='?'){const e=s.indexOf('>',i);if(e<0)return null;i=e+1}else i++;continue}
+      let j=at;while(j<n&&!isWs(s[j])&&s[j]!=='/'&&s[j]!=='>')j++;if(j>=n)return null;const name=s.slice(at,j).toLowerCase(),attrs=[];let self=false;
+      for(;;){const st=j;while(j<n&&(isWs(s[j])||s[j]==='/'))j++;if(j>=n)return null;if(s[j]==='>'){self=j>st&&s[j-1]==='/';break}
+        const from=j;let k=j+(s[j]==='='?1:0);while(k<n&&!isWs(s[k])&&s[k]!=='/'&&s[k]!=='>'&&s[k]!=='=')k++;const an=s.slice(j,k).toLowerCase();j=k;while(j<n&&isWs(s[j]))j++;let v='';
+        if(s[j]==='='){j++;while(j<n&&isWs(s[j]))j++;const q=s[j];if(q==='"'||q==="'"){const e=s.indexOf(q,j+1);if(e<0)return null;v=s.slice(j+1,e);j=e+1}else if(q!=='>'){k=j;while(k<n&&!isWs(s[k])&&s[k]!=='>')k++;v=s.slice(j,k);j=k}}
+        attrs.push({name:an,value:v,from,to:j})}
+      out.push({name,close,self,attrs,at:i,end:j+1});i=j+1}
+    return out}
+  // Links may only stay inside the art or hold a picture; animations may not set a link at all. Decoded, and without what a URL parser ignores.
+  function attrSafe(tag,name,value){const v=decode(value).replace(/[\x00-\x20\x7f-\xa0]/g,'');if(/^on/.test(name)||/(java|vb)script:/i.test(v))return false;
+    // the app's own ids are plain words, and the palette comes before the canvas: art must not answer for $('canvas'). Art from the importers has a prefix with other characters in it.
+    if(name==='id')return!/^[a-z]+$/i.test(v);
+    if(/(^|:)href$/.test(name))return v[0]==='#'||tag!=='a'&&(!v||tag!=='use'&&/^data:image\//i.test(v));
+    if(name==='to'||name==='from'||name==='by'||name==='values')return!/(^|;)[a-z][a-z0-9+.-]*:/i.test(v);
+    return name!=='attributename'||!/^on/i.test(v)}
+  // These leave SVG for HTML, or act on the page.
+  const BAD_TAGS=new Set('script foreignobject iframe object embed link base b big blockquote body br center code dd div dl dt em h1 h2 h3 h4 h5 h6 head hr i img li listing menu meta nobr ol p pre ruby s small span strong strike sub sup table tt u ul var'.split(' '));
+  function tagsSafe(svg){const t=tokens(svg);if(!t)return false;const open=[];
+    for(let k=0;k<t.length;k++){const{name:n,close,self,attrs}=t[k];
+      // an end tag with nothing to close here would close the app's own markup, and what follows it is HTML
+      if(close){const o=open.lastIndexOf(n);if(o<0)return false;open.length=o;continue}
+      if(BAD_TAGS.has(n)||n==='font'&&attrs.some(a=>/^(color|face|size)$/.test(a.name)))return false;
+      for(const a of attrs)if(!attrSafe(n,a.name,a.value))return false;
+      if(self)continue;
+      // inside these the parser reads HTML: words only
+      if((n==='title'||n==='desc')&&!(t[k+1]?.close&&t[k+1].name===n))return false;
+      open.push(n)}
+    return true}
+  // What the browser's own parser makes of it, where there is one: all of it SVG, inside one root.
+  function parsedSafe(svg){if(typeof document==='undefined'||!document.createElement)return true;const t=document.createElement('template');t.innerHTML=`<svg>${svg}</svg>`;if(t.content.childNodes.length!==1)return false;
+    for(const e of t.content.firstChild.querySelectorAll('*')){if(e.namespaceURI!=='http://www.w3.org/2000/svg')return false;for(const a of e.attributes)if(!attrSafe(e.localName.toLowerCase(),a.name.toLowerCase(),a.value))return false}return true}
+  function isSafeMarkup(svg){return typeof svg==='string'&&!/<\s*(script|foreignObject|iframe|object|embed)\b|\bon\w+\s*=|javascript:/i.test(svg)&&tagsSafe(svg)&&parsedSafe(svg)}
   function cleanStyle(css){return String(css||'').replace(/@import[^;]+;?/gi,'').replace(/url\(\s*['"]?(?!#)[^)]*\)/gi,'none').replace(/expression\s*\(/gi,'')}
+  // ---------- <style> in a stencil ----------
+  // A style element reaches the whole page, so only plain class rules stay, and their classes get a prefix made from the rules themselves, in the CSS and on the art.
+  // Scoping scoped art changes nothing (a block whose prefix matches its rules is left as it is), so art keeps its hash, and art made of several stencils keeps each one's classes. No style, no change.
+  const SCOPED=/^ps([0-9a-z]+)-(.+)$/,CLASS_RULE=/^\.[\w-]+(?:\s*\.[\w-]+)*$/;
+  function cssRules(text){let t=cleanStyle(decode(text.replace(/<!\[CDATA\[|\]\]>|<!--[\s\S]*?-->/g,'')).replace(/\/\*[\s\S]*?(\*\/|$)/g,''));for(let p;p!==t;){p=t;t=t.replace(/@[^{};]*(;|\{(?:[^{}]|\{[^{}]*\})*\})/g,'')}
+    const out=[];for(const m of t.matchAll(/([^{}]*)\{([^{}]*)\}/g)){const sel=m[1].split(',').map(x=>x.trim().replace(/\s+/g,' ')).filter(x=>CLASS_RULE.test(x)),decl=m[2].trim();if(sel.length&&decl&&!/[<&\\@]|image-set/i.test(decl))out.push({sel,decl})}return out}
+  const cssText=(rules,f)=>rules.map(r=>r.sel.map(s=>s.replace(/\.([\w-]+)/g,(m,c)=>'.'+f(c))).join(',')+'{'+r.decl+'}').join('');
+  function scopedBy(rules){const hs=new Set();for(const r of rules)for(const s of r.sel)for(const m of s.matchAll(/\.([\w-]+)/g)){const x=SCOPED.exec(m[1]);if(!x)return null;hs.add(x[1])}if(hs.size!==1)return null;const h=[...hs][0];return hash(cssText(rules,c=>SCOPED.exec(c)[2]))===h?h:null}
+  function scopeStyle(svg){if(typeof svg!=='string'||!/<style/i.test(svg))return svg;const t=tokens(svg);if(!t)return svg;const blocks=[];
+    for(let k=0;k<t.length;k++){const a=t[k];if(a.close||a.name!=='style')continue;let e=k;if(!a.self)for(e=k+1;e<t.length&&!(t[e].close&&t[e].name==='style');)e++;const shut=a.self||e<t.length,end=a.self?a.end:shut?t[e].end:svg.length;blocks.push({at:a.at,end,rules:cssRules(a.self?'':svg.slice(a.end,shut?t[e].at:svg.length))});k=e}
+    const known=new Set();for(const b of blocks){b.h=scopedBy(b.rules);if(b.h)known.add(b.h)}
+    const raw=blocks.filter(b=>!b.h),rules=raw.flatMap(b=>b.rules),P=rules.length?hash(cssText(rules,c=>c)):null,keep=c=>{const x=SCOPED.exec(c);return!!x&&known.has(x[1])},edits=[];
+    blocks.forEach(b=>{const r=b.h?b.rules:b===raw[0]?rules:[],css=b.h?cssText(r,c=>c):cssText(r,c=>'ps'+P+'-'+c);edits.push({at:b.at,end:b.end,text:css?`<style>${css}</style>`:''})});
+    if(P)for(const k of t){if(k.close||blocks.some(b=>k.at>=b.at&&k.at<b.end))continue;for(const a of k.attrs)if(a.name==='class')edits.push({at:a.from,end:a.to,text:`class="${decode(a.value).trim().split(/\s+/).filter(Boolean).map(c=>keep(c)?c:'ps'+P+'-'+c).join(' ').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}"`})}
+    edits.sort((a,b)=>a.at-b.at);let out='',p=0;for(const e of edits){out+=svg.slice(p,e.at)+e.text;p=e.end}return out+svg.slice(p)}
+  // ---------- what a stencil must be, wherever it comes from ----------
+  const okId=id=>typeof id==='string'&&/^(?!__proto__$)[\w:.-]+$/.test(id);
+  // What scoping leaves is what reaches the page, so that is what gets checked. Art that scoping would change again had a tag put together by taking a style out (<<style></style>style>…).
+  const safeArt=svg=>{const out=scopeStyle(svg);return scopeStyle(out)===out&&isSafeMarkup(out)?out:null};
+  // exactly four finite numbers, in one spelling
+  function normVb(vb){if(typeof vb!=='string')return null;const a=vb.trim().split(/[\s,]+/).map(Number);return a.length===4&&a.every(x=>Number.isFinite(x))?a.join(' '):null}
+  // a size a drawing can hold, or 0
+  const sizeOf=v=>(typeof v==='number'||typeof v==='string'&&v.trim())&&+v>0&&+v<1e7?+v:0;
+  // A picture whose base64 padding reads as on…= isn't an attack: pad its bytes instead, as the importer does.
+  function repadded(svg){try{return Visio.repad(svg)}catch{return svg}}
+  // The stencil as it may be registered, or null. Nothing here trusts its input: the size and the viewBox end up in markup as they stand. A size that is left out comes from the viewBox.
+  function cleanDef(s){if(!s||typeof s!=='object'||s.name!=null&&typeof s.name!=='string'||typeof s.svg!=='string')return null;const vb=normVb(s.vb),svg=vb&&(safeArt(s.svg)??safeArt(repadded(s.svg)));if(!vb||svg==null)return null;
+    let w=sizeOf(s.w),h=sizeOf(s.h);if(s.w!=null&&!w||s.h!=null&&!h)return null;if(!w||!h){const q=stencilFrom('',vb,'');w||=q.w||64;h||=q.h||64}
+    const d={...s,vb,w,h,svg},r=s.rackUnit;if(r!=null){if(typeof r!=='object')delete d.rackUnit;else{const f=r.fromDef;d.rackUnit={...r,fromDef:f&&typeof f==='object'?{...f,vb:normVb(f.vb)||undefined,w:sizeOf(f.w)||undefined,h:sizeOf(f.h)||undefined}:undefined}}}return d}
   function sanitizeSvg(text,idPrefix){
     const doc=new DOMParser().parseFromString(text,'image/svg+xml'),root=doc.documentElement;if(!root||root.nodeName.toLowerCase()!=='svg'||doc.querySelector('parsererror'))throw Error('Not a valid SVG file.');
     const walk=el=>{for(const c of[...el.children]){const name=c.nodeName.toLowerCase();if(DROP.has(name)||name.includes(':')&&!name.startsWith('svg:')){c.remove();continue}
@@ -55,7 +139,7 @@ const Packs=(()=>{
     // monochrome icons become recolourable: their single colour maps to the accent colour
     const colors=new Set((markup.match(/(?:fill|stroke|stop-color|color)\s*[:=]\s*"?\s*(#[0-9a-f]{3,8}\b|rgb\([^)]*\)|black|white)/gi)||[]).map(m=>m.split(/[:=]/)[1].replace(/["\s]/g,'').toLowerCase()).filter(c=>!['white','#fff','#ffffff'].includes(c)));
     const recolor=colors.size<=1;if(recolor&&colors.size===1){const c=[...colors][0],re=new RegExp(c.replace(/[()#.,]/g,'\\$&'),'gi');markup=markup.replace(re,'currentColor')}
-    if(!isSafeMarkup(markup))throw Error('SVG contains unsupported content.');
+    markup=safeArt(markup);if(markup==null)throw Error('SVG contains unsupported content.');
     return{vb:vb.split(/[\s,]+/).map(Number).join(' '),svg:markup,recolor,aspect:vw/vh}}
   function stencilFrom(name,vb,svg,{cat,tags='',source='',license='',recolor=true}={}){const[, ,vw,vh]=vb.split(' ').map(Number),k=Math.min(64/vw,64/vh),w=Math.max(16,Math.round(vw*k)),h=Math.max(16,Math.round(vh*k));return{name,cat,w,h,vb,svg,tier:5,tags:(tags+' '+name).toLowerCase(),source,license,recolor}}
   async function imageStencil(name,blob,opts){const url=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob)});const img=new Image();img.src=url;await img.decode();const w=img.naturalWidth||64,h=img.naturalHeight||64;return stencilFrom(name,`0 0 ${w} ${h}`,`<image href="${url}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet"/>`,{...opts,recolor:false})}
@@ -92,14 +176,38 @@ const Packs=(()=>{
     const first=files[0],lower=first.name.toLowerCase();
     if(files.every(f=>Visio.isStencil(f.name))){let pack=null,skipped=0;for(const f of files){const r=await Visio.stencilToPack(f);skipped+=r.stats.skipped;if(!pack){pack=r.pack;pack.name=packName||pack.name;continue}pack.categories.push(...r.pack.categories);Object.assign(pack.shapes,r.pack.shapes)}return{pack,skipped}}
     if(files.some(f=>Visio.isLegacy(f.name)))throw Error('Old binary Visio files (.vss / .vsd) cannot be read in a browser — open them in Visio and save as .vssx (stencil) or .vsdx (drawing).');
-    if(files.length===1&&lower.endsWith('.json')){const d=JSON.parse(await first.text());if(!d.portPack)throw Error('Not a Port shape pack.');for(const s of Object.values(d.pack.shapes))if(!isSafeMarkup(s.svg))throw Error('Pack contains unsafe markup.');d.pack.id='u-'+hash(d.pack.name+Date.now());const old=Object.entries(d.pack.shapes);d.pack.shapes={};const remap={};for(const[cid]of(d.pack.categories||[]).entries()){}d.pack.categories=(d.pack.categories||[{name:d.pack.name}]).map(c=>{const id='pack:'+d.pack.id+':'+slug(c.name);remap[c.id]=id;return{id,name:c.name}});for(const[sid,s]of old)d.pack.shapes[sid.startsWith('u-')?sid:'u-'+hash(d.pack.id+sid)]={...s,cat:remap[s.cat]||d.pack.categories[0].id};return{pack:d.pack,skipped:0}}
+    if(files.length===1&&lower.endsWith('.json')){const d=JSON.parse(await first.text());if(!d?.portPack||!d.pack||!d.pack.shapes||typeof d.pack.shapes!=='object')throw Error('Not a Port shape pack.');d.pack.id='u-'+hash(d.pack.name+Date.now());if(d.pack.source==='user')d.pack.source='import';const old=Object.entries(d.pack.shapes);d.pack.shapes={};const remap=Object.create(null);let skipped=0;d.pack.categories=(Array.isArray(d.pack.categories)&&d.pack.categories.length?d.pack.categories:[{name:d.pack.name}]).map(c=>{const id='pack:'+d.pack.id+':'+slug(c?.name);remap[c?.id]=id;return{id,name:String(c?.name??d.pack.name)}});for(const[sid,s]of old){const def=okId(sid)&&cleanDef(s);if(!def){skipped++;continue}d.pack.shapes[sid.startsWith('u-')?sid:'u-'+hash(d.pack.id+sid)]={...def,cat:remap[s.cat]||d.pack.categories[0].id}}return{pack:d.pack,skipped}}
     if(files.length===1&&(lower.endsWith('.xml')||lower.endsWith('.drawio')))return fromDrawioLibrary(await first.text(),packName||first.name.replace(/\.[^.]+$/,''));
     const entries=[];for(const f of files){const n=f.name.toLowerCase();if(n.endsWith('.zip'))entries.push(...await unzip(f));else entries.push({path:f.webkitRelativePath||f.name,blob:f})}
     if(!entries.length)throw Error('No SVG or image files found.');return fromFiles(entries,packName)}
-  async function save(pack){install(pack);try{await Store.put('packs',pack)}catch(err){notify('Pack installed for this session, but browser storage refused it: '+err.message)}}
-  async function remove(id){uninstall(id);try{await Store.del('packs',id)}catch{}}
+  const whyRefused=err=>err?.message||err?.name||'it may be full or blocked';
+  // My shapes says for itself what happened: these leave the change in place for this session and throw, marked err.session.
+  const refused=err=>{throw Object.assign(Error(whyRefused(err)),{session:true})};
+  async function storePack(pack){if(!install(pack))return;try{await Store.put('packs',pack)}catch(err){refused(err)}if(pack.id===USER)unsaved.clear()}
+  async function unstorePack(id){uninstall(id);try{await Store.del('packs',id)}catch(err){refused(err)}}
+  async function save(pack){try{await storePack(pack)}catch(err){notify('Pack installed for this session, but browser storage refused it: '+err.message)}}
+  async function remove(id){try{await unstorePack(id)}catch(err){notify('Removed for this session, but browser storage refused it, so it comes back after a reload: '+err.message)}}
   async function loadAll(){if(typeof ExtendedPack!=='undefined')install(ExtendedPack);try{for(const p of await Store.all('packs'))install(p)}catch(err){console.warn('packs not loaded',err)}}
   function exportPack(id){const p=packs.get(id);if(!p)return;download(slug(p.name)+'.portpack.json',JSON.stringify({portPack:1,pack:p}),'application/json')}
+
+  // ---------- My shapes: art kept from drawings ----------
+  const USER='my-shapes',USER_CAT='pack:'+USER,artKey=svg=>hash(noStroke(svg||''));
+  let userQueue=Promise.resolve();const inOrder=f=>{const r=userQueue.then(f,f);userQueue=r.catch(()=>{});return r};
+  // the stored copy wins, so what another tab added or removed isn't undone; only what storage refused this session is ours to add to it
+  const unsaved=new Set();
+  async function userPack(){let p=null;try{p=await Store.get('packs',USER)}catch{}const mine=packs.get(USER);if(p)for(const id of unsaved)if(mine?.shapes?.[id])p.shapes[id]=mine.shapes[id];return p||mine||{id:USER,name:'My shapes',source:'user',created:new Date().toISOString(),categories:[{id:USER_CAT,name:'My shapes'}],shapes:{}}}
+  // def: {name,vb,svg,w,h,recolor,tags,source,license,visio}. Same art = same shape; a derived rack type (rkc-) never goes in a pack.
+  function userDef(pack,d){if(!d||d.rackUnit||/^rkc-/.test(d.id||''))return{id:null,refused:'rack'};const vb=normVb(d.vb),[,,vw,vh]=(vb||'').split(' ').map(Number),svg=safeArt(d.svg);if(!(vw>0&&vh>0)||svg==null)return{id:null,refused:'markup'};
+    // kept before styles were scoped, under the hash it had then
+    if(svg!==d.svg||/<style/i.test(svg))for(const[k,v]of Object.entries(pack.shapes))if(noStroke(scopeStyle(v?.svg))===noStroke(svg))return{id:k,added:false,name:v.name};
+    let id='ms-'+artKey(svg);while(pack.shapes[id]&&noStroke(pack.shapes[id].svg)!==noStroke(svg))id+='x';if(pack.shapes[id])return{id,added:false,name:pack.shapes[id].name};
+    const name=String(d.name||'').trim()||'Shape',st=stencilFrom(name,vb,svg,{cat:USER_CAT,tags:d.tags||'',source:d.source||'',license:d.license||'',recolor:d.recolor!==false}),w=sizeOf(d.w),h=sizeOf(d.h);if(w&&h){st.w=Math.max(4,Math.round(w));st.h=Math.max(4,Math.round(h))}if(d.visio)st.visio=true;pack.shapes[id]=st;return{id,added:true,name}}
+  function addShapes(defs){return inOrder(async()=>{const pack=await userPack(),out=defs.map(d=>userDef(pack,d));if(out.some(r=>r.added))try{await storePack(pack)}catch(err){for(const r of out)if(r.added)unsaved.add(r.id);throw err}else install(pack);return out})}
+  const addShape=def=>addShapes([def]).then(r=>r[0]);
+  function renameShape(id,name){return inOrder(async()=>{const pack=await userPack(),s=pack.shapes[id];name=String(name||'').trim();if(!s||!name)return false;s.name=name;s.tags=((s.tags||'')+' '+name).toLowerCase();await storePack(pack);return true})}
+  // As uninstall does: a shape the drawing (or its undo history) still uses stays, under "Shapes in this drawing".
+  function removeShape(id){return inOrder(async()=>{const pack=await userPack();if(!pack.shapes[id])return null;delete pack.shapes[id];unsaved.delete(id);const key=`"type":"${id}"`,kept=usedTypes().has(id)||[...(S.history||[]),...(S.future||[])].some(h=>h.includes(key));
+    if(!kept)delete Stencils.shapes[id];else if(Stencils.shapes[id])Object.assign(Stencils.shapes[id],{cat:'doc-shapes',pack:'doc'});packs.set(USER,pack);const done=()=>{ensureDocCategory();iconCache?.clear?.()};try{if(Object.keys(pack.shapes).length)await storePack(pack);else await unstorePack(USER)}catch(err){done();throw err}done();return{kept}})}
 
   // ---------- online icons (Iconify: 200k+ open-source icons) ----------
   const API='https://api.iconify.design';let collections=null;
@@ -126,5 +234,5 @@ const Packs=(()=>{
   async function addOnline(full){let pack=packs.get('online');if(!pack){pack={id:'online',name:'Online picks',source:'iconify',categories:[{id:'pack:online',name:'Online picks'}],shapes:{}}}const id='i-'+slug(full.replace(':','-'));if(!pack.shapes[id]){const st=await fetchIcon(full);st.cat='pack:online';pack.shapes[id]=st;await save(pack)}else install(pack);return id}
   const thumbUrl=(full,color='#2f5ea8')=>{const[p,n]=full.split(':');return`${API}/${p}/${n}.svg?color=${encodeURIComponent(color)}`};
 
-  return{install,uninstall,list,embedUsed,installDoc,sanitizeSvg,isSafeMarkup,importAny,unzip,stencilFrom,save,remove,loadAll,exportPack,search,loadIcons,iconPreview,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
+  return{install,uninstall,list,stencilsFor,embedUsed,installDoc,registerRack,rackType,rememberRack,restoreSource,hash,noStroke,artKey,ensureDocCategory,USER,USER_CAT,addShape,addShapes,renameShape,removeShape,sanitizeSvg,isSafeMarkup,scopeStyle,normVb,importAny,unzip,stencilFrom,save,remove,loadAll,exportPack,search,loadIcons,iconPreview,getCollections,addOnline,thumbUrl,SETS,get:id=>packs.get(id)};
 })();

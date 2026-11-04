@@ -201,6 +201,7 @@ table.keys td:first-child{width:52%}
 
 /* menus */
 .menu{position:fixed;z-index:60;background:var(--panel);border:1px solid var(--border);border-radius:9px;box-shadow:var(--shadow);padding:5px;display:flex;flex-direction:column;min-width:200px;max-height:90vh;overflow:visible}
+.menu.scroll{overflow:hidden auto;max-height:calc(100vh - 12px)}.menu.scroll .submenu{position:fixed}
 .menu button{text-align:left;border:0;font-size:12.5px;padding:6px 10px;display:flex;align-items:center;gap:8px;background:none;border-radius:5px}
 .menu button:hover{background:var(--hover)}
 .menu button kbd{margin-left:auto}
@@ -516,3 +517,6 @@ body.reviewing .workarea{box-shadow:inset 0 0 0 3px #f59e0b88}
 body.reviewing [data-rtab="review"]{color:#b45309}
 .reviewBadge{border:0;border-radius:20px;padding:2px 9px;font-size:11.5px;font-weight:600;background:var(--panel2);color:var(--text);display:flex;align-items:center;gap:4px}
 .reviewBadge.on{background:#f59e0b;color:#fff}.reviewBadge[hidden]{display:none}
+details.cat>.catAct{display:flex;justify-content:flex-end;margin:0 0 4px}.catAct button{font-size:11px;padding:2px 8px}
+.shapePrev{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;min-height:96px;max-height:260px;overflow:auto;padding:12px;margin:0 0 10px;background:#fff;color:#334155;border:1px solid var(--border);border-radius:8px}.shapePrev svg{max-width:100%;height:auto}
+.shapePrev figure{margin:0;width:118px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px}.shapePrev figcaption{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shapePrev figure.more{color:#64748b;align-self:center}

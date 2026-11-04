@@ -69,7 +69,7 @@ function drawScene(parent,page,ctx){
     else if(n.kind==='text')drawTextItem(n,g,ctx);
     else if(n.kind==='table')drawTable(n,g,ctx);
     else if(n.kind==='legend')drawLegend(n,g,ctx,page);
-    for(const l of n.labels||[])drawLabel(n,l,g,ctx);
+    for(const l of n.labels||[])if(!Shapes.labelHidden(n,l))drawLabel(n,l,g,ctx);
     if(n.kind==='node')drawDataLines(n,g,ctx);
   }
   RCTX=null}
@@ -194,6 +194,8 @@ function drawLabel(owner,l,parent,ctx){
   if(l.background)el('rect',{x:l.x+m.left-4,y:l.y+m.top-3,width:m.w+8,height:m.h+6,rx:3,fill:l.bgColor||ctx.bg,'fill-opacity':.94},g);
   // an empty label stays clickable (double-click to type) — except on rack equipment, where it would hide the unit's own grip
   else if(ctx.interactive&&!text&&!Shapes.rackItems[owner?.type])el('rect',{x:l.x-20,y:l.y-l.size,width:40,height:l.size*1.3,fill:'transparent'},g);
+  // a name over a unit's own picture stays readable on a light pill
+  else if(text&&Shapes.rackItems[owner?.type]?.face==='art')el('rect',{x:l.x+m.left-3,y:l.y+m.top-1.5,width:m.w+6,height:m.h+3,rx:2.5,fill:'#f8fafc','fill-opacity':.92,stroke:'#475569','stroke-opacity':.35,'stroke-width':.5},g);
   const halo=!l.background&&l.halo!==false&&owner&&(owner.kind==='node'||owner.kind==='edge')&&!Shapes.rackItems[owner.type]&&!(owner.kind==='node'&&Shapes.kindOf(owner.type)==='basic')?(ctx.bgAt?ctx.bgAt(l.x,l.y):ctx.bg):null;
   if(halo&&text)el('rect',{x:l.x+m.left-2,y:l.y+m.top-1,width:m.w+4,height:m.h+2,rx:2,fill:halo},g);
   const t=el('text',{x:l.x,y:l.y,'text-anchor':l.align||'middle','font-family':l.font||Core.FONT,'font-size':l.size,'font-weight':l.bold?650:null,'font-style':l.italic?'italic':null,'text-decoration':l.underline?'underline':null,fill:l.color||'#34465e'},g);
@@ -249,7 +251,8 @@ function renderOverlay(){
   if(A){for(const id of A.edges||[]){const e=find(id);if(e)el('path',{d:Conn.path(e),fill:'none',stroke:A.color||'#16a34a','stroke-width':(e.strokeWidth||2)+8/z,'stroke-opacity':.35,'stroke-linecap':'round','pointer-events':'none'},o)}
     for(const id of A.nodes||[]){const n=find(id);if(n){const b=Core.box(n);el('rect',{x:b.x-6/z,y:b.y-6/z,width:b.w+12/z,height:b.h+12/z,rx:8/z,fill:A.color||'#16a34a','fill-opacity':.12,stroke:A.color||'#16a34a','stroke-width':2/z,'pointer-events':'none'},o)}}
     if(A.loads)for(const[id,L]of A.loads){const e=find(id);if(!e)continue;const q=Conn.pointAt(e,.5),txt=L.text,w=Core.textWidth(txt,10.5)/1+12;const g=el('g',{transform:`translate(${q[0]} ${q[1]}) scale(${1/z})`,'pointer-events':'none'},o);el('rect',{x:-w/2,y:-9,width:w,height:18,rx:9,fill:L.color},g);const t=el('text',{x:0,y:4,'text-anchor':'middle','font-size':10.5,'font-family':Core.FONT,fill:'#fff','font-weight':650},g);t.textContent=txt}}
-  if(S.dropGhost){const g=S.dropGhost;el('rect',{x:g.x,y:g.y,width:g.w,height:g.h,rx:6/z,fill:blue,'fill-opacity':.07,stroke:blue,'stroke-width':1.5/z,'stroke-dasharray':`${6/z} ${4/z}`,'pointer-events':'none'},o);const t=el('text',{x:g.x+4/z,y:g.y-7/z,fill:blue,'font-size':12/z,'font-family':Core.FONT,'font-weight':600,'pointer-events':'none'},o);t.textContent=`${g.label} · ${Math.round(g.w/Core.PX)} × ${Math.round(g.h/Core.PX)} mm`}
+  if(S.dropGhost?.slot)drawRackSlot(S.dropGhost,o,z);
+  else if(S.dropGhost){const g=S.dropGhost;el('rect',{x:g.x,y:g.y,width:g.w,height:g.h,rx:6/z,fill:blue,'fill-opacity':.07,stroke:blue,'stroke-width':1.5/z,'stroke-dasharray':`${6/z} ${4/z}`,'pointer-events':'none'},o);const t=el('text',{x:g.x+4/z,y:g.y-7/z,fill:blue,'font-size':12/z,'font-family':Core.FONT,'font-weight':600,'pointer-events':'none'},o);t.textContent=`${g.label} · ${Math.round(g.w/Core.PX)} × ${Math.round(g.h/Core.PX)} mm`}
   for(const id of S.highlights){const n=find(id);if(n){const b=Core.bounds([n],n.kind!=='edge');el('rect',{x:b.x-5/z,y:b.y-5/z,width:b.w+10/z,height:b.h+10/z,rx:4/z,fill:'#f59e0b','fill-opacity':.12,stroke:'#f59e0b','stroke-width':2/z,'pointer-events':'none'},o)}}
   // broken endpoints
   const byIdAll=new Map(items().map(n=>[n.id,n]));for(const e of items())if(e.kind==='edge')for(const k of['from','to'])if(e[k]&&!Conn.resolveEnd(e,k,byIdAll)){const p=k==='from'?e.points[0]:e.points.at(-1);el('circle',{cx:p[0],cy:p[1],r:5/z,fill:'#fff4e6',stroke:'#e49a25','stroke-width':2/z,'pointer-events':'none'},o)}
@@ -262,7 +265,7 @@ function renderOverlay(){
   // hover
   const hov=S.hoverId&&find(S.hoverId);
   if(hov&&!S.drag&&hov.kind==='node'&&!isLocked(hov)&&['select','connect','port'].includes(S.mode)&&!S.reviewMode){const b=Core.box(hov);el('rect',{x:b.x-3/z,y:b.y-3/z,width:b.w+6/z,height:b.h+6/z,rx:4/z,fill:'none',stroke:blue,'stroke-opacity':.45,'stroke-width':sw,'pointer-events':'none'},o);
-    if(S.mode==='select'&&!S.selected.has(hov.id)||S.mode==='select'&&S.selected.size===1)drawPorts(hov,o,z);
+    if(S.mode==='select'&&!S.selected.has(hov.id)||S.mode==='select'&&S.selected.size===1)drawPorts(hov,o,z,false,true);
     if(S.mode==='select'&&S.prefs.autoConnect&&Shapes.kindOf(hov.type)==='device')drawAutoArrows(hov,o,z)}
   if(S.mode==='connect'||S.mode==='port'||S.drag?.kind==='bend'||S.drag?.kind==='connect')for(const n of items())if(n.kind==='node'&&itemVisible(n,{doc:S.doc})&&!isLocked(n))drawPorts(n,o,z);
   // selection
@@ -276,6 +279,8 @@ function renderOverlay(){
       // racks and rack units take their size from U counts (inspector / right-click), never from handles
       const ed=editable(),rackish=sel.some(x=>x.type==='rack'||Shapes.rackItems[x.type]);if(ed.length===sel.length&&!S.drag&&!rackish&&!S.reviewMode){for(const[hx,hy]of[[0,0],[.5,0],[1,0],[1,.5],[1,1],[.5,1],[0,1],[0,.5]]){if((hx===.5&&b.w*z<44)||(hy===.5&&b.h*z<44))continue;el('rect',{x:b.x+b.w*hx-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-hx':hx,'data-hy':hy,cursor:(hx===.5?'ns':hy===.5?'ew':hx===hy?'nwse':'nesw')+'-resize'},o)}
         if(sel.length===1&&sel[0].kind==='node'&&sel[0].type!=='rack'&&!Shapes.rackItems[sel[0].type]){const cx=b.x+b.w/2,cy=b.y-24/z;el('line',{x1:cx,y1:b.y-4/z,x2:cx,y2:cy,stroke:blue,'stroke-width':sw,'pointer-events':'none'},o);el('circle',{cx,cy,r:5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'rotate',cursor:'grab'},o)}}
+      // one unit in a rack: top and bottom handles change its height in whole U
+      const un=sel.length===1&&Racks.isU(sel[0])?rackOf(sel[0],pg()):null;if(un&&!isLocked(sel[0])&&!isLocked(un)&&!Racks.isLocked(sel[0],un)&&!S.drag&&!S.reviewMode&&b.h*z>=10)for(const[edge,hy]of[['top',0],['bottom',1]])el('rect',{x:b.x+b.w/2-hs/2,y:b.y+b.h*hy-hs/2,width:hs,height:hs,rx:1.5/z,fill:'#fff',stroke:blue,'stroke-width':1.2/z,'data-role':'resize','data-edge':edge,cursor:'ns-resize'},o);
       for(const n of sel){const r=Shapes.rackItems[n.type]&&rackOf(n,pg());if(r&&Shapes.rackDims(r).rear!=null)el('rect',{x:r.x+Shapes.rearX(r,n)-2/z,y:n.y-2/z,width:n.w+4/z,height:n.h+4/z,fill:'none',stroke:blue,'stroke-dasharray':`${4/z} ${3/z}`,'stroke-width':sw,'pointer-events':'none'},o)}
       if(sel.some(isLocked)){const t=el('text',{x:b.x,y:b.y-9/z,fill:'#8c97a8','font-size':11/z,'font-family':Core.FONT,'pointer-events':'none'},o);t.textContent='🔒 Locked'}}
     if(S.prefs.showPorts&&sel.length===1&&sel[0].kind==='node')drawPorts(sel[0],o,z,true)}
@@ -296,10 +301,12 @@ function renderOverlay(){
   if(d?.kind==='lasso'&&d.pts.length>2)for(const id of Select.lassoSelect(d.pts,!!d.touch)){const n=find(id);if(!n||S.selected.has(id)||n.kind==='edge')continue;const b=Core.box(n);el('rect',{x:b.x-2/z,y:b.y-2/z,width:b.w+4/z,height:b.h+4/z,rx:3/z,fill:d.touch?'#16a34a':blue,'fill-opacity':.1,stroke:d.touch?'#16a34a':blue,'stroke-width':sw,'pointer-events':'none'},o)}
   if(d?.kind==='lasso'&&d.pts.length>1){const col=d.touch?'#16a34a':blue;el('path',{d:'M'+d.pts.map(q=>q.join(' ')).join('L')+'Z',fill:col,'fill-opacity':.07,stroke:col,'stroke-width':sw,'stroke-dasharray':d.touch?`${5/z} ${3/z}`:null,'pointer-events':'none'},o)}
   // where a dragged rack unit will land; a ghost slot also adds the side channels / roof it needs, a full one says so
-  if(d?.kind==='move'&&d.rackSlot){const r=d.rackSlot,bad=r.full,col=bad?'#dc2626':'#159c70';el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:bad?'#dc2626':'#25b889','fill-opacity':bad?.08:.25,stroke:col,'stroke-width':sw,'stroke-dasharray':r.ghost||bad?`${4/z} ${3/z}`:null,'pointer-events':'none'},o);
-    if(r.text){const t=el('text',{x:r.x+r.w+6/z,y:r.y+12/z,fill:bad?'#b91c1c':'#128461','font-size':11/z,'font-weight':600,'font-family':Core.FONT,'pointer-events':'none',stroke:'#fff','stroke-width':3/z,'paint-order':'stroke'},o);t.textContent=r.text}}
+  if((d?.kind==='move'||d?.kind==='uresize')&&d.rackSlot)drawRackSlot(d.rackSlot,o,z);
   ReviewUI.drawOverlay(o,z)}
-function drawPorts(n,o,z,named=false){for(const p of n.ports||[]){const q=Core.portPoint(n,p);const c=el('circle',{cx:q[0],cy:q[1],r:4/z,fill:'#fff',stroke:'#3779db','stroke-width':1.5/z,'data-id':n.id,'data-role':'port','data-port':p.id,cursor:'crosshair'},o);const t=el('title',{},c);t.textContent=p.name||'Port';if(named&&p.name){const tx=el('text',{x:q[0]+6/z,y:q[1]-6/z,'font-size':9/z,fill:'#3779db','font-family':Core.FONT,'pointer-events':'none'},o);tx.textContent=p.name}}}
+function drawRackSlot(r,o,z){const sw=1/z,bad=r.full,col=bad?'#dc2626':'#159c70';el('rect',{x:r.x,y:r.y,width:r.w,height:r.h,fill:bad?'#dc2626':'#25b889','fill-opacity':bad?.08:.25,stroke:col,'stroke-width':sw,'stroke-dasharray':r.ghost||bad?`${4/z} ${3/z}`:null,'pointer-events':'none'},o);
+  if(r.text){const t=el('text',{x:r.x+r.w+6/z,y:r.y+12/z,fill:bad?'#b91c1c':'#128461','font-size':11/z,'font-weight':600,'font-family':Core.FONT,'pointer-events':'none',stroke:'#fff','stroke-width':3/z,'paint-order':'stroke'},o);t.textContent=r.text}}
+// hover: the points a press would start a link from. In select mode a press on a point inside a faceplate moves it (Racks.innerPort).
+function drawPorts(n,o,z,named=false,hover=false){for(const p of n.ports||[]){const inner=S.mode==='select'&&Racks.innerPort(n,p);if(hover&&inner)continue;const q=Core.portPoint(n,p);const c=el('circle',{cx:q[0],cy:q[1],r:4/z,fill:'#fff',stroke:'#3779db','stroke-width':1.5/z,'data-id':n.id,'data-role':'port','data-port':p.id,cursor:inner?null:'crosshair'},o);const t=el('title',{},c);t.textContent=p.name||'Port';if(named&&p.name){const tx=el('text',{x:q[0]+6/z,y:q[1]-6/z,'font-size':9/z,fill:'#3779db','font-family':Core.FONT,'pointer-events':'none'},o);tx.textContent=p.name}}}
 function drawAutoArrows(n,o,z){const b=Core.box(n),gap=14/z,s=7/z;for(const[dir,x,y,rot]of[['up',b.x+b.w/2,b.y-gap,0],['right',b.x+b.w+gap,b.y+b.h/2,90],['down',b.x+b.w/2,b.y+b.h+gap+(n.labels?.length?Core.labelMetrics(n.labels[0],resolveLabel(n,n.labels[0])).h+8/z:0),180],['left',b.x-gap,b.y+b.h/2,270]]){const g=el('g',{transform:`translate(${x} ${y}) rotate(${rot})`,'data-role':'autoconnect','data-id':n.id,'data-dir':dir,cursor:'pointer'},o);el('circle',{cx:0,cy:0,r:s*1.5,fill:'transparent'},g);el('path',{d:`M${-s} ${s*.5}L0 ${-s*.7}L${s} ${s*.5}Z`,fill:'#3774e8','fill-opacity':.55},g);const t=el('title',{},g);t.textContent='Click: add a connected copy · Drag: connect'}}
 function drawEdgeHandles(e,o,z){const blue='#3774e8',hs=8/z,locked=isLocked(e);el('path',{d:Conn.path(e),fill:'none',stroke:blue,'stroke-width':(e.strokeWidth||2)+3/z,'stroke-opacity':.25,'pointer-events':'none'},o);if(locked)return;
   const manual=e.routing!=='auto'&&e.routing!=='straight';

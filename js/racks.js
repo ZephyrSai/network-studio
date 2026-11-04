@@ -85,19 +85,56 @@ function syncRear(items){let changed=false;for(const n of items){if(!isItem(n))c
 // New height, keeping the top U where it was if there is room, else the bottom U, else the nearest free run.
 function setHeight(r,n,hU,items){const cur=uOf(r,n),top=cur+heightU(n)-1,exc=new Set([n.id]);let u=[top-hU+1,cur].find(x=>fits(r,items,x,hU,exc));if(u==null)u=findSlot(r,items,hU,{near:cur,except:exc});if(u==null)return null;n.h=hU*RU();placeAt(r,n,u);return u}
 function moveTo(r,n,u,items){if(!fits(r,items,u,heightU(n),new Set([n.id])))return false;placeAt(r,n,u);return true}
-const isLocked=(n,r)=>!!(n.uLock||r?.lockItems);
+const uLocked=(n,r)=>!!(n.uLock||r?.lockItems);
 
 // Which rack unit stands for a drawing device: [type pattern, rack item, U].
-const MAP=[[/firewall|utm|ngfw|waf/,'rk-firewall',1],[/router|sdwan|wan|vpn/,'rk-router',2],[/l3switch|coreswitch|core|switch|hub/,'rk-switch',1],
-  [/nvr|vms|recorder/,'rk-nvr',2],[/san|storage|nas|backup|tape/,'rk-storage',2],[/hypervisor|esx|blade/,'rk-server2',2],[/server|dns|dhcp|ad|mail|web|app|db|sql|proxy|ids|ips|siem|nms|syslog|controller|wlc|load|lb|scada|historian/,'rk-server',1],
+const MAP=[[/firewall|utm|ngfw|waf/,'rk-firewall',1],[/router|sdwan|wanopt|wan|vpn/,'rk-router',2],[/l3switch|coreswitch|core|switch|hub/,'rk-switch',1],
+  [/nvr|vms|recorder/,'rk-nvr',2],[/san|storage|nas|backup|tape/,'rk-storage',2],[/hypervisor|esx|blade/,'rk-server2',2],[/server|dns|dhcp|ad|mail|web|app|db|sql|proxy|ids|ips|siem|nms|syslog|controller|wlc|loadbalanc|load|lb|scada|historian/,'rk-server',1],
   [/ups/,'rk-ups',2],[/pdu|power/,'rk-pdu',1],[/patch/,'rk-patch',1],[/fib|odf/,'rk-fiber',1],[/kvm|console/,'rk-kvm',1],[/media|converter/,'rk-shelf',2]];
 const VPDU=/vertical|\b0 ?u\b|zero-?u|vpdu/,ROOFFAN=t=>/roof|top[- ]mount/.test(t)&&/fan|cool/.test(t);
 function rackTypeFor(n){const t=(n.type+' '+(n.labels?.[0]?.text||'')).toLowerCase();if(Shapes.rackItems[n.type])return[n.type,Shapes.rackItems[n.type].u];
   if(/pdu|power/.test(t)&&VPDU.test(t))return['rk-vpdu',0];for(const[re,rt,u]of MAP)if(re.test(t))return[/24/.test(t)&&rt==='rk-switch'?'rk-switch24':rt,u];return['rk-server',1]}
-// Families: rack equipment named without a height ('Server' is rk-server or rk-server2 by height).
+// The rack unit a device plainly is, or null: no default, 0U doesn't count, and short words count only whole ('ad' isn't radio, 'core' isn't score). Cameras, APs and phones never are, nor services and endpoints, whatever their names say.
+// What it is comes from its type: a label is a name ('Web dev laptop' stays a laptop). A label can still say how long a PDU is or that a switch has 24 ports.
+const wordHit=(re,t)=>{for(const m of t.matchAll(new RegExp(re.source,'g'))){const a=t[m.index-1]||'',b=t[m.index+m[0].length]||'';if(m[0].length>4||!/[a-z]/.test(a)&&!/[a-z]/.test(b))return true}return false};
+const NOT_GEAR_CAT=new Set(['cloud','endpoints']),NOT_GEAR=new Set(['x-compute-cloud-web-app','x-compute-cloud-mobile-app','x-compute-cloud-serverless','x-compute-cloud-object-storage','x-devices-game-console','x-network-wan-globe']);
+function rackMatch(n){if(C.POE_LOADS.includes(n.type)||isRack(n))return null;if(Shapes.rackItems[n.type])return Shapes.rackItems[n.type].u?[n.type,Shapes.rackItems[n.type].u]:null;if(NOT_GEAR.has(n.type)||NOT_GEAR_CAT.has(stencilOf(n)?.cat))return null;const ty=n.type.toLowerCase(),t=(n.type+' '+(n.labels?.[0]?.text||'')).toLowerCase();if(/pdu|power/.test(t)&&VPDU.test(t))return null;
+  for(const[re,rt,u]of MAP)if(wordHit(re,ty))return[/24/.test(t)&&rt==='rk-switch'?'rk-switch24':rt,u];return null}
+// ---------- a shape as rack equipment ----------
+// A picture of its own: a Visio master, an imported or kept shape, an image. Bundled icons only stand for a kind of device.
+const stencilOf=n=>(typeof Stencils!=='undefined'?Stencils.shapes:{})[n?.type];
+const isArt=n=>{const s=stencilOf(n);return!!n?.image||n?.type==='image'||!!(s?.pack&&s.pack!=='extended')};
+const isArtUnit=n=>isItem(n)&&Shapes.rackItems[n.type].face==='art';
+// A connection point inside a picture of its own, not on its outline: a Visio faceplate carries them on every jack. In select mode a press there grabs the shape; the connector tool still reaches them.
+const innerPort=(n,p)=>!!p&&(isArt(n)||isArtUnit(n))&&p.x>.02&&p.x<.98&&p.y>.02&&p.y<.98;
+// bigger than the cabinet both ways round: a page-wide faceplate still fits a slot, a background box doesn't
+const tooBig=(b,r)=>{const f=frontRect(r);return Math.min(b.w,b.h)>Math.min(f.w,f.h)};
+// Can this shape lock into a slot just by being dragged there? The Make rack equipment dialog takes more.
+// env (for tests and off-document shapes): items, rack, locked, linked; by default the current page and the app's own checks.
+function canMount(n,env={}){if(n?.kind!=='node'||!Shapes.isDevice(n)||isItem(n)||isRack(n)||n.pin||n.locked||n.group)return false;
+  if(env.locked??(typeof isLocked==='function'&&isLocked(n)))return false;if(env.linked??(typeof RackUI!=='undefined'&&!!RackUI.unitOf(n)))return false;
+  if(typeof JoinLines!=='undefined'&&JoinLines.isPanel(n,env.items||(typeof pg==='function'?pg().items:[])))return false;if(env.rack&&tooBig(n,env.rack))return false;return isArt(n)||!!rackMatch(n)}
+const GENERIC=/^(top|right|bottom|left|edge \d+|port \d+)$/i,portsUsed=(n,all)=>{const u=new Set();for(const e of all)if(e.kind==='edge')for(const k of['from','to'])if(e[k]?.node===n.id&&e[k].port)u.add(e[k].port);return u};
+// Turn a shape into a unit in place: same id, links and data, the look of Shapes.make. It keeps its centre until placeAt mounts it. rackFrom holds what Back restores (relative, so it survives moves and copies).
+function toUnit(n,type,hU,all=[]){const c=C.center(n),used=portsUsed(n,all);
+  n.rackFrom={type:n.type,w:n.w,h:n.h,image:n.image,display:n.display,rotation:n.rotation,flipX:n.flipX,flipY:n.flipY,stroke:n.stroke,fill:n.fill,strokeWidth:n.strokeWidth,dash:n.dash,labels:(n.labels||[]).map(l=>({...C.copy(l),x:l.x-n.x,y:l.y-n.y})),ports:C.copy(n.ports||[])};
+  n.type=type;n.w=Shapes.RACK.inner;n.h=hU*RU();n.x=c[0]-n.w/2;n.y=c[1]-n.h/2;n.rotation=0;n.display='symbol';n.stroke='#475569';n.fill='#e2e8f0';n.strokeWidth=2;for(const k of['flipX','flipY','image','dash'])delete n[k];
+  const l=n.labels?.[0]||C.label('',0,0);for(const k of['wrapWidth','anchor','auto','autoGap','italic','underline','font','bgColor','halo'])delete l[k];Object.assign(l,{rotation:0,color:'#1e293b',align:'start',bold:false,background:false,size:hU>1?10:8.5,x:n.x+12});l.y=n.y+n.h/2+l.size*.36;n.labels=[l];
+  const keep=(n.ports||[]).filter(p=>used.has(p.id)||p.name&&!GENERIC.test(p.name));for(const[name,x]of[['Left',0],['Right',1]])if(!keep.some(p=>Math.abs(p.x-x)<.01&&Math.abs(p.y-.5)<.01))keep.push({id:C.uid(),x,y:.5,name});n.ports=keep;return n}
+// Back to the shape it was, centred on (cx,cy). Without rackFrom: type and size come from o. Links keep the ports they use; text is what the label now says.
+function toShape(n,all,{cx,cy,type,w,h,text}){const f=n.rackFrom||{},front=n.labels?.find(l=>l.view!=='rear'),used=portsUsed(n,all),name=text??front?.text??'',plain=C.node('x',0,0,'');
+  n.type=f.type||type;n.w=f.w||w||64;n.h=f.h||h||64;n.x=cx-n.w/2;n.y=cy-n.h/2;for(const k of['rotation','flipX','flipY','display','image','stroke','fill','strokeWidth','dash']){if(f[k]!==undefined)n[k]=f[k];else if(!n.rackFrom&&plain[k]!==undefined)n[k]=plain[k];else delete n[k]}
+  const ports=f.ports?C.copy(f.ports):C.defaultPorts(),taken=new Set();for(const p of n.ports||[]){if(!used.has(p.id))continue;const same=ports.find(q=>q.id===p.id)||ports.find(q=>!taken.has(q.id)&&Math.abs(q.x-p.x)<.001&&Math.abs(q.y-p.y)<.001&&(q.name||'')===(p.name||''));if(same)same.id=p.id;else ports.push(C.copy(p));taken.add(p.id)}n.ports=ports;
+  const labels=(f.labels||[]).map(l=>({...C.copy(l),x:l.x+n.x,y:l.y+n.y}));if(labels[0])labels[0].text=name;else if(String(name).trim())labels.push(C.label(name,cx,n.y+n.h+16));n.labels=labels;
+  for(const k of['rackFrom','showName','hideName','uLock','fullHeight','ref'])delete n[k];return n}
+// On a page that keeps its own order (Visio imports) a rack added later paints over a unit and its links: lift them just above it. rack < links < unit, as band sorting draws them.
+function stackOver(page,n,r){if(page.stack!=='doc')return;const a=page.items;if(!a.includes(n)||!a.includes(r))return;const low=x=>a.indexOf(x)<a.indexOf(r),up=[...a.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)&&low(e)),...(low(n)?[n]:[])];
+  for(const x of up)a.splice(a.indexOf(x),1);a.splice(a.indexOf(r)+1,0,...up)}
+// Families: rack equipment named without a height ('Server' is rk-server or rk-server2 by height). Art units aren't one: their names repeat and the registry outlives a document, so they are listed per document.
 const family=type=>Shapes.rackItems[type]?.fam||'';
-const families=()=>[...new Set(Object.values(Shapes.rackItems).map(x=>x.fam))];
-function typeFor(fam,hU){const c=Object.entries(Shapes.rackItems).filter(([,v])=>v.fam===fam);return(c.find(([,v])=>v.u===hU)||c[0])?.[0]||null}
+const families=()=>[...new Set(Object.values(Shapes.rackItems).filter(x=>x.face!=='art').map(x=>x.fam))];
+const artTypes=list=>[...new Set(list.filter(n=>n.kind==='node'&&Shapes.rackItems[n.type]?.face==='art').map(n=>n.type))];
+function typeFor(fam,hU){const c=Object.entries(Shapes.rackItems).filter(([,v])=>v.face!=='art'&&v.fam===fam);return(c.find(([,v])=>v.u===hU)||c[0])?.[0]||null}
 // Rack equipment named in free text (a spreadsheet, a device name): {type, guessed}
 const MORE=[[/blank/,'rk-blank'],[/brush/,'rk-brush'],[/shelf/,'rk-shelf'],[/drawer/,'rk-drawer'],[/vented|cable tray/,'rk-tray'],[/fan/,'rk-fan'],[/cable ?man|cable mgmt|cable organi[sz]er/,'rk-cable'],[/ats|transfer switch/,'rk-ats'],[/monitor|lcd/,'rk-monitor'],[/blade/,'rk-blade']];
 function guessType(text){const t=String(text||'').toLowerCase();if(/pdu|power strip|power bar/.test(t)&&VPDU.test(t))return{type:'rk-vpdu',guessed:true};if(ROOFFAN(t))return{type:'rk-rooffan',guessed:true};
@@ -114,11 +151,11 @@ function summary(r,items,find){const eq=contents(r,items).sort((a,b)=>uOf(r,b)-u
   const used=rows.reduce((s,x)=>s+x.h,0),deep=rows.filter(x=>x.depth>usable),warn=[];
   if(budget&&power>budget)warn.push(`Power ${power} W is over the ${budget} W budget.`);else if(budget&&power>budget*.8)warn.push(`Power is at ${Math.round(power/budget*100)}% of the budget (keep under 80%).`);
   if(ups&&power>ups)warn.push(`Load ${power} W is more than the UPS can carry (${Math.round(ups)} W).`);
-  for(const x of deep)warn.push(`${x.asset?.labels?.[0]?.text||x.n.labels?.[0]?.text||x.n.type} is ${x.depth} mm deep — more than the ${usable} mm usable in a ${depth} mm rack.`);
+  for(const x of deep)warn.push(`${x.asset?.labels?.[0]?.text||x.n.labels?.[0]?.text||Shapes.nameOf(x.n.type)} is ${x.depth} mm deep — more than the ${usable} mm usable in a ${depth} mm rack.`);
   if(rows.some(x=>x.estimated)||ex.some(x=>x.estimated))warn.push('Some power figures are typical values — enter Power draw (W) on the device for exact numbers.');
   return{rack:r,rows,extras:ex,units:units(r),used,free:units(r)-used,power,amps:+(power/v).toFixed(1),volts:v,btu:Math.round(power*3.412),budget,ups:Math.round(ups),depth,usable,deepest:Math.max(0,...rows.map(x=>x.depth)),warn}}
 
 return{isRack,isItem,isU,isZeroU,mountOf,heightU,contents,extras,frontRect,rackOf,channel,where,position,fansOf,uOf,occupied,fits,findSlot,freeU,placeAt,
-  sideOccupied,sideFits,findSide,placeSide,sideLength,inWay,roofItem,placeRoof,resize,setFrame,setUnits,syncRear,setHeight,moveTo,isLocked,rackTypeFor,family,families,typeFor,guessType,specs,summary,TYPICAL};
+  sideOccupied,sideFits,findSide,placeSide,sideLength,inWay,roofItem,placeRoof,resize,setFrame,setUnits,syncRear,setHeight,moveTo,isLocked:uLocked,rackTypeFor,rackMatch,isArt,isArtUnit,innerPort,canMount,tooBig,toUnit,toShape,stackOver,span,family,families,artTypes,typeFor,guessType,specs,summary,TYPICAL};
 })();
 if(typeof module!=='undefined')module.exports=Racks;
