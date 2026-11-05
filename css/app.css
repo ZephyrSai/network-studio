@@ -520,3 +520,8 @@ body.reviewing [data-rtab="review"]{color:#b45309}
 details.cat>.catAct{display:flex;justify-content:flex-end;margin:0 0 4px}.catAct button{font-size:11px;padding:2px 8px}
 .shapePrev{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;min-height:96px;max-height:260px;overflow:auto;padding:12px;margin:0 0 10px;background:#fff;color:#334155;border:1px solid var(--border);border-radius:8px}.shapePrev svg{max-width:100%;height:auto}
 .shapePrev figure{margin:0;width:118px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px}.shapePrev figcaption{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shapePrev figure.more{color:#64748b;align-self:center}
+
+/* Change shape */
+.chgHead{display:flex;gap:8px;margin:0 0 10px}.chgHead input{flex:1 1 60%;min-width:0}.chgHead select{flex:1 1 40%;min-width:0}
+.chgGrid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr));max-height:min(52vh,460px);overflow:auto;align-content:start;margin:0 0 8px}.chgGrid .stencil.active{border-color:var(--blue-line);background:var(--hover)}.chgGrid>p{grid-column:1/-1}
+.chgBtn{margin-top:4px;width:100%}

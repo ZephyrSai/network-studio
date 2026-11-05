@@ -296,7 +296,7 @@ function apply(P,r,page,env={}){let items=page.items;if(!items.includes(r))items
   const put=(n,p,was)=>{if(p.mount==='u'){const l=n.labels?.[0];if(was!=='u'&&l&&!l.anchor)l.rotation=0;n.h=p.h*RU();Racks.placeAt(r,n,p.u)}else if(isSide(p.mount))Racks.placeSide(r,n,p.mount,p.u,p.h);else if(p.mount==='roof')Racks.placeRoof(r,n)};
   const parked=[],sides=[];
   for(const x of P.rows){if(!x.on)continue;let n;
-    if(x.kind==='match'){n=byId(x.id);if(!n)continue;const was=Racks.mountOf(n),ty=x.changes.find(c=>c.kind==='type');if(ty){n.type=ty.type;if(ty.fans)write(n,'fans',ty.fans);retype(n,was)}
+    if(x.kind==='match'){n=byId(x.id);if(!n)continue;const was=Racks.mountOf(n),ty=x.changes.find(c=>c.kind==='type');if(ty){n.type=ty.type;if(ty.fans)write(n,'fans',ty.fans);retype(n,was);if(Shapes.rackItems[ty.type]?.face!=='art'){delete n.artFit;if(n.inset){delete n.inset;if(Racks.isU(n))Racks.placeAt(r,n,Racks.uOf(r,n))}}}
       if(x.place&&!x.fixed&&(x.moved||x.resized||was!==Racks.mountOf(n))){if(x.place.mount==='park'){if(was!==Racks.mountOf(n))reshape(n,x.want.h);parked.push(n)}else{put(n,x.place,was);if(isSide(x.place.mount))sides.push([n,x.place])}}
       if(x.moved)out.moved.push(n.id);if(x.updated)out.updated.push(n.id)}
     else{if(!x.place)continue;n=Shapes.make(x.type,0,0,x.link?'{{asset}}':x.newName||x.p.name||undefined);const ly=r.layer||env.layer;if(ly)n.layer=ly;if(x.link)n.ref=x.link.id;if(x.type==='rk-rooffan')n.data.fans=x.fans;items.push(n);out.added.push(n.id);

@@ -127,3 +127,15 @@ test('Remember for this shape travels on the derived type, and a kept shape neve
 
 test('catalogue skips art units, which stay rack items',()=>{const X=sandbox(),{Packs,Stencils,Shapes}=X;const id=Packs.rackType(rk(5,{name:'Firewall'}));const rackCat=Shapes.catalog().find(c=>c.id==='rack');assert.ok(!rackCat.items.some(i=>i.type===id));
   assert.equal(Stencils.shapes[id].name,'Firewall');assert.equal(Shapes.kindOf(id),'rackitem');assert.ok(Shapes.isDevice({kind:'node',type:id}))});
+
+// ---------- trimming the empty margin inside a picture ----------
+const pixels=(W,H,paint)=>{const d=new Uint8ClampedArray(W*H*4);for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=paint(x,y);if(c)d.set(c,(y*W+x)*4)}return d};
+const GREY=[120,120,120,255],WHITE=[255,255,255,255];
+test('trimBox: an empty margin goes, white or transparent',()=>{const{trimBox:t}=sandbox().ShapeKit,box=(x0,y0,x1,y1)=>(x,y)=>x>=x0&&x<x1&&y>=y0&&y<y1?GREY:null;
+  let q=t(pixels(100,40,box(5,3,95,37)),100,40);assert.equal(q.x0,5);assert.equal(q.x1,95);assert.equal(q.y0,3);assert.equal(q.y1,37);
+  q=t(pixels(100,40,(x,y)=>x>=5&&x<95&&y>=3&&y<37?GREY:WHITE),100,40);assert.equal(q.x0,5,'a white margin is a margin too');assert.equal(q.y1,37)});
+test('trimBox: a white faceplate with an outline keeps its whole face',()=>{const{trimBox:t}=sandbox().ShapeKit;const q=t(pixels(100,40,(x,y)=>x<4||x>=96?null:(x===4||x===95||y===0||y===39)?GREY:WHITE),100,40);assert.deepEqual([q.x0,q.x1,q.y0,q.y1],[4,96,0,40])});
+test('trimBox: a small mark on a white plate is not a reason to crop down to it',()=>{const{trimBox:t}=sandbox().ShapeKit,q=t(pixels(100,40,(x,y)=>x>=40&&x<60&&y>=15&&y<25?GREY:WHITE),100,40);assert.deepEqual([q.x0,q.x1,q.y0,q.y1],[0,100,0,40],'the plate is the picture')});
+test('trimBox: nothing painted, or too little to trust, changes nothing',()=>{const{trimBox:t}=sandbox().ShapeKit;assert.equal(t(pixels(50,50,()=>null),50,50),null);assert.equal(t(pixels(100,40,(x,y)=>x>=40&&x<60&&y>=15&&y<25?GREY:null),100,40),null)});
+test('rackType: the same art is the same type after its viewBox has been trimmed, in a saved file too',()=>{const X=sandbox(),{Packs,Stencils}=X,d={name:'A',vb:'-1 -1 12 7',svg:'<path d="M0 0h10v5z" fill="#123"/>',u:1,frac:1,from:'x'},id=Packs.rackType(d);assert.ok(id);const s=Stencils.shapes[id];s.rackUnit.vb0=s.vb;s.vb='0 0 10 5';assert.equal(Packs.rackType(d),id,'not a second type');assert.equal(s.vb,'0 0 10 5','the trim stays');assert.notEqual(Packs.rackType({...d,svg:'<path d="M0 0h9v5z" fill="#123"/>'}),id,'different art is a different type');
+  const Y=sandbox(),doc={version:3,stencils:Packs.stencilsFor([{kind:'node',type:id}]),pages:[]};Y.Packs.installDoc(doc);assert.equal(Y.Stencils.shapes[id].vb,'0 0 10 5','the file carries the trim');assert.equal(Y.Packs.rackType(d),id,'and a new copy in another browser is still that type')});

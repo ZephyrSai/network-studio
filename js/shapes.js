@@ -122,12 +122,12 @@ function drawFace(n,g){
   if(face==='rooffan'){el('rect',{x:0,y:0,width:w,height:h,rx:2.5,fill:body,stroke:s,'stroke-width':1},g);const k=Math.max(1,Math.min(6,+n.data?.fans||4)),x0=w*.3,x1=w-6,r=Math.min(h/2-2,(x1-x0)/k/2-1.5);
     for(let j=0;j<k;j++){const cx=x0+(x1-x0)*(j+.5)/k;el('circle',{cx:f(cx),cy:h/2,r:f(r),fill:'#f8fafc',stroke:dark,'stroke-width':.9},g);el('path',{d:`M${f(cx-r*.7)} ${f(h/2)}h${f(r*1.4)}M${f(cx)} ${f(h/2-r*.7)}v${f(r*1.4)}`,stroke:dark,'stroke-width':.6},g);el('circle',{cx:f(cx),cy:h/2,r:1.3,fill:dark},g)}return}
   const plateOf=()=>{el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:body,stroke:s,'stroke-width':1},g);for(const x of[1.5,w-7.5]){el('rect',{x,y:1.5,width:6,height:h-3,fill:s,'fill-opacity':.18},g);el('circle',{cx:x+3,cy:h/2,r:1.4,fill:s,'fill-opacity':.6},g)}};
-  // a shape's own picture: centred in its share of the slot, on a plate with ears when it doesn't fill it. Always ends with an outline: exports and colour-by read that.
+  // a shape's own picture fills the box end to end; one that keeps its proportions (artKeeps) sits on a plate with ears when it leaves a gap. Always ends with an outline: exports and colour-by read that.
   const artS=face==='art'?ST().shapes[n.type]:null,artT=artS&&typeof iconTemplate==='function'?iconTemplate(n.type):null;
-  if(artT){const[vx,vy,vw,vh]=artS.vb.split(/[\s,]+/).map(Number),fr=artS.rackUnit?.frac||1,bw=w*fr,fit=(vw/vh)/(bw/h);if(fr<.9||fit<.5||fit>2)plateOf();
+  if(artT){if(typeof ShapeKit!=='undefined')ShapeKit.trimLater(n.type);const[vx,vy,vw,vh]=artS.vb.split(/[\s,]+/).map(Number),keep=artKeeps(n,artS),fr=keep&&!n.inset?Math.min(1,artS.rackUnit?.frac||1):1,bw=w*fr,fit=(vw/vh)/(bw/h);if(keep&&(fr<.97||fit<.97||fit>1.03))plateOf();
     // stray lines outside the picture must not cross the units above and below
     const bb=typeof glyphFrac==='function'?glyphFrac(n.type,0):null,tol=Math.max(vw,vh)*.01,over=bb&&(bb.x<vx-tol||bb.y<vy-tol||bb.x+bb.w>vx+vw+tol||bb.y+bb.h>vy+vh+tol);
-    const box=el('svg',{x:f((w-bw)/2),y:0,width:f(bw),height:h,viewBox:artS.vb,preserveAspectRatio:'xMidYMid meet',overflow:over?'hidden':'visible'},g),ig=artT.cloneNode(true);ig.setAttribute('fill',body);ig.setAttribute('stroke','currentColor');ig.setAttribute('color',s);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig);
+    const box=el('svg',{x:f((w-bw)/2),y:0,width:f(bw),height:h,viewBox:artS.vb,preserveAspectRatio:keep?'xMidYMid meet':'none',overflow:over?'hidden':'visible'},g),ig=artT.cloneNode(true);ig.setAttribute('fill',body);ig.setAttribute('stroke','currentColor');ig.setAttribute('color',s);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig);
     el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:'none',stroke:s,'stroke-width':.75},g);return}
   plateOf();
   const x0=w*.46,x1=w-12,bw=x1-x0,mid=h/2;
@@ -215,6 +215,8 @@ const isDevice=n=>n.kind==='node'&&(!!ST().shapes[n.type]||!!rackItems[n.type]||
 const nameOf=type=>basic[type]?.name||rackItems[type]?.name||(type==='rack'?'Rack':ST().shapes[type]?.name)||(type==='image'?'Image':type);
 
 // An art unit's picture says what it is: a name that only repeats the type, or none, isn't drawn. showName forces it on; hideName is a text turned off by hand.
+// A picture unit fills its slot, unless stretching would wreck it (a square icon in a 1U slot, a half-width box): then it keeps its proportions. n.artFit is someone's choice, either way, and a width dragged by hand means the picture should fill it.
+const ART_STRETCH=1.6,artKeeps=(n,s=ST().shapes[n.type])=>{if(n.artFit==='keep')return true;if(n.artFit==='fill'||n.inset)return false;const[,,vw,vh]=String(s?.vb||'').split(/[\s,]+/).map(Number),a=(vw/vh)/(n.w/n.h);return!(a>=1/ART_STRETCH&&a<=ART_STRETCH)};
 function labelHidden(n,l){const t=rackItems[n?.type];if(t?.face!=='art'||n.showName)return false;const v=String(C.resolve(n,l)??'').trim();return!v||v===t.name||v===n.hideName}
 // Build a node of any catalogue type at (x,y) top-left.
 function make(type,x,y,name){
@@ -239,5 +241,5 @@ function iconSvg(type,{display='symbol',accent='#2f5ea8',fill='#ffffff',size=40}
   const inner=`<svg x="${s.w*inset}" y="${s.h*inset}" width="${s.w*(1-2*inset)}" height="${s.h*(1-2*inset)}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" overflow="visible"><g fill="${bg?accent:fill}" stroke="currentColor" color="${bg?'#ffffff':accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.svg}</g></svg>`;
   return`<svg viewBox="-2 -2 ${s.w+4} ${s.h+4}" width="${size}" height="${size*.8}">${bg}${inner}</svg>`}
 
-return{basic,RU,RACK,rackItems,rackSize,rackFrame,rackDims,rackInner,rackU,rearX,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,labelHidden,make,iconSvg};
+return{basic,RU,RACK,rackItems,rackSize,rackFrame,rackDims,rackInner,rackU,rearX,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,labelHidden,artKeeps,make,iconSvg};
 })();

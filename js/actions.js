@@ -89,7 +89,7 @@ const actions={
   pageLeft:()=>movePage(-1),pageRight:()=>movePage(1),guideX:()=>addGuide('x'),guideY:()=>addGuide('y'),clearGuides:()=>mutate(()=>pg().guideLines=[]),
   // library
   saveSymbol:()=>{if(!S.selected.size)return notify('Select devices (or a group) to save.');const name=prompt('Library item name',Analysis.nameOf(picked()[0])||'Custom symbol');if(!name?.trim())return;const set=moveSet([...S.selected]);S.library.push({id:C.uid(),name:name.trim(),items:C.copy(set),stencils:Packs.stencilsFor(set)});saveLibrary();notify('Saved to your library (left panel ▸ My library).')},
-  makeRack:o=>RackUI.openMake(o),backToShape:()=>RackUI.backToShape(),
+  makeRack:o=>RackUI.openMake(o),backToShape:()=>RackUI.backToShape(),changeShape:()=>ChangeShape.open(),
   addToShapes:()=>ShapeKit.openAdd(),keepAllShapes:()=>ShapeKit.keepAll(),importLibrary:()=>$('libraryInput').click(),exportLibrary:()=>download('port-library.json',JSON.stringify({version:3,portLibrary:true,library:S.library},null,1),'application/json'),
   // view
   zoomIn:()=>zoomAt(1.2),zoomOut:()=>zoomAt(1/1.2),fit:()=>fit(),fitSelection:()=>fit(true),zoom100:()=>setZoom(1),

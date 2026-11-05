@@ -85,7 +85,10 @@ async function buildIR(ids=null){
       const images=[...g.querySelectorAll('image')].filter(im=>!im.closest('svg[data-picture]')),pics=[...g.querySelectorAll('svg[data-picture]')].filter(p=>!p.parentNode.closest('svg[data-picture]'));
       if(!geoms.length&&!images.length&&!pics.length&&!g.querySelector('text'))continue;
       // bounds by loop: a shape can have hundreds of thousands of points (spreading them overflows the call stack)
-      const bx=n.kind==='node'||n.kind==='zone'||n.kind==='text'||n.kind==='table'||n.kind==='legend'?C.box(n):null;let x0=bx?bx.x:Infinity,y0=bx?bx.y:Infinity,x1=bx?bx.x+bx.w:-Infinity,y1=bx?bx.y+bx.h:-Infinity;
+      const bx=n.kind==='node'||n.kind==='zone'||n.kind==='text'||n.kind==='table'||n.kind==='legend'?C.box(n):null;
+      // a picture in a rack is clipped to its slot on screen; the export has no clip, so its geometry is held there too
+      if(Shapes.rackItems[n.type]?.face==='art'&&bx)for(const gm of geoms)gm.points=gm.points.map(q=>[Math.max(bx.x,Math.min(bx.x+bx.w,q[0])),Math.max(bx.y,Math.min(bx.y+bx.h,q[1]))]);
+      let x0=bx?bx.x:Infinity,y0=bx?bx.y:Infinity,x1=bx?bx.x+bx.w:-Infinity,y1=bx?bx.y+bx.h:-Infinity;
       for(const gm of geoms)for(const q of gm.points){if(q[0]<x0)x0=q[0];if(q[0]>x1)x1=q[0];if(q[1]<y0)y0=q[1];if(q[1]>y1)y1=q[1]}if(!Number.isFinite(x0)){x0=bx?.x||0;y0=bx?.y||0;x1=x0+(bx?.w||1);y1=y0+(bx?.h||1)}
       const id=sid++;idMap.set(n.id,id);const main=n.labels?.[0],mainText=main&&!Shapes.labelHidden(n,main)?resolveLabel(n,main,RCTX):'',
         // a name on a unit's own picture goes out after the picture, on top of it, not as the text of the shape under it

@@ -75,7 +75,10 @@ function setUnits(r,u,items){u=Math.round(+u);if(!(u>=1))return{ok:false,blocker
   const side=extras(r,items).filter(n=>n.fullHeight&&(where(r,n).mount==='left'||where(r,n).mount==='right')).map(n=>[n,where(r,n).mount]),roof=roofItem(r,items),f0=Shapes.rackFrame(r).h;
   r.units=u;const dy=f0-Shapes.rackFrame(r).h;r.y+=dy;for(const l of r.labels||[])l.y+=dy;if(roof)C.move(roof,0,dy);resize(r);for(const[n,sd]of side)placeSide(r,n,sd,1,u);return{ok:true}}
 // Put n so its lowest U is u.
-function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU();n.h=h;n.w=i.w;C.move(n,i.x-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.find(x=>x.view!=='rear');if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36;for(const b of n.labels)if(b.view==='rear'){b.size=l.size;b.y=l.y}}}
+// How far a picture unit stands in from each rail, as shares of the slot's width. Built-in faces always span it. Never so far that nothing is left, whatever a file says.
+const insetOf=n=>{if(Shapes.rackItems[n?.type]?.face!=='art'||!Array.isArray(n.inset))return[0,0];const l=Math.max(0,+n.inset[0]||0),e=Math.max(0,+n.inset[1]||0);return l+e>.8?[0,0]:[l,e]};
+function setInset(r,n,l,e){const rear=rearSpots(r,[n]);if(l<.002&&e<.002)delete n.inset;else n.inset=[+l.toFixed(4),+e.toFixed(4)];placeAt(r,n,uOf(r,n));reRear(r,rear)}
+function placeAt(r,n,u){const i=inner(r),h=heightU(n)*RU(),[a,b]=insetOf(n);n.h=h;n.w=i.w*(1-a-b);C.move(n,i.x+a*i.w-n.x,i.y+i.h-(u-1)*RU()-h-n.y);const l=n.labels?.find(x=>x.view!=='rear');if(l&&!l.anchor){l.align='start';l.x=n.x+12;l.size=heightU(n)>1?10:8.5;l.y=n.y+n.h/2+l.size*.36;for(const b of n.labels)if(b.view==='rear'){b.size=l.size;b.y=l.y}}}
 // Rear view labels: a unit in a rack that shows its rear view carries a second, real label there — movable and
 // editable like the front one. It repeats the front text until it is edited, and goes when the view does.
 function syncRear(items){let changed=false;for(const n of items){if(!isItem(n))continue;if(isZeroU(n)){const k=(n.labels||[]).findIndex(l=>l.view==='rear');if(k>=0){n.labels.splice(k,1);changed=true}continue}const r=rackOf(n,items),on=!!r?.views?.rear,i=(n.labels||[]).findIndex(l=>l.view==='rear');
@@ -115,18 +118,21 @@ function canMount(n,env={}){if(n?.kind!=='node'||!Shapes.isDevice(n)||isItem(n)|
   if(env.locked??(typeof isLocked==='function'&&isLocked(n)))return false;if(env.linked??(typeof RackUI!=='undefined'&&!!RackUI.unitOf(n)))return false;
   if(typeof JoinLines!=='undefined'&&JoinLines.isPanel(n,env.items||(typeof pg==='function'?pg().items:[])))return false;if(env.rack&&tooBig(n,env.rack))return false;return isArt(n)||!!rackMatch(n)}
 const GENERIC=/^(top|right|bottom|left|edge \d+|port \d+)$/i,portsUsed=(n,all)=>{const u=new Set();for(const e of all)if(e.kind==='edge')for(const k of['from','to'])if(e[k]?.node===n.id&&e[k].port)u.add(e[k].port);return u};
+// the points worth keeping when a shape changes: links end on them, or someone named them
+const keptPorts=(n,all)=>{const used=portsUsed(n,all);return(n.ports||[]).filter(p=>used.has(p.id)||p.name&&!GENERIC.test(p.name))};
+function unitPorts(n,all){const keep=keptPorts(n,all);for(const[name,x]of[['Left',0],['Right',1]])if(!keep.some(p=>Math.abs(p.x-x)<.01&&Math.abs(p.y-.5)<.01))keep.push({id:C.uid(),x,y:.5,name});return keep}
 // Turn a shape into a unit in place: same id, links and data, the look of Shapes.make. It keeps its centre until placeAt mounts it. rackFrom holds what Back restores (relative, so it survives moves and copies).
-function toUnit(n,type,hU,all=[]){const c=C.center(n),used=portsUsed(n,all);
+function toUnit(n,type,hU,all=[]){const c=C.center(n);
   n.rackFrom={type:n.type,w:n.w,h:n.h,image:n.image,display:n.display,rotation:n.rotation,flipX:n.flipX,flipY:n.flipY,stroke:n.stroke,fill:n.fill,strokeWidth:n.strokeWidth,dash:n.dash,labels:(n.labels||[]).map(l=>({...C.copy(l),x:l.x-n.x,y:l.y-n.y})),ports:C.copy(n.ports||[])};
   n.type=type;n.w=Shapes.RACK.inner;n.h=hU*RU();n.x=c[0]-n.w/2;n.y=c[1]-n.h/2;n.rotation=0;n.display='symbol';n.stroke='#475569';n.fill='#e2e8f0';n.strokeWidth=2;for(const k of['flipX','flipY','image','dash'])delete n[k];
   const l=n.labels?.[0]||C.label('',0,0);for(const k of['wrapWidth','anchor','auto','autoGap','italic','underline','font','bgColor','halo'])delete l[k];Object.assign(l,{rotation:0,color:'#1e293b',align:'start',bold:false,background:false,size:hU>1?10:8.5,x:n.x+12});l.y=n.y+n.h/2+l.size*.36;n.labels=[l];
-  const keep=(n.ports||[]).filter(p=>used.has(p.id)||p.name&&!GENERIC.test(p.name));for(const[name,x]of[['Left',0],['Right',1]])if(!keep.some(p=>Math.abs(p.x-x)<.01&&Math.abs(p.y-.5)<.01))keep.push({id:C.uid(),x,y:.5,name});n.ports=keep;return n}
+  n.ports=unitPorts(n,all);return n}
 // Back to the shape it was, centred on (cx,cy). Without rackFrom: type and size come from o. Links keep the ports they use; text is what the label now says.
 function toShape(n,all,{cx,cy,type,w,h,text}){const f=n.rackFrom||{},front=n.labels?.find(l=>l.view!=='rear'),used=portsUsed(n,all),name=text??front?.text??'',plain=C.node('x',0,0,'');
   n.type=f.type||type;n.w=f.w||w||64;n.h=f.h||h||64;n.x=cx-n.w/2;n.y=cy-n.h/2;for(const k of['rotation','flipX','flipY','display','image','stroke','fill','strokeWidth','dash']){if(f[k]!==undefined)n[k]=f[k];else if(!n.rackFrom&&plain[k]!==undefined)n[k]=plain[k];else delete n[k]}
   const ports=f.ports?C.copy(f.ports):C.defaultPorts(),taken=new Set();for(const p of n.ports||[]){if(!used.has(p.id))continue;const same=ports.find(q=>q.id===p.id)||ports.find(q=>!taken.has(q.id)&&Math.abs(q.x-p.x)<.001&&Math.abs(q.y-p.y)<.001&&(q.name||'')===(p.name||''));if(same)same.id=p.id;else ports.push(C.copy(p));taken.add(p.id)}n.ports=ports;
   const labels=(f.labels||[]).map(l=>({...C.copy(l),x:l.x+n.x,y:l.y+n.y}));if(labels[0])labels[0].text=name;else if(String(name).trim())labels.push(C.label(name,cx,n.y+n.h+16));n.labels=labels;
-  for(const k of['rackFrom','showName','hideName','uLock','fullHeight','ref'])delete n[k];return n}
+  for(const k of['rackFrom','showName','hideName','uLock','fullHeight','ref','inset','artFit'])delete n[k];return n}
 // On a page that keeps its own order (Visio imports) a rack added later paints over a unit and its links: lift them just above it. rack < links < unit, as band sorting draws them.
 function stackOver(page,n,r){if(page.stack!=='doc')return;const a=page.items;if(!a.includes(n)||!a.includes(r))return;const low=x=>a.indexOf(x)<a.indexOf(r),up=[...a.filter(e=>e.kind==='edge'&&(e.from?.node===n.id||e.to?.node===n.id)&&low(e)),...(low(n)?[n]:[])];
   for(const x of up)a.splice(a.indexOf(x),1);a.splice(a.indexOf(r)+1,0,...up)}
@@ -156,6 +162,6 @@ function summary(r,items,find){const eq=contents(r,items).sort((a,b)=>uOf(r,b)-u
   return{rack:r,rows,extras:ex,units:units(r),used,free:units(r)-used,power,amps:+(power/v).toFixed(1),volts:v,btu:Math.round(power*3.412),budget,ups:Math.round(ups),depth,usable,deepest:Math.max(0,...rows.map(x=>x.depth)),warn}}
 
 return{isRack,isItem,isU,isZeroU,mountOf,heightU,contents,extras,frontRect,rackOf,channel,where,position,fansOf,uOf,occupied,fits,findSlot,freeU,placeAt,
-  sideOccupied,sideFits,findSide,placeSide,sideLength,inWay,roofItem,placeRoof,resize,setFrame,setUnits,syncRear,setHeight,moveTo,isLocked:uLocked,rackTypeFor,rackMatch,isArt,isArtUnit,innerPort,canMount,tooBig,toUnit,toShape,stackOver,span,family,families,artTypes,typeFor,guessType,specs,summary,TYPICAL};
+  sideOccupied,sideFits,findSide,placeSide,sideLength,inWay,roofItem,placeRoof,resize,setFrame,setUnits,syncRear,setHeight,moveTo,isLocked:uLocked,rackTypeFor,rackMatch,isArt,isArtUnit,innerPort,canMount,tooBig,toUnit,toShape,stackOver,span,insetOf,setInset,keptPorts,unitPorts,family,families,artTypes,typeFor,guessType,specs,summary,TYPICAL};
 })();
 if(typeof module!=='undefined')module.exports=Racks;

@@ -40,7 +40,8 @@ const Packs=(()=>{
   const RKC=/^rkc-/;
   function registerRack(id,s){if(!RKC.test(id)||!s?.rackUnit||typeof s.name!=='string'||!s.name.trim()||Shapes.rackItems[id])return false;const r=s.rackUnit,fr=+r.frac;r.u=Math.max(1,Math.min(48,Math.round(+r.u)||1));r.frac=fr>0?Math.min(1,fr):1;Shapes.rackItems[id]={name:s.name,fam:s.name,u:r.u,face:'art'};return true}
   // d: {name,vb,svg,u,frac,from,fromDef:{vb,w,h,name,tags},tags} → the type's id. The same art always gets the same id, across reloads too.
-  function rackType(d){const vb=normVb(d.vb),art=safeArt(d.svg);if(!vb||art==null)return null;const svg=noStroke(art),name=String(d.name||'').trim()||'Rack equipment';let id='rkc-'+hash(svg);for(let s=Stencils.shapes[id];s&&(s.svg!==svg||s.vb!==vb);s=Stencils.shapes[id])id+='x';if(Stencils.shapes[id])return id;
+  // Same art in the same viewBox is the same type. vb0 is the viewBox it was made with, when ShapeKit.trimLater has trimmed it since.
+  function rackType(d){const vb=normVb(d.vb),art=safeArt(d.svg);if(!vb||art==null)return null;const svg=noStroke(art),name=String(d.name||'').trim()||'Rack equipment';let id='rkc-'+hash(svg);for(let s=Stencils.shapes[id];s&&(s.svg!==svg||(s.rackUnit?.vb0||s.vb)!==vb);s=Stencils.shapes[id])id+='x';if(Stencils.shapes[id])return id;
     const def={name,cat:'rack-art',w:Shapes.RACK.inner,vb,svg,tier:3,tags:d.tags||'',recolor:false,pack:'doc',rackUnit:{u:d.u,frac:d.frac,from:d.from,fromDef:d.fromDef}};if(!registerRack(id,def))return null;def.h=def.rackUnit.u*Shapes.RU;Stencils.shapes[id]=def;return id}
   // the height chosen with Remember for this shape travels with the document
   function rememberRack(id,u){const s=Stencils.shapes[id],r=Shapes.rackItems[id];if(!s?.rackUnit||!r)return;u=Math.max(1,Math.min(48,Math.round(+u)||1));s.rackUnit.u=r.u=u;s.h=u*Shapes.RU}

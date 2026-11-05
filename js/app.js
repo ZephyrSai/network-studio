@@ -97,7 +97,7 @@ function beginPointer(e){
   if(S.mode==='zone'){S.drag={kind:'zone',start:[grid(p[0]),grid(p[1])]};S.drag.current=S.drag.start;capture();return}
   if(S.mode==='text'){S.drag={kind:'textbox',start:p,current:p};capture();return}
   if(S.mode==='port'&&n?.kind==='node'&&!isLocked(n)){if(role==='port'){remember();S.drag={kind:'port',id:n.id,port:t.dataset.port};capture()}else{const c=edgeCandidate(n,p);mutate(()=>n.ports.push({id:C.uid(),name:'Port '+(n.ports.length+1),x:c.candidate.x,y:c.candidate.y}))}return}
-  if(role==='resize'&&t.dataset.edge){const m=picked()[0],r=m&&Racks.isU(m)?Racks.rackOf(m,items()):null;if(!r||picked().length!==1||isLocked(m)||isLocked(r)||Racks.isLocked(m,r))return;remember();S.drag={kind:'uresize',id:m.id,rackId:r.id,edge:t.dataset.edge,u0:Racks.uOf(r,m),h0:Racks.heightU(m)};capture();render('overlay');return}
+  if(role==='resize'&&t.dataset.edge){const m=picked()[0],r=m&&Racks.isU(m)?Racks.rackOf(m,items()):null;if(!r||picked().length!==1||isLocked(m)||isLocked(r)||Racks.isLocked(m,r))return;remember();S.drag={kind:'uresize',id:m.id,rackId:r.id,edge:t.dataset.edge,u0:Racks.uOf(r,m),h0:Racks.heightU(m),x0:m.x,w0:m.w};capture();render('overlay');return}
   if(role==='resize'){if(!editable().length||picked().some(x=>x.type==='rack'||Shapes.rackItems[x.type]))return;remember();S.drag={kind:'resize',start:p,original:C.copy(editable()),box:C.bounds(picked()),hx:+t.dataset.hx,hy:+t.dataset.hy};capture();return}
   const face=role==='edge'&&faceUnder(n,p);if(face){n=face;id=n.id;role='object'}
   if(n){
@@ -147,6 +147,10 @@ function pointerMove(e,fromPan=false){
   if(d.kind==='autoconn'){if(Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>5){const n=find(d.id);startConnect({p:C.center(n),ref:{node:n.id,port:null}},p,e);S.drag.autoFrom=true}return}
   if(d.kind==='connect'){const t=snapTarget(p,e,{exclude:d.from?.node});d.target=t;d.moved=d.moved||Math.hypot(e.clientX-d.startClient[0],e.clientY-d.startClient[1])>4;d.preview=previewRoute(d,t);render('overlay');return}
   // a unit's top or bottom edge: the other edge stays, the slot shows the new height, the unit changes on release
+  if(d.kind==='uresize'&&(d.edge==='left'||d.edge==='right')){const n=find(d.id),r=find(d.rackId);if(!n||!r)return;const i=Shapes.rackInner(r),z=S.view.zoom,min=i.w*.2,end=d.x0+d.w0;let a=d.x0,b=end;if(d.edge==='left')a=Math.max(i.x,Math.min(end-min,p[0]));else b=Math.min(i.x+i.w,Math.max(d.x0+min,p[0]));
+    // the rails and the middle of the slot catch the edge
+    for(const q of[i.x,i.x+i.w/2,i.x+i.w]){if(d.edge==='left'&&Math.abs(a-q)<6/z&&end-q>=min)a=q;if(d.edge==='right'&&Math.abs(b-q)<6/z&&q-d.x0>=min)b=q}
+    const pct=Math.round((b-a)/i.w*100);d.rackSlot={x:a,y:n.y,w:b-a,h:n.h,mount:'u',u:d.u0,hU:d.h0,side:[(a-i.x)/i.w,(i.x+i.w-b)/i.w],text:pct>=100?'End to end':pct+'% of the slot'};d.moved=true;render('overlay');return}
   if(d.kind==='uresize'){const n=find(d.id),r=find(d.rackId);if(!n||!r)return;const i=Shapes.rackInner(r),RU=Shapes.RU,units=r.units||42,top=d.u0+d.h0-1,line=Math.round((i.y+i.h-p[1])/RU);let u=d.u0,h=d.h0;if(d.edge==='top')h=Math.max(1,Math.min(units-d.u0+1,line-d.u0+1));else{u=Math.max(1,Math.min(top,line+1));h=top-u+1}
     const full=!Racks.fits(r,items(),u,h,new Set([n.id]));d.rackSlot={x:i.x,y:i.y+i.h-(u-1+h)*RU,w:i.w,h:h*RU,mount:'u',u,hU:h,full,text:Racks.span(u,h)+(full?' is taken':''),why:`${Racks.span(u,h)} is taken — ${Analysis.nameOf(n)||Shapes.nameOf(n.type)} stays as it was.`};d.moved=true;render('overlay');return}
   // a press that moves less than 4 px is a click, not a drag (no accidental nudges)
@@ -186,7 +190,7 @@ function snapMove(d,dx,dy,e){
     if(movers.length===1){const want=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1,ex=new Set([movers[0].id]);if(!Racks.fits(rack,items(),want,hU,ex)){const u=Racks.findSlot(rack,items(),hU,{near:want,except:ex});if(u==null)return red(`No ${hU}U run free`,`No ${hU}U run is free in ${Analysis.nameOf(rack)}.`);ny=i.y+i.h-(u-1)*Shapes.RU-b.h}}
     // several keep their spacing: all of them fit there, or none moves (copies being dragged stay on the pointer)
     if(movers.length>1){const ex=new Set(movers.map(m=>m.id)),hit=movers.map(m=>[Math.round((i.y+i.h-(m.y+ny-b.y+m.h))/Shapes.RU)+1,Racks.heightU(m)]).find(([u,h])=>!Racks.fits(rack,items(),u,h,ex));if(hit)return red(`${Racks.span(...hit)} is taken`,`${Racks.span(...hit)} of ${Analysis.nameOf(rack)} is taken — the units stay where they were.`,!S.duplicated)}
-    const u=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1;dx=i.x-b.x;dy=ny-b.y;d.rackSlot={rackId:rack.id,x:i.x,y:ny,w:i.w,h:b.h,mount:'u',text:movers.length===1?`U${u}${hU>1?'–'+(u+hU-1):''}`:''};return[dx,dy]}}
+    const u=Math.round((i.y+i.h-(ny+b.h))/Shapes.RU)+1;dx=i.x+Math.min(...movers.map(m=>Racks.insetOf(m)[0]))*i.w-b.x;dy=ny-b.y;d.rackSlot={rackId:rack.id,x:i.x,y:ny,w:i.w,h:b.h,mount:'u',text:movers.length===1?`U${u}${hU>1?'–'+(u+hU-1):''}`:''};return[dx,dy]}}
   if(S.prefs.guides&&!free){const th=6/z,others=items().filter(t=>!d.original.some(o=>o.id===t.id)&&t.kind!=='edge'&&itemVisible(t,{doc:S.doc})),ps=C.pageSize(pg());const xs=[],ys=[];
     for(const t of others){if(t.kind==='zone')continue;const tb=C.box(t);xs.push(tb.x,tb.x+tb.w/2,tb.x+tb.w);ys.push(tb.y,tb.y+tb.h/2,tb.y+tb.h)}xs.push(ps.w/2);ys.push(ps.h/2);for(const g of pg().guideLines||[])(g.axis==='x'?xs:ys).push(g.pos);
     let bx=null,by=null;for(const v of[b.x,b.x+b.w/2,b.x+b.w])for(const x of xs){const off=x-v-dx;if(Math.abs(off)<th&&(bx===null||Math.abs(off)<Math.abs(bx.off)))bx={off,x}}
@@ -219,6 +223,7 @@ function pointerUp(e){
   else if(d.kind==='textbox'){const q=d.current,w=Math.abs(q[0]-d.start[0]);const x=w>30?Math.min(q[0],d.start[0]):d.start[0],y=w>30?Math.min(q[1],d.start[1]):d.start[1];const n=mutate(()=>{const t=C.text('Text',x,y,w>30?w:240,60,14);if(w>30)t.labels[0].wrapWidth=w-20;t.layer=S.activeLayer;items().push(t);select([t.id]);return t});setMode('select');editLabel(n.id,n.labels[0].id,true)}
   else if(d.kind==='autoconn'){autoConnect(d.id,d.dir)}
   else if(d.kind==='connect'){finishConnect(d,e,p)}
+  else if(d.kind==='uresize'&&d.rackSlot?.side){const n=find(d.id),r=find(d.rackId),sl=d.rackSlot;if(n&&r&&(Math.abs(sl.x-d.x0)>.01||Math.abs(sl.w-d.w0)>.01)){Racks.setInset(r,n,sl.side[0],sl.side[1]);changed();notify(`${Analysis.nameOf(n)||Shapes.nameOf(n.type)}: ${sl.text.toLowerCase()}. Right-click ▸ Picture in the slot ▸ Fill end to end puts it back.`,3200)}else S.history.pop()}
   else if(d.kind==='uresize'){const n=find(d.id),r=find(d.rackId),sl=d.rackSlot;if(n&&r&&sl&&!sl.full&&(sl.u!==d.u0||sl.hU!==d.h0)){n.h=sl.hU*Shapes.RU;Racks.placeAt(r,n,sl.u);changed();notify(`${Analysis.nameOf(n)||Shapes.nameOf(n.type)} is now ${sl.hU}U at ${Racks.span(sl.u,sl.hU)}.`,2200)}else{S.history.pop();if(sl?.full)notify(sl.why,3200)}}
   // nothing could move, or it went back: no undo step. What followed the units on the way is put back too.
   else if(d.kind==='move'&&d.moved&&!d.original.length)S.history.pop();

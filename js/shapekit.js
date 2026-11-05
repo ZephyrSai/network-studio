@@ -48,6 +48,19 @@ const ShapeKit=(()=>{
   // The derived type showing this shape's own picture; registered only when something is about to use it.
   function rackTypeOf(n){const s=!n.image&&Stencils.shapes[n.type];if(s?.rackUnit)return n.type;const a=artOf(n,{name:'Shape'}),m=s&&sizeOf(n.type),hint=hintOf(n),name=s?.name||(n.image?'Image':Shapes.nameOf(n.type)),id=Packs.rackType({name,vb:m?[m.x,m.y,m.w,m.h].map(fix).join(' '):a.vb,svg:a.svg,u:hint.u,frac:hint.frac,from:n.type,tags:s?.tags||'',fromDef:{vb:s?.vb||a.vb,w:s?.w||n.w,h:s?.h||n.h,name:s?.name||name,tags:s?.tags||''}});if(!id)throw Error('This shape can’t be drawn as rack equipment.');return id}
 
+  // A picture often carries an empty margin the geometry can't show: the 3% a stencil import adds, or blank space inside a metafile. Measured once per type from the painted pixels, so a unit
+  // really reaches the rails, drawings saved earlier too. It only changes the rack type's viewBox, which travels with the file. Left as it is if the browser won't let us read the pixels.
+  const trimmed=new Set(),trimQ=[];let trimming=false;
+  function trimLater(type){if(trimmed.has(type)||typeof document==='undefined'||typeof Image==='undefined')return;trimmed.add(type);if(!Stencils.shapes[type]?.rackUnit)return;trimQ.push(type);if(!trimming)pumpTrim()}
+  async function pumpTrim(){trimming=true;let any=false;while(trimQ.length){const t=trimQ.shift();try{if(await trimType(t))any=true}catch{}}trimming=false;if(any&&typeof render==='function')render()}
+  // the box of what's painted: blank is transparent, or white up to the first real mark in from each side
+  function paintBox(d,W,H,isBlank){let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const k=(y*W+x)*4;if(isBlank(d[k],d[k+1],d[k+2],d[k+3]))continue;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return x1<0?null:{x0,y0,x1:x1+1,y1:y1+1}}
+  function trimBox(d,W,H){const clear=(r,g,b,a)=>a<24,white=(r,g,b,a)=>a<24||r>=248&&g>=248&&b>=248,ok=(q,min)=>q&&(q.x1-q.x0)/W>=min&&(q.y1-q.y0)/H>=min,w=paintBox(d,W,H,white);if(ok(w,.7))return w;const c=paintBox(d,W,H,clear);return ok(c,.5)?c:null}
+  async function trimType(type){const s=Stencils.shapes[type];if(!s?.rackUnit)return false;const[vx,vy,vw,vh]=s.vb.split(/[\s,]+/).map(Number);if(!(vw>0&&vh>0))return false;const a=vw/vh,W=Math.max(16,Math.round(a>=1?1200:1200*a)),H=Math.max(16,Math.round(a>=1?1200/a:1200));
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${vx} ${vy} ${vw} ${vh}" width="${W}" height="${H}" preserveAspectRatio="none"><g fill="#ffffff" stroke="#475569" color="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.svg}</g></svg>`;
+    const img=new Image();await new Promise((ok,no)=>{img.onload=ok;img.onerror=no;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,W,H);const q=trimBox(g.getImageData(0,0,W,H).data,W,H);if(!q)return false;
+    const fx=(q.x1-q.x0)/W,fy=(q.y1-q.y0)/H;if(fx>.995&&fy>.995)return false;s.rackUnit.vb0??=s.vb;s.vb=[vx+q.x0/W*vw,vy+q.y0/H*vh,vw*fx,vh*fy].map(fix).join(' ');return true}
+
   // ---------- adding ----------
   function reveal(){S.prefs.catOpen??={};S.prefs.catOpen[Packs.USER_CAT]=true;savePrefs();S.ltab='shapes';const q=$('search');if(q?.value)q.value='';renderLeft();document.querySelector(`[data-cat="${Packs.USER_CAT}"]`)?.scrollIntoView?.({block:'nearest'})}
   const WHERE='My shapes (Shapes panel, on the left)',SESSION=(what,err)=>`${what} for this session only: browser storage refused it (${err.message}), so that’s undone after a reload.`;
@@ -75,6 +88,6 @@ const ShapeKit=(()=>{
       if(c==='rename'){const v=prompt('Shape name',s.name);if(!v?.trim()||v.trim()===s.name)return;try{await Packs.renameShape(t,v)}catch(err){renderPalette();return notify(SESSION('Renamed',err),8000)}renderPalette();return notify(`Renamed to “${v.trim()}”.`)}
       if(!confirm(`Remove “${s.name}” from My shapes?`))return;let r;try{r=await Packs.removeShape(t)}catch(err){renderPalette();return notify(SESSION('Removed',err),8000)}renderPalette();notify(r?.kept?`Removed from My shapes. It stays under “Shapes in this drawing” while the drawing uses it.`:`“${s.name}” removed from My shapes.`,5000)}}
 
-  return{rackHint,artOf,artFor,preview,openAdd,keepAll,paletteMenu,paletteItems,sizeOf,hintOf,rackKey,rackTypeOf};
+  return{rackHint,artOf,artFor,preview,openAdd,keepAll,paletteMenu,paletteItems,sizeOf,hintOf,rackKey,rackTypeOf,trimLater,trimBox};
 })();
 if(typeof module!=='undefined')module.exports=ShapeKit;

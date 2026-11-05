@@ -94,6 +94,10 @@ function backToShape(n=picked().find(Racks.isItem)){if(!n||!(n.rackFrom||Racks.i
 // On: shows even a name that repeats the picture. Off: hides this text, until the label says something else.
 function toggleName(n){const l=n.labels?.find(x=>x.view!=='rear');mutate(()=>{const lab=l||(n.labels=[...(n.labels||[]),{...C.label('',n.x+12,n.y+n.h/2+3,8.5),align:'start',color:'#1e293b'}]).at(-1);if(Shapes.labelHidden(n,lab)){n.showName=true;delete n.hideName;if(!lab.text.trim())lab.text=Shapes.nameOf(n.type)}else{delete n.showName;n.hideName=String(C.resolve(n,lab)??'').trim()}})}
 
+// Fill end to end also takes the width back to the rails.
+const unitShut=n=>{const r=rackFor(n);return isLocked(n)||!!r&&(isLocked(r)||Racks.isLocked(n,r))};
+function setFit(sel,v){const arts=sel.filter(Racks.isArtUnit),list=arts.filter(n=>!unitShut(n));if(!list.length){if(arts.length)notify('Locked: unlock it, or its rack, first.',2600);return}mutate(()=>{for(const n of list){n.artFit=v;if(v==='fill'&&n.inset){const r=rackFor(n);if(r)Racks.setInset(r,n,0,0);else delete n.inset}}})}
+
 // ---------- rack commands ----------
 // Turning a view on widens the rack; whatever stands to its right moves along so nothing ends up underneath.
 function setView(r,k){mutate(()=>{const edge=r.x+r.w,top=r.y,h0=r.h;r.views={...r.views,[k]:!r.views?.[k]};resizeRack(r);const dx=r.x+r.w-edge;if(dx)makeRoom(r,edge,dx,top,top+Math.max(h0,r.h))})}
@@ -269,7 +273,7 @@ function menu(sel){const sub=(l,b)=>`<div class="sub"><button>${l} ▸</button><
   if(uu.length){const cur=uu.length===1?Racks.heightU(uu[0]):0;h+=sub('Height',[1,2,3,4,5,6,8,10].map(u=>`<button data-ctx="q:rk:h:${u}">${u}U${u===cur?' ✓':''}</button>`).join(''));
     if(uu.length===1&&units.length===1)h+=`<button data-ctx="q:rk:to">Move to U…</button>`}
   if(units.length){const zu=units.every(Racks.isZeroU);h+=`<button data-ctx="q:rk:lock">${units.every(n=>n.uLock)?zu?'Unlock':'Unlock U position':zu?'Lock in place':'Lock in this U'}</button>`;if(units.length===1&&units[0].ref)h+=`<button data-ctx="q:rk:asset">Show the device in the drawing</button>`;
-    if(sel.length===1&&Racks.isArtUnit(units[0])){const l=units[0].labels?.find(x=>x.view!=='rear');h+=`<button data-ctx="q:rk:name">${l&&!Shapes.labelHidden(units[0],l)?'✓ ':''}Show name on the faceplate</button>`}
+    if(sel.length===1&&Racks.isArtUnit(units[0])){const l=units[0].labels?.find(x=>x.view!=='rear'),keep=Shapes.artKeeps(units[0]);if(!unitShut(units[0]))h+=sub('Picture in the slot',`<button data-ctx="q:rk:fit:fill">${!keep&&!units[0].inset?'✓ ':''}Fill end to end</button><button data-ctx="q:rk:fit:keep">${keep?'✓ ':''}Keep its proportions</button>`);h+=`<button data-ctx="q:rk:name">${l&&!Shapes.labelHidden(units[0],l)?'✓ ':''}Show name on the faceplate</button>`}
     if(sel.length===1&&canBack(units[0]))h+=`<button data-ctx="q:rk:back">Back to a normal shape</button>`}
   if(racks.length===1){const r=racks[0],v=r.views||{};h+=sub('Views',`<button data-ctx="q:rk:v:rear">${v.rear?'✓ ':''}Rear view</button><button data-ctx="q:rk:v:top">${v.top?'✓ ':''}Top view (depth)</button>`)
     +sub('Spreadsheet',`<button data-ctx="q:rk:xls:export">Export to Excel (.xlsx)</button><button data-ctx="q:rk:xls:csv">Export as CSV</button><button data-ctx="q:rk:xls:import">Import from Excel or CSV…</button>`)
@@ -278,7 +282,7 @@ function menu(sel){const sub=(l,b)=>`<div class="sub"><button>${l} ▸</button><
     +`<button data-ctx="q:rk:lockall">${r.lockItems?'Unlock all equipment':'Lock all equipment in its U'}</button><button data-ctx="q:rk:power">Space & power…</button>`}
   return h}
 function apply(c){const[, ,op,...rest]=c.split(':'),v=rest.join(':'),sel=picked(),u1=sel.find(Racks.isItem),r1=sel.find(Racks.isRack);
-  if(op==='add')return openAdd();if(op==='unit')return gotoUnit(sel.find(n=>Shapes.isDevice(n)));if(op==='make')return actions.makeRack();if(op==='back')return actions.backToShape();if(op==='name'&&u1)return toggleName(u1);
+  if(op==='add')return openAdd();if(op==='unit')return gotoUnit(sel.find(n=>Shapes.isDevice(n)));if(op==='make')return actions.makeRack();if(op==='back')return actions.backToShape();if(op==='name'&&u1)return toggleName(u1);if(op==='fit')return setFit(sel,v);
   if(op==='h'){for(const n of sel.filter(Racks.isU))setHeight(n,+v);return}if(op==='to'&&u1)return openMoveTo(u1);
   if(op==='len'&&u1)return v==='custom'?openLength(u1):setLength(u1,+v);if(op==='side'&&u1)return switchSide(u1);if(op==='fans'&&u1)return setFans(u1,+v);if(op==='lock')return toggleLock(sel.filter(Racks.isItem));if(op==='asset'&&u1)return gotoAsset(u1);
   if(!r1)return;if(op==='v')return setView(r1,v);if(op==='frame')return toggleFrame(r1,v);if(op==='xls')return v==='import'?importSheet(r1):exportSheet(r1,v==='csv'?'csv':'xlsx');if(op==='acc')return addAccessory(r1,v);if(op==='power')return openPower(r1);
