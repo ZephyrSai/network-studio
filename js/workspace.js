@@ -1,6 +1,6 @@
 // Browser workspace (drawings kept in IndexedDB), shape-pack manager, shape import and the online Icons tab.
 const Workspace=(()=>{
-  let lastThumb=0,saving=null;
+  let lastThumb=0,saving=null,confirmed=null;
   const enabled=()=>Store.ok&&S.prefs.workspace!==false;
   function newId(){return C.uid()}
   // Called from the autosave timer: keeps the current drawing in IndexedDB as well as the quick localStorage copy.
@@ -8,7 +8,7 @@ const Workspace=(()=>{
     const now=Date.now();let thumb=null;if(force||now-lastThumb>15000){try{const p=doc.pages.find(x=>!x.isBackground)||doc.pages[0];thumb=new XMLSerializer().serializeToString(thumbnail(doc,p,320,200));lastThumb=now}catch{}}
     const json=JSON.parse(JSON.stringify(doc)),prev=thumb?null:await Store.get('drawings',docId).catch(()=>null);
     const rec={id:docId,name:json.name,modified:new Date().toISOString(),pages:json.pages.filter(p=>!p.isBackground).length,objects:json.pages.reduce((s,p)=>s+p.items.length,0),doc:json,thumb:thumb||prev?.thumb||null};
-    saving=Store.put('drawings',rec).then(()=>docId===S.docId&&Store.kvSet('lastDoc',docId)).then(()=>setSaveState(S.fileHandle?'Saved in this browser · file not yet updated':'Saved in this browser')).catch(err=>setSaveState('Browser storage full or blocked — save a file ('+err.message+')'));return saving}
+    saving=Store.put('drawings',rec).then(()=>docId===S.docId&&Store.kvSet('lastDoc',docId)).then(()=>{confirmed=docId;setSaveState(S.fileHandle?'Saved in this browser · file not yet updated':'Saved in this browser')}).catch(err=>{confirmed=null;setSaveState('Browser storage full or blocked — save a file ('+err.message+')')});return saving}
   async function restoreLast(){if(!enabled())return null;try{const id=await Store.kvGet('lastDoc');if(!id)return null;const rec=await Store.get('drawings',id);if(!rec)return null;return{id,doc:C.migrate(rec.doc)}}catch(err){console.warn('workspace restore failed',err);return null}}
   async function open(id){const rec=await Store.get('drawings',id);if(!rec)return notify('That drawing is no longer in this browser.');await flush();loadDocument(C.migrate(rec.doc),{name:rec.name,id});notify('Opened “'+rec.name+'” from this browser.',2200)}
   async function flush(){clearTimeout(autosaveTimer);if(S.dirty||!S.docId)await saveCurrent(true);else await saving}
@@ -68,5 +68,5 @@ const Workspace=(()=>{
   function wireIcons(){const inp=$('iconSearch');let t=null;inp.addEventListener('input',()=>{clearTimeout(t);t=setTimeout(searchIcons,350)});inp.addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(t);searchIcons()}});$('iconSet').addEventListener('change',searchIcons);
     const box=$('iconResults');box.innerHTML=iconsIntro();box.addEventListener('click',e=>{const a=e.target.closest('[data-try]');if(a){e.preventDefault();inp.value=a.dataset.try;searchIcons();return}const b=e.target.closest('[data-iconify]');if(b)pickOnline(b.dataset.iconify)});
     box.addEventListener('dragstart',e=>{const b=e.target.closest('[data-iconify]');if(b)e.dataTransfer.setData('application/x-port-iconify',b.dataset.iconify)})}
-  return{saveCurrent,restoreLast,open,flush,openDrawings,openPacks,importShapes,searchIcons,pickOnline,wireIcons,newId};
+  return{saved:id=>confirmed===id,saveCurrent,restoreLast,open,flush,openDrawings,openPacks,importShapes,searchIcons,pickOnline,wireIcons,newId};
 })();

@@ -127,7 +127,7 @@ function drawFace(n,g){
   if(artT){if(typeof ShapeKit!=='undefined')ShapeKit.trimLater(n.type);const[vx,vy,vw,vh]=artS.vb.split(/[\s,]+/).map(Number),keep=artKeeps(n,artS),fr=keep&&!n.inset?Math.min(1,artS.rackUnit?.frac||1):1,bw=w*fr,fit=(vw/vh)/(bw/h);if(keep&&(fr<.97||fit<.97||fit>1.03))plateOf();
     // stray lines outside the picture must not cross the units above and below
     const bb=typeof glyphFrac==='function'?glyphFrac(n.type,0):null,tol=Math.max(vw,vh)*.01,over=bb&&(bb.x<vx-tol||bb.y<vy-tol||bb.x+bb.w>vx+vw+tol||bb.y+bb.h>vy+vh+tol);
-    const box=el('svg',{x:f((w-bw)/2),y:0,width:f(bw),height:h,viewBox:artS.vb,preserveAspectRatio:keep?'xMidYMid meet':'none',overflow:over?'hidden':'visible'},g),ig=artT.cloneNode(true);ig.setAttribute('fill',body);ig.setAttribute('stroke','currentColor');ig.setAttribute('color',s);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig);
+    const box=el('svg',{x:f((w-bw)/2),y:0,width:f(bw),height:h,viewBox:artS.vb,preserveAspectRatio:keep?'xMidYMid meet':'none',overflow:over?'hidden':'visible'},g),pic=typeof Raster==='undefined'?null:n._lite&&Raster.isHeavy(n.type)?Raster.plate(n.type,box):n._live?Raster.pick(n,n.type,{fill:body,color:s,sw:n.strokeWidth??2},box):null;if(!pic){const ig=artT.cloneNode(true);ig.setAttribute('fill',body);ig.setAttribute('stroke','currentColor');ig.setAttribute('color',s);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig)}
     el('rect',{x:0,y:0,width:w,height:h,rx:1.5,fill:'none',stroke:s,'stroke-width':.75},g);return}
   plateOf();
   const x0=w*.46,x1=w-12,bw=x1-x0,mid=h/2;
@@ -228,7 +228,7 @@ function make(type,x,y,name){
   const s=ST().shapes[type]||{name:type,w:64,h:64},n=C.node(type,x,y,name??s.name,s.w||64,s.h||64);return n}
 
 // Markup of a stencil wrapped for a display mode, as a standalone <svg> string (palette, legend, previews).
-function iconSvg(type,{display='symbol',accent='#2f5ea8',fill='#ffffff',size=40}={}){
+function iconSvg(type,{display='symbol',accent='#2f5ea8',fill='#ffffff',size=40,live=false}={}){
   const s=ST().shapes[type];
   if(basic[type]){const b=basic[type],k=Math.min(36/b.w,28/b.h),w=b.w*k,h=b.h*k;return`<svg viewBox="-2 -2 ${f(w+4)} ${f(h+4)}" width="${size}" height="${size*.8}">${b.paths(w,h).map(p=>`<path d="${p.d}" fill="${p.open?'none':b.fill==='none'?'none':'#fff'}" stroke="${accent}" stroke-width="1.5"/>`).join('')}</svg>`}
   if(type==='rack'||/^rack\d+$/.test(type))return`<svg viewBox="0 0 40 40" width="${size}" height="${size*.8}"><rect x="10" y="2" width="20" height="36" rx="2" fill="#fff" stroke="${accent}" stroke-width="1.6"/><path d="M13 8h14M13 13h14M13 18h14M13 23h14M13 28h14M13 33h14" stroke="${accent}" stroke-width="1.2" stroke-opacity=".6"/></svg>`;
@@ -238,7 +238,9 @@ function iconSvg(type,{display='symbol',accent='#2f5ea8',fill='#ffffff',size=40}
   if(!s)return`<svg viewBox="0 0 40 32" width="${size}" height="${size*.8}"><rect x="4" y="4" width="32" height="24" rx="4" fill="none" stroke="${accent}"/></svg>`;
   const bg=display==='tile'?`<rect x="0" y="0" width="${s.w}" height="${s.h}" rx="${Math.min(s.w,s.h)*.2}" fill="${accent}"/>`:display==='circle'?`<circle cx="${s.w/2}" cy="${s.h/2}" r="${Math.min(s.w,s.h)/2}" fill="${accent}"/>`:'';
   const inset=display==='tile'?.16:display==='circle'?.22:0,[vx,vy,vw,vh]=s.vb.split(/[\s,]+/).map(Number);
-  const inner=`<svg x="${s.w*inset}" y="${s.h*inset}" width="${s.w*(1-2*inset)}" height="${s.h*(1-2*inset)}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" overflow="visible"><g fill="${bg?accent:fill}" stroke="currentColor" color="${bg?'#ffffff':accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.svg}</g></svg>`;
+  // in the app's own panels (live) a detailed picture is an image, once there is one; its address means nothing outside this page, so never in what's exported or saved
+  const im=live&&typeof Raster!=='undefined'?Raster.thumb(type,{fill:bg?accent:fill,color:bg?'#ffffff':accent,sw:2}):null,art=im?`<image href="${im.url}" x="${im.win[0]}" y="${im.win[1]}" width="${im.win[2]}" height="${im.win[3]}" preserveAspectRatio="none"/>`:`<g fill="${bg?accent:fill}" stroke="currentColor" color="${bg?'#ffffff':accent}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.svg}</g>`;
+  const inner=`<svg x="${s.w*inset}" y="${s.h*inset}" width="${s.w*(1-2*inset)}" height="${s.h*(1-2*inset)}" viewBox="${vx} ${vy} ${vw} ${vh}" preserveAspectRatio="xMidYMid meet" overflow="visible">${art}</svg>`;
   return`<svg viewBox="-2 -2 ${s.w+4} ${s.h+4}" width="${size}" height="${size*.8}">${bg}${inner}</svg>`}
 
 return{basic,RU,RACK,rackItems,rackSize,rackFrame,rackDims,rackInner,rackU,rearX,drawRack,drawFace,linkTypes,applyLinkType,speedMbps,STATUS,PALETTE,CATEGORY,themes,applyTheme,catalog,kindOf,isDevice,nameOf,labelHidden,artKeeps,make,iconSvg};

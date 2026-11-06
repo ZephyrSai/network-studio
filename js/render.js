@@ -3,9 +3,9 @@ let RCTX=null; // context of the scene currently being drawn (for {{field}} subs
 
 function layerOf(n,doc=S.doc){return doc.layers.find(l=>l.id===n.layer)||doc.layers[0]}
 function itemVisible(n,ctx){const L=layerOf(n,ctx.doc);if(L&&L.visible===false)return false;if(ctx.print&&L&&L.print===false)return false;return true}
-function makeCtx(page,{doc=S.doc,interactive=false,print=false,prefix='v',tag=false,fieldPage=null}={}){
+function makeCtx(page,{doc=S.doc,interactive=false,print=false,prefix='v',tag=false,fieldPage=null,lite=false}={}){
   const pageIndex=doc.pages.findIndex(p=>p.id===page.id),fg=doc.pages.filter(p=>!p.isBackground),fp=fieldPage||page;
-  return{doc,page,fieldPage:fp,interactive,print,prefix,tag,pageIndex,pageNumber:Math.max(1,fg.findIndex(p=>p.id===fp.id)+1),pageCount:fg.length,byId:new Map(page.items.map(n=>[n.id,n])),colors:colorMap(doc,page),bg:page.bg||'#ffffff',dim:interactive?S.filterFn:null,analysis:interactive?S.analysis:null}}
+  return{doc,page,fieldPage:fp,interactive,lite,print,prefix,tag,pageIndex,pageNumber:Math.max(1,fg.findIndex(p=>p.id===fp.id)+1),pageCount:fg.length,byId:new Map(page.items.map(n=>[n.id,n])),colors:colorMap(doc,page),bg:page.bg||'#ffffff',dim:interactive?S.filterFn:null,analysis:interactive?S.analysis:null}}
 
 // ---------- {{field}} substitution ----------
 function resolveLabel(owner,l,ctx=RCTX){
@@ -53,26 +53,45 @@ function colorFor(n,ctx){const c=ctx.colors;if(!c||!Shapes.isDevice(n))return nu
 const iconCache=new Map();
 function iconTemplate(type){let t=iconCache.get(type);if(t)return t;const s=Stencils?.shapes?.[type];if(!s)return null;t=el('g');t.innerHTML=s.svg;iconCache.set(type,t);return t}
 
+// stacking: by kind (zones at the back, links under devices) — or, on pages that keep it (Visio imports), the items' own order
+function sceneOrder(list,page){if(page.stack==='doc')return list;const band=n=>n.kind==='zone'?0:n.kind==='node'&&n.type==='rack'?1:n.kind==='edge'?2:n.kind==='node'&&Shapes.rackItems[n.type]?3:4,area=n=>n.kind==='zone'?-(n.w*n.h):0;return list.map((n,i)=>[n,i]).sort((a,b)=>band(a[0])-band(b[0])||area(a[0])-area(b[0])||a[1]-b[1]).map(a=>a[0])}
+function sceneBg(list,ctx){const zones=list.filter(n=>n.kind==='zone'&&n.fill&&n.fill!=='none').sort((a,b)=>a.w*a.h-b.w*b.h);ctx.bgAt=(x,y)=>{for(const z of zones)if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return z.fill;return ctx.bg}}
+function itemG(n,ctx,parent){const dim=ctx.dim&&!ctx.dim(n);return el('g',{'data-id':ctx.interactive||ctx.tag?n.id:null,opacity:dim?.16:n.opacity??null},parent)}
+function drawItem(n,g,ctx,page,defs,before,d){
+  if(n.kind==='edge')drawEdge(n,g,defs,ctx,before,d);
+  else if(n.kind==='zone')drawZone(n,g,ctx);
+  else if(n.kind==='node')drawNode(n,g,ctx);
+  else if(n.kind==='text')drawTextItem(n,g,ctx);
+  else if(n.kind==='table')drawTable(n,g,ctx);
+  else if(n.kind==='legend')drawLegend(n,g,ctx,page);
+  for(const l of n.labels||[])if(!Shapes.labelHidden(n,l))drawLabel(n,l,g,ctx);
+  if(n.kind==='node')drawDataLines(n,g,ctx)}
 function drawScene(parent,page,ctx){
-  RCTX=ctx;const list=page.items.filter(n=>itemVisible(n,ctx));
-  const band=n=>n.kind==='zone'?0:n.kind==='node'&&n.type==='rack'?1:n.kind==='edge'?2:n.kind==='node'&&Shapes.rackItems[n.type]?3:4;
-  // stacking: by kind (zones at the back, links under devices) — or, on pages that keep it (Visio imports), the items' own order
-  const area=n=>n.kind==='zone'?-(n.w*n.h):0,ordered=page.stack==='doc'?list:list.map((n,i)=>[n,i]).sort((a,b)=>band(a[0])-band(b[0])||area(a[0])-area(b[0])||a[1]-b[1]).map(a=>a[0]);
-  const defs=el('defs',{},parent),edgesSoFar=[],zones=list.filter(n=>n.kind==='zone'&&n.fill&&n.fill!=='none').sort((a,b)=>a.w*a.h-b.w*b.h);
-  ctx.bgAt=(x,y)=>{for(const z of zones)if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return z.fill;return ctx.bg};
-  for(const n of ordered){
-    const dim=ctx.dim&&!ctx.dim(n);
-    const g=el('g',{'data-id':ctx.interactive||ctx.tag?n.id:null,opacity:dim?.16:n.opacity??null},parent);
-    if(n.kind==='edge'){Conn.placeLabels(n);drawEdge(n,g,defs,ctx,edgesSoFar);edgesSoFar.push(n)}
-    else if(n.kind==='zone')drawZone(n,g,ctx);
-    else if(n.kind==='node')drawNode(n,g,ctx);
-    else if(n.kind==='text')drawTextItem(n,g,ctx);
-    else if(n.kind==='table')drawTable(n,g,ctx);
-    else if(n.kind==='legend')drawLegend(n,g,ctx,page);
-    for(const l of n.labels||[])if(!Shapes.labelHidden(n,l))drawLabel(n,l,g,ctx);
-    if(n.kind==='node')drawDataLines(n,g,ctx);
-  }
+  RCTX=ctx;const list=page.items.filter(n=>itemVisible(n,ctx)),ordered=sceneOrder(list,page),defs=el('defs',{},parent),style=ctx.doc.display?.jumpStyle||'arc',jumps=style==='none'?null:Conn.jumpIndex();sceneBg(list,ctx);
+  for(const n of ordered){const g=itemG(n,ctx,parent);let path;if(n.kind==='edge'){Conn.placeLabels(n);path=Conn.path(n,jumps?jumps.near(n):[],style);jumps?.add(n)}drawItem(n,g,ctx,page,defs,null,path)}
   RCTX=null}
+
+// ---------- the live canvas: only what changed is drawn again ----------
+// Each item's drawing is kept with a signature of everything it depends on. A legend draws the page, a table its cells and {{fields}} other items, so those are always drawn.
+const live={key:'',items:new Map()};
+// colours and paint of a shape's picture, as drawNode and drawFace give them
+function artPaint(n,ctx){const c=colorFor(n,ctx);if(Shapes.rackItems[n.type])return{fill:n.fill||'#e2e8f0',color:c||n.stroke||'#475569',sw:n.strokeWidth??2};const m=n.display||'symbol',solid=m==='tile'||m==='circle',a=c||n.stroke||'#2f5ea8';return{fill:solid?a:n.fill||'#fff',color:solid?'#ffffff':a,sw:n.strokeWidth??2}}
+function liveSig(n,ctx,d){if(n.kind==='table'||n.kind==='legend'||n.target)return null;let bg='';for(const l of n.labels||[]){if(String(l.text??'').includes('{{'))return null;bg+=ctx.bgAt(l.x,l.y)+';'}
+  const{image,...rest}=n,dim=ctx.dim&&!ctx.dim(n)?1:0;let more='';
+  if(n.kind==='edge'){more=d+'|'+(ctx.analysis?.loads?.get(n.id)?.color||'')+'|'+Math.max(14,((n.strokeWidth||2)+6)*(S.view?.zoom||1));
+    // the names at a link's ends sit clear of the device's own label
+    for(const[k,t]of[['from',n.fromIf],['to',n.toIf]]){if(!t)continue;const a=n[k]&&ctx.byId.get(n[k].node),l=a?.labels?.[0];if(a)more+='|'+[a.x,a.y,a.w,a.h,l?.x,l?.y,l?.size,l?.text,l?.rotation].join()}}
+  else if(n.type==='rack'){const all=ctx.page.items,inside=[...Racks.contents(n,all),...Racks.extras(n,all)];for(const it of inside)for(const l of it.labels||[])if(String(l.text??'').includes('{{'))return null;more=JSON.stringify(inside.map(it=>{const{image:_,...r}=it;return r}))+(colorFor(n,ctx)||'')}
+  else if(n.kind==='node'){const s=Stencils.shapes[n.type];more=(colorFor(n,ctx)||'')+'|'+(s?s.vb+s.svg.length+'|'+Raster.stateOf(n,n.type,artPaint(n,ctx)):'')}
+  return JSON.stringify(rest)+'|'+(image?image.length+image.slice(-24):'')+'|'+bg+'|'+dim+'|'+more}
+function drawLive(parent,page,ctx){RCTX=ctx;const list=page.items.filter(n=>itemVisible(n,ctx)),d=ctx.doc,ordered=sceneOrder(list,page);sceneBg(list,ctx);
+  const key=JSON.stringify([page.id,page.bg,page.stack,d.display,d.fields,d.layers,d.theme,d.linkStyles,document.documentElement.dataset.theme]);if(key!==live.key){parent.replaceChildren();live.items.clear();live.key=key}
+  const style=d.display?.jumpStyle||'arc',jumps=style==='none'?null:Conn.jumpIndex(),next=[];
+  for(const n of ordered){let path;if(n.kind==='edge'){Conn.placeLabels(n);path=Conn.path(n,jumps?jumps.near(n):[],style);jumps?.add(n)}const sig=liveSig(n,ctx,path),was=live.items.get(n.id);next.push({n,sig,path,keep:was&&sig!==null&&was.sig===sig?was:null})}
+  // what changed or went comes out first, so what stays doesn't have to move
+  const kept=new Set(next.filter(x=>x.keep).map(x=>x.keep.g));for(const[id,c]of live.items)if(!kept.has(c.g)){c.g.remove();live.items.delete(id)}
+  let cur=parent.firstChild;for(const x of next){let g=x.keep?.g;if(!g){g=itemG(x.n,ctx);drawItem(x.n,g,ctx,page,g,null,x.path)}if(g===cur)cur=cur.nextSibling;else parent.insertBefore(g,cur);live.items.set(x.n.id,{sig:x.sig,g})}
+  while(cur){const nx=cur.nextSibling;cur.remove();cur=nx}RCTX=null}
 
 function hitRect(n,parent,ctx,x=0,y=0,w=n.w,h=n.h){if(ctx.interactive)el('rect',{x,y,width:w,height:h,fill:'transparent','data-id':n.id,'data-role':'object'},parent)}
 
@@ -82,14 +101,14 @@ function drawNode(n,g,ctx){
   if(n.image){if(n.display==='card')el('rect',{x:0,y:0,width:w,height:h,rx:8,fill:n.fill||'#fff',stroke:accent,'stroke-width':1},t);el('image',{href:n.image,x:n.display==='card'?6:0,y:n.display==='card'?6:0,width:n.display==='card'?w-12:w,height:n.display==='card'?h-12:h,preserveAspectRatio:'xMidYMid meet'},t)}
   else if(kind==='basic'){const b=Shapes.basic[n.type];for(const p of b.paths(w,h))el('path',{d:p.d,fill:p.open||n.fill==='none'?'none':n.fill||'#fff',stroke:accent,'stroke-width':n.strokeWidth??1.75,'stroke-dasharray':n.dash||null,'stroke-linejoin':'round'},t)}
   else if(kind==='rack')Shapes.drawRack(n,t,Racks.contents(n,ctx.page.items),it=>resolveLabel(it,it.labels?.find(l=>l.view!=='rear')||{text:''},ctx),Racks.extras(n,ctx.page.items),{interactive:ctx.interactive});
-  else if(kind==='rackitem')Shapes.drawFace({...n,stroke:colorFor(n,ctx)||n.stroke},t);
+  else if(kind==='rackitem')Shapes.drawFace({...n,stroke:colorFor(n,ctx)||n.stroke,_live:ctx.interactive,_lite:ctx.lite},t);
   else{
     const s=Stencils?.shapes?.[n.type],mode=n.display||'symbol';
     if(mode==='card')el('rect',{x:0,y:0,width:w,height:h,rx:Math.min(10,w*.15),fill:n.fill||'#fff',stroke:accent,'stroke-width':1.2,'stroke-opacity':.55},t);
     else if(mode==='tile')el('rect',{x:0,y:0,width:w,height:h,rx:Math.min(w,h)*.2,fill:accent},t);
     else if(mode==='circle')el('ellipse',{cx:w/2,cy:h/2,rx:w/2,ry:h/2,fill:accent},t);
     const inset=mode==='card'?.15:mode==='tile'?.16:mode==='circle'?.22:0,tpl=iconTemplate(n.type);
-    if(tpl&&s){const box=el('svg',{x:w*inset,y:h*inset,width:w*(1-2*inset),height:h*(1-2*inset),viewBox:s.vb,preserveAspectRatio:'xMidYMid meet',overflow:'visible'},t);const solid=mode==='tile'||mode==='circle';const ig=tpl.cloneNode(true);ig.setAttribute('fill',solid?accent:n.fill||'#fff');ig.setAttribute('stroke','currentColor');ig.setAttribute('color',solid?'#ffffff':accent);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig)}
+    if(tpl&&s){const box=el('svg',{x:w*inset,y:h*inset,width:w*(1-2*inset),height:h*(1-2*inset),viewBox:s.vb,preserveAspectRatio:'xMidYMid meet',overflow:'visible'},t);const solid=mode==='tile'||mode==='circle';if(ctx.lite&&Raster.isHeavy(n.type))Raster.plate(n.type,box);else if(!(ctx.interactive&&Raster.pick(n,n.type,artPaint(n,ctx),box))){const ig=tpl.cloneNode(true);ig.setAttribute('fill',solid?accent:n.fill||'#fff');ig.setAttribute('stroke','currentColor');ig.setAttribute('color',solid?'#ffffff':accent);ig.setAttribute('stroke-width',n.strokeWidth??2);ig.setAttribute('stroke-linecap','round');ig.setAttribute('stroke-linejoin','round');box.append(ig)}}
     else el('rect',{x:2,y:2,width:w-4,height:h-4,rx:6,fill:n.fill||'#fff',stroke:accent,'stroke-width':1.5,'stroke-dasharray':'4 3'},t);
     if(n.data?.status==='To remove'&&ctx.doc.display?.statusMarks!==false)el('path',{d:`M4 4L${w-4} ${h-4}M${w-4} 4L4 ${h-4}`,stroke:'#dc2626','stroke-width':2.5,'stroke-linecap':'round',opacity:.85},t);
   }
@@ -178,8 +197,8 @@ function drawLegend(n,g,ctx,page){
 
 function markerDef(e,type,side,defs,ctx,color){if(!type||type==='none')return null;const id=`${ctx.prefix}-m-${e.id}-${side}`,m=el('marker',{id,viewBox:'-8 -6 12 12',refX:0,refY:0,markerWidth:7,markerHeight:7,markerUnits:'strokeWidth',orient:'auto-start-reverse',overflow:'visible'},defs);
   if(type==='dot')el('circle',{cx:-2,cy:0,r:3.2,fill:color},m);else if(type==='circle')el('circle',{cx:-3,cy:0,r:3,fill:ctx.bg,stroke:color,'stroke-width':1.3},m);else if(type==='diamond')el('path',{d:'M0 0L-4 -3L-8 0L-4 3Z',fill:color},m);else if(type==='openArrow')el('path',{d:'M-7 -4L0 0L-7 4',fill:'none',stroke:color,'stroke-width':1.4},m);else if(type==='bar')el('path',{d:'M-1 -4.5V4.5',stroke:color,'stroke-width':1.6},m);else el('path',{d:'M1 0L-7 -4L-7 4Z',fill:color},m);return`url(#${id})`}
-function drawEdge(e,g,defs,ctx,before){
-  const d=Conn.path(e,before,ctx.doc.display?.jumpStyle||'arc'),w=e.strokeWidth||2,load=ctx.analysis?.loads?.get(e.id),color=load?load.color:e.stroke||'#4a6fa5';
+function drawEdge(e,g,defs,ctx,before,path){
+  const d=path??Conn.path(e,before,ctx.doc.display?.jumpStyle||'arc'),w=e.strokeWidth||2,load=ctx.analysis?.loads?.get(e.id),color=load?load.color:e.stroke||'#4a6fa5';
   // pick tolerance stays ~14 px on screen at any zoom
   if(ctx.interactive)el('path',{d,fill:'none',stroke:'transparent','stroke-width':Math.max(14,(w+6)*(S.view?.zoom||1)),'vector-effect':'non-scaling-stroke','pointer-events':'stroke','data-id':e.id,'data-role':'edge'},g);
   const ms=markerDef(e,e.startMarker,'s',defs,ctx,color),me=markerDef(e,e.endMarker,'e',defs,ctx,color);
@@ -202,37 +221,42 @@ function drawLabel(owner,l,parent,ctx){
   m.lines.forEach((line,i)=>{const s=el('tspan',{x:l.x,dy:i?m.lh:null},t);s.textContent=line||' '})}
 
 // ---------- standalone SVG (export, print, thumbnails) ----------
-function sceneSvg(page,{doc=S.doc,print=true,pad=15,area=null,prefix='o'}={}){
+function sceneSvg(page,{doc=S.doc,print=true,pad=15,area=null,prefix='o',lite=false}={}){
   const root=document.createElementNS(NS,'svg');root.setAttribute('xmlns',NS);
-  const ctx=makeCtx(page,{doc,print,prefix}),bgSrc=page.background&&doc.pages.find(p=>p.id===page.background),bgPage=bgSrc&&bgSrc!==page?Constraints.bgView(bgSrc,page):null;
+  const ctx=makeCtx(page,{doc,print,prefix,lite}),bgSrc=page.background&&doc.pages.find(p=>p.id===page.background),bgPage=bgSrc&&bgSrc!==page?Constraints.bgView(bgSrc,page):null;
   RCTX=ctx;for(const n of page.items)if(n.kind==='legend')legendMeasure(n,page,ctx);RCTX=null;
   const all=[...page.items,...(bgPage?bgPage.items:[])].filter(n=>itemVisible(n,ctx));
   const b=area||(all.length?Core.bounds(all,true):{x:0,y:0,...Core.pageSize(page)});const vb=[b.x-pad,b.y-pad,b.w+pad*2,b.h+pad*2];
   root.setAttribute('viewBox',vb.map(v=>+v.toFixed(2)).join(' '));root.setAttribute('width',+vb[2].toFixed(2));root.setAttribute('height',+vb[3].toFixed(2));
   el('rect',{x:vb[0],y:vb[1],width:vb[2],height:vb[3],fill:page.bg||'#fff'},root);
-  if(bgPage)drawScene(el('g',{},root),bgPage,makeCtx(bgPage,{doc,print,prefix:prefix+'b',fieldPage:page}));
+  if(bgPage)drawScene(el('g',{},root),bgPage,makeCtx(bgPage,{doc,print,prefix:prefix+'b',fieldPage:page,lite}));
   drawScene(el('g',{},root),page,ctx);return root}
 
 // ---------- editor canvas ----------
-const need={scene:true,page:true,overlay:true,panel:true};let frame=0,frameTimer=0;
+const need={scene:true,page:true,overlay:true,panel:true,rulers:false};let frame=0,frameTimer=0,settleTimer=0,viewSize=null,rulerDims=null,pageSig='',rulerSig='',rulerInk=null;
 // rAF pauses in background tabs, so a timer backs it up
 function render(part){if(part)need[part]=true;else{need.scene=need.page=need.overlay=need.panel=true}if(!frame){frame=requestAnimationFrame(renderNow);frameTimer=setTimeout(renderNow,150)}}
 function renderNow(){
-  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;if(!Number.isFinite(S.view.x+S.view.y+S.view.zoom)){if(!(S.view.zoom>0&&S.view.zoom<=ZOOM.max))S.view.zoom=1;clampView()}const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom;
-  svg.setAttribute('viewBox',`${S.view.x} ${S.view.y} ${cw/z} ${ch/z}`);
+  cancelAnimationFrame(frame);clearTimeout(frameTimer);frame=0;const svg=$('canvas');if(!svg||!S.doc)return;if(!Number.isFinite(S.view.x+S.view.y+S.view.zoom)){if(!(S.view.zoom>0&&S.view.zoom<=ZOOM.max))S.view.zoom=1;clampView()}
+  // sizes are read here, before anything below dirties the layout: reading them later would force the browser to lay out the whole drawing, mid-frame
+  const cw=svg.clientWidth||800,ch=svg.clientHeight||600,z=S.view.zoom,rx=$('rulerX'),ry=$('rulerY');viewSize=[cw,ch];rulerDims=S.prefs.rulers&&rx&&ry&&!rx.hidden&&!ry.hidden?{x:[rx.clientWidth,rx.clientHeight],y:[ry.clientWidth,ry.clientHeight]}:null;
+  // setting it, even to the same value, makes the browser lay out and repaint every shape
+  const vb=`${S.view.x} ${S.view.y} ${cw/z} ${ch/z}`;if(svg.getAttribute('viewBox')!==vb){svg.setAttribute('viewBox',vb);Raster.touched();clearTimeout(settleTimer);settleTimer=setTimeout(settle,240)}
   // zooming only needs the page sheet (grid density, hairlines) and the overlay — not every shape
   if(need.scene||need.page)drawPageLayer(z);
   if(need.scene){
     Conn.sync(items(),{pageId:pg().id});const world=$('scene'),bgl=$('bgLayer');
-    bgl.replaceChildren();world.replaceChildren();
-    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background);if(bgPage&&bgPage!==pg()){const v=Constraints.bgView(bgPage,pg());drawScene(el('g',{opacity:.9},bgl),v,makeCtx(v,{prefix:'bg',fieldPage:pg()}))}
-    drawScene(world,pg(),makeCtx(pg(),{interactive:true}));scheduleMinimap();
+    const bgPage=pg().background&&S.doc.pages.find(p=>p.id===pg().background),v=bgPage&&bgPage!==pg()?Constraints.bgView(bgPage,pg()):null,bgSig=v?JSON.stringify([pg().id,pg().name,v,S.doc.display,S.doc.layers,S.doc.theme]):'';
+    if(bgSig!==live.bg||bgSig.includes('{{')||v&&(S.doc.display?.colorBy||v.items.some(n=>n.kind==='legend'||n.kind==='table'))){bgl.replaceChildren();if(v)drawScene(el('g',{opacity:.9},bgl),v,makeCtx(v,{prefix:'bg',fieldPage:pg()}));live.bg=bgSig}
+    drawLive(world,pg(),makeCtx(pg(),{interactive:true}));scheduleMinimap();
   }
-  renderOverlay();renderRulers();updateMinimapView();
+  if(need.scene||need.page||need.overlay||need.panel||!need.rulers)renderOverlay();
+  renderRulers();updateMinimapView();
   if(need.panel){updatePanel();renderChrome()}
-  need.scene=need.page=need.overlay=need.panel=false}
-function drawPageLayer(z){const pl=$('pageLayer');pl.replaceChildren();
-    const b=Core.pageSize(pg()),m=pg().margin*Core.PX,dark=document.documentElement.dataset.theme==='dark';
+  rulerDims=null;need.scene=need.page=need.overlay=need.panel=need.rulers=false}
+// once the view has rested: detailed pictures now large on screen go back to vectors, and the ones far off to images
+function settle(){if(S.drag||S.dragSymbol){settleTimer=setTimeout(settle,240);return}render('scene')}
+function drawPageLayer(z){const pl=$('pageLayer'),b=Core.pageSize(pg()),m=pg().margin*Core.PX,dark=document.documentElement.dataset.theme==='dark',sig=[z,b.w,b.h,m,dark,pg().bg,S.prefs.grid,gridStep(),S.prefs.guides,JSON.stringify(pg().guideLines||[])].join('|');if(sig===pageSig&&pl.firstChild)return;pageSig=sig;pl.replaceChildren();
     el('rect',{x:-50000,y:-50000,width:100000,height:100000,fill:'transparent','data-role':'background'},pl);
     el('rect',{x:4,y:5,width:b.w,height:b.h,fill:dark?'#00000055':'#c9d3e055','pointer-events':'none'},pl);
     el('rect',{x:0,y:0,width:b.w,height:b.h,fill:pg().bg||'#fff','data-role':'background'},pl);
@@ -317,11 +341,14 @@ function drawEdgeHandles(e,o,z){const blue='#3774e8',hs=8/z,locked=isLocked(e);e
 
 // ---------- rulers ----------
 function renderRulers(){
-  for(const axis of['x','y']){const c=$(axis==='x'?'rulerX':'rulerY');if(!c)continue;if(!S.prefs.rulers){c.hidden=true;continue}c.hidden=false;const dpr=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(c.width!==w*dpr||c.height!==h*dpr){c.width=w*dpr;c.height=h*dpr}const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
-    const css=getComputedStyle(document.documentElement);g.fillStyle=css.getPropertyValue('--ruler').trim()||'#f6f8fb';g.fillRect(0,0,w,h);g.strokeStyle=css.getPropertyValue('--ruler-tick').trim()||'#9aabc1';g.fillStyle=css.getPropertyValue('--muted').trim()||'#7c8da4';g.font='9px '+Core.FONT;
+  // nothing it shows has changed: leave them
+  const selNow=picked(),selBox=selNow.length?Core.bounds(selNow):null,theme=document.documentElement.dataset.theme+'|'+S.prefs.theme,sigNow=[S.prefs.rulers,S.view.x,S.view.y,S.view.zoom,rulerDims?JSON.stringify(rulerDims):'',S.cursor,selBox?.x,selBox?.y,selBox?.w,selBox?.h,theme].join('|');if(sigNow===rulerSig&&rulerDims)return;rulerSig=sigNow;
+  if(rulerInk?.theme!==theme){const css=getComputedStyle(document.documentElement);rulerInk={theme,bg:css.getPropertyValue('--ruler').trim()||'#f6f8fb',tick:css.getPropertyValue('--ruler-tick').trim()||'#9aabc1',muted:css.getPropertyValue('--muted').trim()||'#7c8da4'}}
+  for(const axis of['x','y']){const c=$(axis==='x'?'rulerX':'rulerY');if(!c)continue;if(!S.prefs.rulers){c.hidden=true;continue}c.hidden=false;const dpr=devicePixelRatio||1,w=rulerDims?rulerDims[axis][0]:c.clientWidth,h=rulerDims?rulerDims[axis][1]:c.clientHeight;if(c.width!==w*dpr||c.height!==h*dpr){c.width=w*dpr;c.height=h*dpr}const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
+    g.fillStyle=rulerInk.bg;g.fillRect(0,0,w,h);g.strokeStyle=rulerInk.tick;g.fillStyle=rulerInk.muted;g.font='9px '+Core.FONT;
     const z=S.view.zoom,ppm=Core.PX*z,origin=axis==='x'?S.view.x:S.view.y,len=axis==='x'?w:h;let step=[1,2,5,10,20,50,100,200,500,1000].find(s=>s*ppm>=48)||1000;const minor=step/(String(step)[0]==='2'?4:5);
     // selection band
-    const sel=picked();if(sel.length){const b=Core.bounds(sel),a0=((axis==='x'?b.x:b.y)-origin)*z,a1=a0+(axis==='x'?b.w:b.h)*z;g.fillStyle='#3774e833';if(axis==='x')g.fillRect(a0,0,a1-a0,h);else g.fillRect(0,a0,w,a1-a0);g.fillStyle=css.getPropertyValue('--muted').trim()||'#7c8da4'}
+    if(selBox){const b=selBox,a0=((axis==='x'?b.x:b.y)-origin)*z,a1=a0+(axis==='x'?b.w:b.h)*z;g.fillStyle='#3774e833';if(axis==='x')g.fillRect(a0,0,a1-a0,h);else g.fillRect(0,a0,w,a1-a0);g.fillStyle=rulerInk.muted}
     const startMM=Math.floor(origin/Core.PX/minor)*minor;g.beginPath();
     for(let mm=startMM;;mm+=minor){const pos=(mm*Core.PX-origin)*z;if(!(pos<=len))break;if(pos<0)continue;const major=Math.abs(mm/step-Math.round(mm/step))<1e-6,tk=major?(axis==='x'?h:w)*.55:(axis==='x'?h:w)*.25;if(axis==='x'){g.moveTo(pos+.5,h);g.lineTo(pos+.5,h-tk)}else{g.moveTo(w,pos+.5);g.lineTo(w-tk,pos+.5)}
       if(major){const label=String(Math.round(mm));if(axis==='x')g.fillText(label,pos+3,9);else{g.save();g.translate(9,pos+3);g.rotate(-Math.PI/2);g.textAlign='right';g.fillText(label,0,0);g.restore()}}}
@@ -334,9 +361,9 @@ let miniBounds=null;
 function drawMinimap(){const m=$('minimap');if(!m||!S.prefs.minimap){if(m)m.hidden=true;return}m.hidden=false;const svg=$('miniSvg'),b=Core.pageSize(pg()),all=items(),ext=miniBounds=drawingBounds(),x0=ext.x-40,y0=ext.y-40,x1=ext.x+ext.w+40,y1=ext.y+ext.h+40;
   svg.setAttribute('viewBox',`${x0} ${y0} ${x1-x0} ${y1-y0}`);svg.dataset.vb=JSON.stringify([x0,y0,x1-x0,y1-y0]);const g=$('miniScene');g.replaceChildren();el('rect',{x:0,y:0,width:b.w,height:b.h,fill:pg().bg||'#fff',stroke:'#94a3b8','stroke-width':4},g);
   for(const n of all){if(!itemVisible(n,{doc:S.doc}))continue;if(n.kind==='zone')el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:n.fill||'#eef4fb',stroke:n.stroke,'stroke-width':3},g);else if(n.kind==='edge')el('polyline',{points:n.points.map(p=>p.join(',')).join(' '),fill:'none',stroke:n.stroke,'stroke-width':4},g);else if(n.kind==='node')el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:6,fill:n.display==='tile'||n.display==='circle'?n.stroke:'#fff',stroke:n.stroke,'stroke-width':4},g);else el('rect',{x:n.x,y:n.y,width:n.w,height:n.h,fill:'#94a3b833'},g)}updateMinimapView()}
-function updateMinimapView(){const r=$('miniView'),svg=$('canvas');if(!r||!S.prefs.minimap)return;const z=S.view.zoom,vw=svg.clientWidth/z,vh=svg.clientHeight/z;r.setAttribute('x',S.view.x);r.setAttribute('y',S.view.y);r.setAttribute('width',vw);r.setAttribute('height',vh);r.setAttribute('stroke-width',Math.max(3,vw/90));
+function updateMinimapView(){const r=$('miniView'),svg=$('canvas');if(!r||!S.prefs.minimap)return;const z=S.view.zoom,vw=(viewSize?viewSize[0]:svg.clientWidth)/z,vh=(viewSize?viewSize[1]:svg.clientHeight)/z;r.setAttribute('x',S.view.x);r.setAttribute('y',S.view.y);r.setAttribute('width',vw);r.setAttribute('height',vh);r.setAttribute('stroke-width',Math.max(3,vw/90));
   // only worth showing once part of the drawing is out of view
   const b=miniBounds||drawingBounds(),t=2/z;$('minimap').classList.toggle('away',b.x>=S.view.x-t&&b.y>=S.view.y-t&&b.x+b.w<=S.view.x+vw+t&&b.y+b.h<=S.view.y+vh+t)}
 
 // ---------- thumbnails ----------
-function thumbnail(doc,page,w=260,h=170){const svg=sceneSvg(page,{doc,print:true,pad:20});svg.setAttribute('width',w);svg.setAttribute('height',h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');return svg}
+function thumbnail(doc,page,w=260,h=170){const svg=sceneSvg(page,{doc,print:true,pad:20,lite:true});svg.setAttribute('width',w);svg.setAttribute('height',h);svg.setAttribute('preserveAspectRatio','xMidYMid meet');return svg}

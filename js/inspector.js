@@ -46,7 +46,7 @@ function labelsList(n){return section('Text',`${n.labels?.[0]?field(n.kind==='zo
 function nodePanel(n){
   const kind=Shapes.kindOf(n.type),dev=kind==='device'||n.image;let out='';
   // racks and rack units have their own sections; the device-type picker does not apply to them
-  if(kind!=='rack'&&kind!=='rackitem')out+=`<div class="typeHead">${n.image?'':Shapes.iconSvg(n.type,{size:34,display:n.display==='card'?'symbol':n.display,accent:n.stroke})}<div>${field('Shape type',sel('type',typeOptions(),n.type,n.image?'disabled':''))}<button class="chgBtn" data-action="changeShape">Change shape…</button></div></div>`;
+  if(kind!=='rack'&&kind!=='rackitem')out+=`<div class="typeHead">${n.image?'':Shapes.iconSvg(n.type,{size:34,display:n.display==='card'?'symbol':n.display,accent:n.stroke,live:true})}<div>${field('Shape type',sel('type',typeOptions(),n.type,n.image?'disabled':''))}<button class="chgBtn" data-action="changeShape">Change shape…</button></div></div>`;
   out+=labelsList(n);
   if(kind==='rack'){const sm=Racks.summary(n,items(),id=>S.doc.pages.flatMap(p=>p.items).find(x=>x.id===id)),v=n.views||{};out+=section('Rack',`${row(field('Height (U)',sel('units',[[12,'12U'],[18,'18U'],[24,'24U'],[42,'42U'],[45,'45U'],[47,'47U'],[48,'48U']],n.units||42)),field('Frame colour',color('stroke',n.stroke)))}
     <p class="muted">${sm.used} of ${sm.units} U used · ${sm.free} U free · ${sm.power.toLocaleString()} W · ${sm.btu.toLocaleString()} BTU/h${sm.warn.length?` · <span class="warnTxt">${sm.warn.length} warning${sm.warn.length>1?'s':''}</span>`:''}</p>

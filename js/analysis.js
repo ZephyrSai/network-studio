@@ -2,7 +2,9 @@
 // PoE budgets, CCTV storage, rack capacity, IP plan, design-rule checks and reports (inventory, cables, BOM).
 const Analysis=(()=>{
 const C=Core;
-const nameOf=n=>{if(!n)return'';const l=n.labels?.[0];const t=l?resolveLabel(n,l,makeCtx(pageOfItem(n)||pg())):'';return String(t||n.data?.hostname||(n.kind==='zone'?'Zone':Shapes.nameOf(n.type))||n.kind||'').replace(/\n/g,' ')};
+// Only a name with {{fields}} in it needs the page's context, and building that for every item adds up on a large drawing: it's kept for the rest of this task.
+let ctxMemo=null;const ctxOf=n=>{const p=pageOfItem(n)||pg();if(ctxMemo?.p===p&&ctxMemo.doc===S.doc&&ctxMemo.len===p.items.length)return ctxMemo.ctx;const ctx=makeCtx(p);ctxMemo={p,doc:S.doc,len:p.items.length,ctx};queueMicrotask(()=>{ctxMemo=null});return ctx};
+const nameOf=n=>{if(!n)return'';const l=n.labels?.[0];const t=l?String(l.text??'').includes('{{')?resolveLabel(n,l,ctxOf(n)):l.text??'':'';return String(t||n.data?.hostname||(n.kind==='zone'?'Zone':Shapes.nameOf(n.type))||n.kind||'').replace(/\n/g,' ')};
 const pageOfItem=n=>S.doc.pages.find(p=>p.items.includes(n));
 const tier=n=>Stencils?.shapes?.[n.type]?.tier??(Shapes.rackItems[n.type]?3:5);
 const DEFAULT_POE={camera:6.5,domecamera:7,ptzcamera:25,anpr:12,thermal:12,wap:15,ipphone:5,accesscontrol:8,intercom:10,sensor:3,iotgateway:8,display:25,thinclient:12};

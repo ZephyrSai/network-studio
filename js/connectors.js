@@ -9,6 +9,10 @@ function metric(points){const lengths=[0];for(let i=1;i<points.length;i++)length
 function at(m,s){s=Math.max(0,Math.min(m.total,s));for(let i=1;i<m.points.length;i++)if(m.lengths[i]>=s){const a=m.points[i-1],b=m.points[i],t=(s-m.lengths[i-1])/(m.lengths[i]-m.lengths[i-1]||1);return[a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])]}return m.points.at(-1)}
 function tangent(m,s){const a=at(m,Math.max(0,s-1)),b=at(m,Math.min(m.total,s+1)),l=dist(a,b)||1;return[(b[0]-a[0])/l,(b[1]-a[1])/l]}
 function intersections(m,other){const out=[];for(let i=1;i<m.points.length;i++){const a=m.points[i-1],b=m.points[i],rx=b[0]-a[0],ry=b[1]-a[1];for(let j=1;j<other.length;j++){const c=other[j-1],d=other[j],sx=d[0]-c[0],sy=d[1]-c[1],den=rx*sy-ry*sx;if(Math.abs(den)<1e-8)continue;const qx=c[0]-a[0],qy=c[1]-a[1],t=(qx*sy-qy*sx)/den,u=(qx*ry-qy*rx)/den;if(t>=0&&t<=1&&u>=0&&u<=1){const x=a[0]+t*rx,y=a[1]+t*ry;if(dist([x,y],other[0])<8||dist([x,y],other.at(-1))<8)continue;out.push(m.lengths[i-1]+t*(m.lengths[i]-m.lengths[i-1]))}}}return out}
+// Which earlier connectors can this one cross? Each one's box is worked out once per redraw, not once for every link after it: on a drawing with thousands of links that is most of the cost. It gives the same crossings: it only rules out what can't touch.
+function jumpIndex(){const X0=[],Y0=[],X1=[],Y1=[],list=[],M=2;
+  return{near(e){if(e.jumps===false)return[];const b=C.bounds([e]),a0=b.x-M,c0=b.y-M,a1=b.x+b.w+M,c1=b.y+b.h+M,out=[];for(let i=0;i<list.length;i++)if(X0[i]<=a1&&X1[i]>=a0&&Y0[i]<=c1&&Y1[i]>=c0)out.push(list[i]);return out},
+    add(e){const b=C.bounds([e]);X0.push(b.x);Y0.push(b.y);X1.push(b.x+b.w);Y1.push(b.y+b.h);list.push(e)}}}
 // SVG path with arcs ("line jumps") where this connector crosses connectors drawn before it.
 function path(e,previous=[],style='arc'){const m=metric(sample(e)),p=m.points;if(!p.length)return'';const jumps=[];
   if(e.jumps!==false&&style!=='none'){const r=Number(e.jumpSize)||6,bb=C.bounds([e]);const near=previous.filter(o=>{const b=C.bounds([o]);return C.overlaps({x:bb.x-2,y:bb.y-2,w:bb.w+4,h:bb.h+4},b)});const cross=near.flatMap(o=>intersections(m,sample(o))).sort((a,b)=>a-b);for(const s of cross)if(s>r+3&&s<m.total-r-3&&(!jumps.length||s-jumps.at(-1).s>r*2+3))jumps.push({s,r})}
@@ -117,6 +121,6 @@ function endLabelPos(e,key,offset=16,center=null){const m=metric(sample(e));if(m
   // labels sit beside vertical runs (outward from the device centre) and above/below horizontal runs
   if(vertical){const right=center?q[0]>=center[0]-.5:true;return{x:q[0]+(right?5:-5),y:q[1]+3,anchor:right?'start':'end'}}const below=center?q[1]>center[1]+.5:false;return{x:q[0],y:q[1]+(below?12:-5),anchor:'middle'}}
 
-return{setLabelExtra,sample,metric,at,path,orthogonalize,simplify,resolveEnd,boundaryPoint,route,sync,reset,markDirty,pointAt,nearestT,placeLabels,endLabelPos,obstacleList,elbow};
+return{setLabelExtra,sample,metric,at,path,jumpIndex,orthogonalize,simplify,resolveEnd,boundaryPoint,route,sync,reset,markDirty,pointAt,nearestT,placeLabels,endLabelPos,obstacleList,elbow};
 })();
 if(typeof Core!=='undefined')Core.setSampler(Conn.sample);

@@ -9,23 +9,31 @@ const C=Core;
 
 // ---------- history ----------
 let autosaveTimer=null;
-function snapshot(){return JSON.stringify({doc:S.doc,pageIndex:S.pageIndex})}
-function remember(){S.history.push(snapshot());if(S.history.length>150)S.history.shift();S.future=[]}
-function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();Quick.revInfo();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosave,700)}
+// The shapes a drawing embeds are the bulk of it, and never change with an edit: each undo step would otherwise hold its own megabytes.
+function snapshot(){const{stencils,...doc}=S.doc;return JSON.stringify({doc,pageIndex:S.pageIndex})}
+const HISTORY_MAX=96e6;
+function remember(){S.history.push(snapshot());let total=0;for(const h of S.history)total+=h.length;while(S.history.length>1&&(S.history.length>150||total>HISTORY_MAX)){total-=S.history.shift().length;if(S.reviewFloor>0)S.reviewFloor--}S.future=[]}
+function changed(){const r=Constraints.sync(pg(),S.doc);if(r?.shift){S.view.x+=r.shift[0];S.view.y+=r.shift[1]}if(r?.resized&&!S.quietResize)notify(`Page resized to ${pg().paper==='Custom'?pg().customW+' × '+pg().customH+' mm':pg().paper+' '+pg().orientation} to fit the drawing (Page ▸ Auto-size).`,2600);S.dirty=true;S.doc.meta.modified=new Date().toISOString();setSaveState('Unsaved changes');scheduleCheck();Quick.revInfo();clearTimeout(autosaveTimer);autosaveTimer=setTimeout(autosaveIdle,900)}
 // Review mode locks the layout: an edit stops here (the global handler swallows the error); review data changes pass.
 class ReviewLock extends Error{constructor(){super('Review mode: the layout is locked');this.name='ReviewLock'}}
 function mutate(fn){if(S.reviewMode&&!S.reviewEdit){ReviewUI.blocked();throw new ReviewLock()}remember();const r=fn();changed();render();return r}
 let checkTimer=null;
 // Design-rule check runs quietly after edits; the status bar shows the count and opens the full list.
 // Findings accepted as intentional or marked resolved do not count.
-function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;if(!S.side)return}checkTimer=setTimeout(()=>{try{const issues=Analysis.check(S.doc),open=issues.filter(i=>i.status==='open'),e=open.filter(i=>i.severity==='error').length,w=open.filter(i=>i.severity==='warning').length,b=$('issueCount');ReviewUI.update(issues);if(!b||!S.prefs.liveCheck)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},900)}
+// On a large drawing it waits longer, in proportion to what it takes, and never runs during a gesture.
+let checkCost=0;
+function scheduleCheck(){clearTimeout(checkTimer);if(!S.prefs.liveCheck){const b=$('issueCount');if(b)b.hidden=true;if(!S.side)return}checkTimer=setTimeout(()=>{if(S.drag)return scheduleCheck();try{const t0=performance.now(),issues=Analysis.check(S.doc);checkCost=performance.now()-t0;const open=issues.filter(i=>i.status==='open'),e=open.filter(i=>i.severity==='error').length,w=open.filter(i=>i.severity==='warning').length,b=$('issueCount');ReviewUI.update(issues);if(!b||!S.prefs.liveCheck)return;b.hidden=false;b.className='issueBtn '+(e?'err':w?'warn':'ok');b.textContent=e||w?`${e?e+' error'+(e>1?'s':''):''}${e&&w?' · ':''}${w?w+' warning'+(w>1?'s':''):''}`:'✓ No issues';b.title='Design-rule check — click for details'}catch(err){console.warn('live check',err)}},Math.max(900,Math.min(6000,checkCost*8)))}
 function clearTransient(){S.selected.clear();S.activeLabel=null;S.segment=null;S.bend=null;S.trace=null;S.drag=null;S.snapPort=null;S.highlights.clear();S.findMark=null}
-function restore(s){const r=JSON.parse(s);S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;Conn.reset();changed();render()}
+function restore(s){const r=JSON.parse(s),st=S.doc?.stencils;if(st&&!r.doc.stencils)r.doc.stencils=st;S.doc=r.doc;S.pageIndex=Math.min(r.pageIndex,S.doc.pages.length-1);const keep=new Set([...S.selected].filter(id=>items().some(n=>n.id===id)));clearTransient();S.selected=keep;Conn.reset();changed();render()}
 // in review mode only what was done during the review can be undone
 function undo(){if(!S.history.length||S.reviewMode&&S.history.length<=S.reviewFloor)return notify(S.reviewMode?'Nothing to undo in this review.':'Nothing to undo.');S.future.push(snapshot());restore(S.history.pop())}
 function redo(){if(!S.future.length||S.reviewMode&&S.future.length<=S.reviewFutureFloor)return;S.history.push(snapshot());restore(S.future.pop())}
 function setSaveState(t){const e=$('saveState');if(e)e.textContent=t}
-function autosave(){try{Packs.embedUsed(S.doc);localStorage.setItem('port-v3-recovery',JSON.stringify(S.doc));setSaveState(S.fileHandle?'Unsaved · recovery copy kept':'Recovery copy saved in this browser')}catch{setSaveState('Quick recovery copy too large — kept in browser storage only')}Workspace.saveCurrent()}
+// Saving a large drawing takes a moment: never in the middle of a gesture.
+function autosaveIdle(){if(S.drag){autosaveTimer=setTimeout(autosaveIdle,600);return}if(typeof requestIdleCallback==='function')requestIdleCallback(autosave,{timeout:1800});else autosave()}
+// The quick copy is the fallback for when the browser's database isn't there. Writing a large one to localStorage blocks the page, so it stops, but only once the database has confirmed it holds this drawing.
+const RECOVERY_MAX=1.2e6;let recoveryBig=null;
+function autosave(){try{Packs.embedUsed(S.doc);if(recoveryBig===S.docId&&Workspace.saved(S.docId))throw 0;const json=JSON.stringify(S.doc);if(json.length>RECOVERY_MAX&&Workspace.saved(S.docId)){recoveryBig=S.docId;try{localStorage.removeItem('port-v3-recovery')}catch{}throw 0}recoveryBig=null;localStorage.setItem('port-v3-recovery',json);setSaveState(S.fileHandle?'Unsaved · recovery copy kept':'Recovery copy saved in this browser')}catch{setSaveState('Quick recovery copy too large — kept in browser storage only')}Workspace.saveCurrent()}
 function savePrefs(){try{localStorage.setItem('port-v3-prefs',JSON.stringify(S.prefs))}catch{}}
 
 let toastTimer=null;
@@ -138,7 +146,7 @@ function pointerMove(e,fromPan=false){
     if(S.mode==='connect'){if(S.trace){const t=snapTarget(p,e);S.hover=t.p}else snapTarget(p,e);S.hoverId=nodesAt(p)[0]?.id||null;render('overlay')}
     else if(S.mode==='select'||S.mode==='port'){const tgt=e.target.closest('[data-id]'),id=tgt?.dataset.id;let n=id&&find(id);if(tgt?.dataset.role==='edge')n=faceUnder(n,p)||n;const hv=n&&Select.selectable(n)&&!n.pin?n.id:null;if(hv!==S.hoverItem){S.hoverItem=hv;render('overlay')}let h=n?.kind==='node'?n.id:null;if(!h&&S.hoverId){const o=find(S.hoverId);if(o){const b=C.box(o),pad=46/S.view.zoom;if(p[0]>b.x-pad&&p[0]<b.x+b.w+pad&&p[1]>b.y-pad&&p[1]<b.y+b.h+pad+30/S.view.zoom)h=o.id}}if(h!==S.hoverId){S.hoverId=h;render('overlay')}}
     else render('overlay');
-    if(S.prefs.rulers)renderRulers();return}
+    if(S.prefs.rulers)render('rulers');return}
   if(d.kind==='guide'){const g=pg().guideLines.find(x=>x.id===d.guide);g.pos=grid(p[g.axis==='x'?0:1]);d.moved=true;render('scene');return}
   if(d.kind==='pan'){S.view.x=d.view.x-(e.clientX-d.start[0])/S.view.zoom;S.view.y=d.view.y-(e.clientY-d.start[1])/S.view.zoom;clampView();render('overlay');return}
   if(d.kind==='comment'){d.current=p;render('overlay');return}
@@ -260,7 +268,7 @@ function autoConnect(id,dir){
 function nextName(s){const m=/(\d+)(\D*)$/.exec(s||'');return m?s.slice(0,m.index)+String(+m[1]+1).padStart(m[1].length,'0')+m[2]:(s?s+' 2':'')}
 function quickAddMenu(e,p,d){
   const menu=$('contextMenu'),types=['switch','router','firewall','server','wap','camera','workstation','cloud'].filter(t=>Stencils?.shapes?.[t]);
-  menu.innerHTML=`<div class="menuTitle">Add connected device</div><div class="quickGrid">${types.map(t=>`<button data-quick="${t}" title="${html(Shapes.nameOf(t))}">${Shapes.iconSvg(t,{size:30})}<span>${html(Shapes.nameOf(t))}</span></button>`).join('')}</div><button data-quick="">Leave unconnected end</button><button data-quick="cancel">Cancel</button>`;
+  menu.innerHTML=`<div class="menuTitle">Add connected device</div><div class="quickGrid">${types.map(t=>`<button data-quick="${t}" title="${html(Shapes.nameOf(t))}">${Shapes.iconSvg(t,{size:30,live:true})}<span>${html(Shapes.nameOf(t))}</span></button>`).join('')}</div><button data-quick="">Leave unconnected end</button><button data-quick="cancel">Cancel</button>`;
   showMenu(menu,e.clientX,e.clientY);
   menu.onclick=ev=>{const b=ev.target.closest('[data-quick]');if(!b)return;menu.onclick=null;hideMenus();const type=b.dataset.quick;if(type==='cancel'){S.history.pop();render();return}
     if(!type){const edge=createEdge(d.from,null,d.fromP,[grid(p[0]),grid(p[1])]);changed();select([edge.id]);render();return}
